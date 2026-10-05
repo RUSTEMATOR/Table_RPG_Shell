@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { THEMES } from '../lib/cardTheme/index.ts';
+import { relLum } from '../lib/cardTheme/engine.mjs';
 import { Button, Sheet } from '../ui/index.ts';
 import { cn } from '../lib/cn.ts';
 
@@ -36,13 +37,16 @@ export function ThemeChoice({ base, value, onChange }: { base: string; value: st
 function Swatch({ k, label, on, onPick, wide }: { k: string; label: string; on: boolean; onPick: () => void; wide?: boolean }) {
   const t = THEMES[k] ?? THEMES.other!;
   const accent = typeof t.accent === 'string' ? t.accent : t.ink;
+  // Подпись лежит на фоне темы: её цвет — hink («текст на фоне»), а не ink (он для светлой панели карточки).
+  // Если и он не читается, берём чёрный или белый — что контрастнее.
+  const text = readable(typeof t.hink === 'string' ? t.hink : t.ink, t.bg);
   return (
     <button
       type="button"
       role="radio"
       aria-checked={on}
       onClick={onPick}
-      style={{ background: t.bg, color: t.ink }}
+      style={{ background: t.bg, color: text }}
       className={cn(
         'flex min-h-14 cursor-pointer items-center gap-2.5 rounded-control border-2 border-solid px-3 py-2 text-left font-ui text-sm leading-tight focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
         on ? 'border-accent' : 'border-transparent shadow-[inset_0_0_0_1px_rgba(0,0,0,.12)]',
@@ -55,4 +59,15 @@ function Swatch({ k, label, on, onPick, wide }: { k: string; label: string; on: 
       <span className="min-w-0">{label}</span>
     </button>
   );
+}
+
+const contrast = (a: string, b: string) => {
+  const x = relLum(a),
+    y = relLum(b);
+  return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+};
+/** Цвет текста, читаемый на фоне bg (контраст не меньше 4,5). */
+function readable(ink: string, bg: string): string {
+  if (contrast(ink, bg) >= 4.5) return ink;
+  return contrast('#000000', bg) >= contrast('#ffffff', bg) ? '#111111' : '#f7f4ec';
 }
