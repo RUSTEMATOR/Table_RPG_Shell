@@ -59,12 +59,7 @@ function PlayerHome({ active, theme, base, choice, onChoice }: { active: boolean
   return (
     <>
       <ThemeChoice base={base} value={choice} onChange={onChoice} />
-      <PlayerCard
-        className="reveal"
-        c={character}
-        theme={theme}
-        onChange={setCharacter}
-      />
+      <PlayerCard className="reveal" c={character} theme={theme} onChange={setCharacter} />
     </>
   );
 }
@@ -175,7 +170,10 @@ function PlayerTabs() {
   );
   return (
     <>
-      <div ref={pager} className="-mx-4 flex min-h-0 flex-1 snap-x snap-mandatory overflow-x-auto overflow-y-hidden overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div
+        ref={pager}
+        className="-mx-4 flex min-h-0 flex-1 snap-x snap-mandatory overflow-x-auto overflow-y-hidden overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
         {pane(
           'rolls',
           <>
@@ -245,4 +243,3 @@ function usePlayerSkin(): string {
   useSocketEvent('character:updated', ({ character }) => take(character));
   return skin;
 }
-

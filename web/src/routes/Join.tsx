@@ -4,6 +4,8 @@ import { PIN_LENGTH, ru, type InviteInfo } from '@zg/shared';
 import { api } from '../lib/api.ts';
 import { homeFor, useMe } from '../lib/me.tsx';
 import { errorText } from './errors.ts';
+import { AuthFrame } from '../components/AuthFrame.tsx';
+import { Button, Field, Input, Skeleton } from '../ui/index.ts';
 
 // GET приглашения ничего не меняет; ссылка гасится только по кнопке (POST).
 export function Join() {
@@ -37,65 +39,61 @@ export function Join() {
     if (me) navigate(homeFor(me.member.role), { replace: true });
   };
 
+  const pin = isGm ? '' : 'text-center font-mono text-2xl tracking-[.35em] tabular-nums';
+  const secretInput = (value: string, set: (v: string) => void, id: string, describedBy: string | undefined, first?: boolean) => (
+    <Input
+      id={id}
+      aria-describedby={describedBy}
+      type="password"
+      inputMode={isGm ? 'text' : 'numeric'}
+      maxLength={isGm ? 200 : PIN_LENGTH}
+      value={value}
+      onChange={(e) => set(isGm ? e.target.value : e.target.value.replace(/\D/g, ''))}
+      autoComplete="new-password"
+      className={pin}
+      required
+      autoFocus={first}
+    />
+  );
+  const mismatch = secret2.length > 0 && secret2.length >= secret.length && secret !== secret2;
+
   return (
-    <div className="screen center">
-      <div className="card narrow">
-        <h1>{ru.appName}</h1>
-        {!info && !error && <p className="muted">Проверяю приглашение…</p>}
-        {info && (
-          <form onSubmit={accept} className="stack">
-            <p>
-              {info.roomName}: приглашение для <strong>{info.name}</strong> ({ru.roles[info.role]}).
-            </p>
-            {info.needsSecret && (
-              <>
-                <p className="muted small">
-                  {isGm
-                    ? 'Задайте пароль мастера.'
-                    : `Придумайте PIN из ${PIN_LENGTH} цифр. С ним можно войти с любого устройства по коду комнаты.`}
-                </p>
-                <label className="field">
-                  <span>{isGm ? 'Пароль' : 'PIN'}</span>
-                  <input
-                    type="password"
-                    inputMode={isGm ? 'text' : 'numeric'}
-                    maxLength={isGm ? 200 : PIN_LENGTH}
-                    value={secret}
-                    onChange={(e) => setSecret(isGm ? e.target.value : e.target.value.replace(/\D/g, ''))}
-                    autoComplete="new-password"
-                    className={isGm ? '' : 'code-input'}
-                    required
-                  />
-                </label>
-                <label className="field">
-                  <span>Ещё раз</span>
-                  <input
-                    type="password"
-                    inputMode={isGm ? 'text' : 'numeric'}
-                    maxLength={isGm ? 200 : PIN_LENGTH}
-                    value={secret2}
-                    onChange={(e) => setSecret2(isGm ? e.target.value : e.target.value.replace(/\D/g, ''))}
-                    autoComplete="new-password"
-                    className={isGm ? '' : 'code-input'}
-                    required
-                  />
-                </label>
-              </>
-            )}
-            <button className="btn" disabled={busy || !valid}>
-              Войти как {info.name}
-            </button>
-          </form>
-        )}
-        {error && (
-          <div className="stack">
-            <p className="error">{error}</p>
-            <button className="btn btn-secondary" onClick={() => navigate('/login')}>
-              Войти по коду и PIN
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
+    <AuthFrame step={info ? 'invite' : error ? 'error' : 'loading'}>
+      {!info && !error && (
+        <div className="grid gap-2" aria-busy="true">
+          <Skeleton className="h-5 w-3/4" />
+          <Skeleton className="h-11 w-full" />
+          <p className="m-0 text-muted">Проверяю приглашение…</p>
+        </div>
+      )}
+      {info && (
+        <form onSubmit={accept} className="grid gap-3">
+          <p className="m-0">
+            {info.roomName}: приглашение для <strong>{info.name}</strong> ({ru.roles[info.role]}).
+          </p>
+          {info.needsSecret && (
+            <>
+              <p className="m-0 text-[13.6px] text-muted">
+                {isGm ? 'Задайте пароль мастера, не короче 8 знаков.' : `Придумайте PIN из ${PIN_LENGTH} цифр. С ним можно войти с любого устройства по коду комнаты.`}
+              </p>
+              <Field label={isGm ? 'Пароль' : 'PIN'}>{(id, d) => secretInput(secret, setSecret, id, d, true)}</Field>
+              <Field label="Ещё раз" error={mismatch ? 'Не совпадает с первым.' : undefined}>
+                {(id, d) => secretInput(secret2, setSecret2, id, d)}
+              </Field>
+            </>
+          )}
+          <Button type="submit" variant="primary" size="lg" disabled={busy || !valid}>
+            {busy ? 'Вхожу…' : `Войти как ${info.name}`}
+          </Button>
+          {error && <p className="error m-0">{error}</p>}
+        </form>
+      )}
+      {!info && error && (
+        <>
+          <p className="error m-0">{error}</p>
+          <Button onClick={() => navigate('/login')}>Войти по коду и PIN</Button>
+        </>
+      )}
+    </AuthFrame>
   );
 }

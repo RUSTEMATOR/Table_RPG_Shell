@@ -5,6 +5,8 @@ import { api } from '../lib/api.ts';
 import { homeFor, useMe } from '../lib/me.tsx';
 import { load, save } from '../lib/storage.ts';
 import { errorText } from './errors.ts';
+import { AuthFrame } from '../components/AuthFrame.tsx';
+import { Button, Field, Input } from '../ui/index.ts';
 
 export function Login() {
   const { me, loading, refresh } = useMe();
@@ -15,6 +17,7 @@ export function Login() {
   const [secret, setSecret] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [dir, setDir] = useState<1 | -1>(1);
 
   useEffect(() => {
     if (!loading && me) navigate(homeFor(me.member.role), { replace: true });
@@ -28,6 +31,7 @@ export function Login() {
     setBusy(false);
     if (!r.ok) return setError(errorText(r.error, r.retryAfterSec));
     save('zg:roomCode', code.trim().toUpperCase());
+    setDir(1);
     setRoom(r.data);
   };
 
@@ -48,55 +52,81 @@ export function Login() {
     if (next) navigate(homeFor(next.member.role), { replace: true });
   };
 
+  const step = !room ? 'code' : !member ? 'who' : 'secret';
+  const go = (d: 1 | -1, f: () => void) => {
+    setDir(d);
+    setError(null);
+    f();
+  };
+  const pin = 'text-center font-mono text-2xl tracking-[.35em] tabular-nums';
+
   return (
-    <div className="screen center">
-      <div className="card narrow">
-        <h1>{ru.appName}</h1>
-        {!room && (
-          <form onSubmit={findRoom} className="stack">
-            <label className="field">
-              <span>Код комнаты</span>
-              <input
+    <AuthFrame step={step} dir={dir}>
+      {step === 'code' && (
+        <form onSubmit={findRoom} className="grid gap-3">
+          <Field label="Код комнаты" hint="Шесть знаков, его даёт мастер." error={error}>
+            {(id, describedBy) => (
+              <Input
+                id={id}
+                aria-describedby={describedBy}
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
                 maxLength={6}
                 autoCapitalize="characters"
                 autoComplete="off"
                 spellCheck={false}
-                className="code-input"
+                className={pin}
                 required
+                autoFocus
               />
-            </label>
-            <button className="btn" disabled={busy || code.trim().length !== 6}>
-              Дальше
-            </button>
-          </form>
-        )}
-        {room && !member && (
-          <div className="stack">
-            <p className="muted">{room.roomName}. Кто вы?</p>
+            )}
+          </Field>
+          <Button type="submit" variant="primary" size="lg" disabled={busy || code.trim().length !== 6}>
+            {busy ? 'Ищу…' : 'Дальше'}
+          </Button>
+        </form>
+      )}
+      {step === 'who' && room && (
+        <>
+          <p className="m-0 text-muted">{room.roomName}. Кто вы?</p>
+          <div className="grid gap-2">
             {room.members.map((m) => (
-              <button key={m.id} className="btn btn-secondary" onClick={() => setMember(m)}>
-                {m.name}
-                <span className="muted small"> · {ru.roles[m.role]}</span>
-              </button>
+              <Button key={m.id} size="lg" className="justify-start gap-3 text-left" onClick={() => go(1, () => setMember(m))}>
+                <span aria-hidden="true" className="grid size-8 shrink-0 place-items-center rounded-full bg-accent-soft font-name text-base text-accent">
+                  {m.name.slice(0, 1).toUpperCase()}
+                </span>
+                <span className="grow">{m.name}</span>
+                <span className="text-sm font-normal text-muted">{ru.roles[m.role]}</span>
+              </Button>
             ))}
-            <button className="btn btn-ghost" onClick={() => setRoom(null)}>
-              Другой код
-            </button>
           </div>
-        )}
-        {room && member && (
-          <form onSubmit={login} className="stack">
-            <p>
-              Вход: <strong>{member.name}</strong>
-            </p>
-            <label className="field">
-              <span>{member.role === 'gm' ? 'Пароль' : `PIN (${PIN_LENGTH} цифр)`}</span>
-              {member.role === 'gm' ? (
-                <input type="password" value={secret} onChange={(e) => setSecret(e.target.value)} autoComplete="current-password" required />
+          <Button variant="ghost" onClick={() => go(-1, () => setRoom(null))}>
+            Другой код
+          </Button>
+        </>
+      )}
+      {step === 'secret' && member && (
+        <form onSubmit={login} className="grid gap-3">
+          <p className="m-0">
+            Вход: <strong>{member.name}</strong>
+          </p>
+          <Field label={member.role === 'gm' ? 'Пароль' : `PIN (${PIN_LENGTH} цифр)`} error={error}>
+            {(id, describedBy) =>
+              member.role === 'gm' ? (
+                <Input
+                  id={id}
+                  aria-describedby={describedBy}
+                  type="password"
+                  value={secret}
+                  onChange={(e) => setSecret(e.target.value)}
+                  autoComplete="current-password"
+                  required
+                  autoFocus
+                />
               ) : (
-                <input
+                <Input
+                  id={id}
+                  aria-describedby={describedBy}
                   type="password"
                   inputMode="numeric"
                   pattern="\d{6}"
@@ -104,21 +134,22 @@ export function Login() {
                   value={secret}
                   onChange={(e) => setSecret(e.target.value.replace(/\D/g, ''))}
                   autoComplete="current-password"
-                  className="code-input"
+                  className={pin}
                   required
+                  autoFocus
                 />
-              )}
-            </label>
-            <button className="btn" disabled={busy || !secret}>
-              Войти
-            </button>
-            <button type="button" className="btn btn-ghost" onClick={() => setMember(null)}>
-              Назад
-            </button>
-          </form>
-        )}
-        {error && <p className="error">{error}</p>}
-      </div>
-    </div>
+              )
+            }
+          </Field>
+          <Button type="submit" variant="primary" size="lg" disabled={busy || !secret}>
+            {busy ? 'Вхожу…' : 'Войти'}
+          </Button>
+          <Button variant="ghost" onClick={() => go(-1, () => setMember(null))}>
+            Назад
+          </Button>
+        </form>
+      )}
+      {step === 'who' && error && <p className="error m-0">{error}</p>}
+    </AuthFrame>
   );
 }
