@@ -34,7 +34,16 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api\//, /^\/socket\.io\//],
-        runtimeCaching: [],
+        // Физика кубиков (Rapier, WebAssembly внутри, ~4 МБ) не входит в предкэш: качается при первом броске
+        // и дальше берётся из кэша, в том числе без сети.
+        globIgnores: ['**/physics.worker-*.js'],
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) => /\/assets\/physics\.worker-[\w-]+\.js$/.test(url.pathname),
+            handler: 'CacheFirst',
+            options: { cacheName: 'zg-dice-physics', expiration: { maxEntries: 2 } },
+          },
+        ],
         cleanupOutdatedCaches: true,
       },
     }),
@@ -50,5 +59,10 @@ export default defineConfig({
       '/socket.io': { target: devServer, ws: true },
     },
   },
+  // Тяжёлые зависимости собираем заранее одним проходом: иначе Vite досборщик при первом открытии «Бросков»
+  // пересобирает react отдельно, и r3f получает вторую копию React (Invalid hook call).
+  resolve: { dedupe: ['react', 'react-dom'] },
+  optimizeDeps: { include: ['three', '@react-three/fiber', 'motion/react', 'radix-ui', 'sonner', 'react', 'react-dom', 'react-dom/client'] },
+  worker: { format: 'es' },
   build: { sourcemap: true },
 });
