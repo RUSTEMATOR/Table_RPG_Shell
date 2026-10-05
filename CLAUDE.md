@@ -32,6 +32,7 @@ npm run dev | build | typecheck (после каждого шага) | db:genera
 Его появление в ответе игроку или столу — блокирующий дефект.
 
 ## Где что
+- Руководство пользователя (игрок, мастер, стол, администрирование): docs/manual.md.
 - Мастер-план: zelenogorye-plan.md. Решения: docs/decisions.md. Ручные проверки: docs/test-cases/.
 - Dev: `npm run dev` (сервер 127.0.0.1:3001 + Vite 5173 в локальной сети), env — ~/.config/zelenogorye/.env.development.
 - Первый запуск dev: `npm run setup:dev`, тестовые персонажи — `npm run seed:dev`, приглашения — экран мастера или `npm run invite:dev -- --name "Имя"`.
