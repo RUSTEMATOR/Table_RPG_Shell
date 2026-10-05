@@ -3,7 +3,7 @@ import { cn } from '../lib/cn.ts';
 
 /** Панель экрана. Класс `card` обязателен: по нему тема надевает свою рамку (рваные края, двойная линия…). */
 export function Card({ className, as: As = 'section', ...rest }: HTMLAttributes<HTMLElement> & { as?: 'section' | 'div' | 'article' | 'aside' }) {
-  return <As className={cn('card grid gap-3', className)} {...rest} />;
+  return <As className={cn('card grid content-start gap-3', className)} {...rest} />;
 }
 
 export function CardTitle({ className, ...rest }: HTMLAttributes<HTMLHeadingElement>) {

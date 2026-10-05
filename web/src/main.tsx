@@ -29,6 +29,7 @@ const router = createBrowserRouter([
   { path: '/gm/new', lazy: lazy(() => import('./routes/GmNew.tsx'), 'GmNew') },
   { path: '/gm/char/:id', lazy: lazy(() => import('./routes/GmCharacter.tsx'), 'GmCharacter') },
   { path: '/table', lazy: lazy(() => import('./routes/Table.tsx'), 'Table') },
+  ...(import.meta.env.DEV ? [{ path: '/dev/ui', lazy: lazy(() => import('./routes/DevUi.tsx'), 'DevUi') }] : []),
   { path: '*', lazy: lazy(() => import('./routes/Home.tsx'), 'Home') },
 ]);
 
