@@ -1,21 +1,45 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import type { DiaryEntryPlayer } from '@zg/shared';
 import { api } from '../lib/api.ts';
+import { useMe } from '../lib/me.tsx';
 import { useConnection, useSocketEvent } from '../lib/socket.ts';
+import { load as loadPref, remove as removePref, save as savePref } from '../lib/storage.ts';
+import { rememberReplies } from '../lib/unread.ts';
 
 const when = (t: number) => new Date(t).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 
 /** Дневник игрока. «Только для меня» мастер не видит; запрос мастеру не может быть личным. */
+// Неотправленная запись живёт на устройстве: переживает закрытие приложения и обрыв связи.
+type Draft = { text: string; mode: Mode };
+function readDraft(key: string): Draft {
+  try {
+    const d = JSON.parse(loadPref(key) ?? '') as Partial<Draft>;
+    const mode = d.mode === 'private' || d.mode === 'request' ? d.mode : 'note';
+    return { text: typeof d.text === 'string' ? d.text : '', mode };
+  } catch {
+    return { text: '', mode: 'note' };
+  }
+}
+
 export function Diary() {
+  const { me } = useMe();
+  const draftKey = `zg:diary:draft:${me?.member.id ?? ''}`;
   const [entries, setEntries] = useState<DiaryEntryPlayer[] | null>(null);
-  const [text, setText] = useState('');
-  const [mode, setMode] = useState<'note' | 'private' | 'request'>('note');
+  const [text, setText] = useState(() => readDraft(draftKey).text);
+  const [mode, setMode] = useState<Mode>(() => readDraft(draftKey).mode);
+  useEffect(() => {
+    if (text.trim()) savePref(draftKey, JSON.stringify({ text, mode }));
+    else removePref(draftKey);
+  }, [draftKey, text, mode]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     const r = await api<{ entries: DiaryEntryPlayer[] }>('GET', '/api/player/diary');
-    if (r.ok) setEntries(r.data.entries);
+    if (r.ok) {
+      setEntries(r.data.entries);
+      rememberReplies(r.data.entries);
+    }
   }, []);
   useEffect(() => {
     void load();
@@ -29,7 +53,10 @@ export function Diary() {
       const cur = l ?? [];
       return cur.some((x) => x.id === e.id) ? cur.map((x) => (x.id === e.id ? e : x)) : [e, ...cur];
     });
-  useSocketEvent('diary:changed', ({ entry }) => upsert(entry));
+  useSocketEvent('diary:changed', ({ entry }) => {
+    upsert(entry);
+    rememberReplies([entry]);
+  });
   useSocketEvent('diary:removed', ({ id }) => setEntries((l) => (l ?? []).filter((x) => x.id !== id)));
 
   const submit = async (e: FormEvent) => {
@@ -53,13 +80,7 @@ export function Diary() {
       <form onSubmit={submit} className="stack">
         <textarea rows={4} value={text} onChange={(e) => setText(e.target.value)} maxLength={8000} placeholder="Что случилось, что почувствовал, о чём догадываешься…" />
         <div className="row">
-          {(
-            [
-              ['note', 'Запись'],
-              ['private', 'Только для меня'],
-              ['request', 'Вопрос мастеру'],
-            ] as const
-          ).map(([k, l]) => (
+          {MODES.map(([k, l]) => (
             <button key={k} type="button" className={`tab ${mode === k ? 'tab-on' : ''}`} onClick={() => setMode(k)}>
               {l}
             </button>

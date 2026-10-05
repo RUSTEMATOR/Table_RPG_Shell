@@ -72,9 +72,11 @@ function GreenHint({ rollId }: { rollId: string }) {
   );
 }
 
-export function Feed({ limit = 50, gm = false }: { limit?: number; gm?: boolean }) {
-  const feed = useFeed().slice(0, limit);
-  if (!feed.length) return <p className="muted">Бросков пока нет.</p>;
+export function Feed({ limit = 50, gm = false, only }: { limit?: number; gm?: boolean; only?: (r: FeedRoll) => boolean }) {
+  const feed = useFeed()
+    .filter((r) => !only || only(r))
+    .slice(0, limit);
+  if (!feed.length) return <p className="muted">{only ? 'Своих бросков пока нет.' : 'Бросков пока нет.'}</p>;
   return (
     <ul className="feed">
       {feed.map((r) => {

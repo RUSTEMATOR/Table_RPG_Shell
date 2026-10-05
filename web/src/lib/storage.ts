@@ -12,3 +12,9 @@ export function save(key: string, value: string): void {
     localStorage.setItem(key, value);
   } catch {}
 }
+
+export function remove(key: string): void {
+  try {
+    localStorage.removeItem(key);
+  } catch {}
+}

@@ -57,8 +57,13 @@ export function clearFeed() {
   emit();
 }
 
+// Свои броски с этого устройства: для фильтра «Мои» (броски с других устройств узнаются по имени).
+const own = new Set<string>();
+export const isOwnRoll = (id: string) => own.has(id);
+
 /** Ответ на свой бросок приходит раньше события ленты — показываем сразу. */
 export function addOwn(r: FeedRoll) {
+  own.add(r.id);
   upsert(r);
   emit();
 }
