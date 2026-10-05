@@ -12,6 +12,7 @@ import {
   ornSvg,
   pictoSvg,
   resolveTheme,
+  baseTheme,
   settingThemeOf,
   themeData,
 } from '../lib/cardTheme/index.ts';
@@ -26,14 +27,25 @@ const Chip = ({ k, label, st }: { k: string; label: string; st?: string }) => (
 );
 
 /** Карточка, как её видит игрок. В предпросмотре у мастера onChange не передаётся (правки нет) и частиц нет (fx=false). */
-export function PlayerCard({ c, onChange, fx = true }: { c: PlayerCharacter; onChange?: (c: PlayerCharacter) => void; fx?: boolean }) {
-  const th = resolveTheme(c.look);
+export function PlayerCard({
+  c,
+  onChange,
+  fx = true,
+  theme,
+}: {
+  c: PlayerCharacter;
+  onChange?: (c: PlayerCharacter) => void;
+  fx?: boolean;
+  /** Тема с учётом выбора игрока и дня/ночи; без неё — тема персонажа. */
+  theme?: string;
+}) {
+  const th = theme ?? resolveTheme(c.look);
   ensureTheme(th);
   const T = themeData(th);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!fx || !ref.current) return;
-    return mountMagic(ref.current, th, c.look.genre);
+    return mountMagic(ref.current, baseTheme(th), c.look.genre);
   }, [fx, th, c.look.genre]);
 
   const sub = [c.origin, c.pronoun !== 'не указано' ? c.pronoun : ''].filter(Boolean).join(' · ');
@@ -46,7 +58,7 @@ export function PlayerCard({ c, onChange, fx = true }: { c: PlayerCharacter; onC
           {c.portrait ? (
             <img className="p-portrait" src={c.portrait} alt="Портрет персонажа" />
           ) : (
-            <span className="p-sigil" dangerouslySetInnerHTML={html(pictoSvg(T.glyph || 'green'))} />
+            <span className="p-sigil" dangerouslySetInnerHTML={html(pictoSvg(String(T.glyph || 'green')))} />
           )}
         </button>
         <div>

@@ -2,6 +2,7 @@ import { THEMES, fontsHref, isTheme, themeCss, themeFamilies, themeFor } from '.
 
 export { catChipHtml, dot, esc, mdLite, ornSvg, pictoSvg, settingThemeOf, DEMAND_WORDS, THEMES } from './engine.js';
 export { magicSpin, mountMagic } from './magic.js';
+export { baseTheme, themeVariant } from './variant.ts';
 
 // DOM-часть оформления (ensureTheme / requestFonts артефакта): правило темы — один раз в <style id="ct-css">,
 // шрифты темы — одной ссылкой на Google Fonts при первом показе.

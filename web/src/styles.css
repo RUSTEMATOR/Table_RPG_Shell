@@ -485,6 +485,15 @@ input[type='range'] {
   }
 }
 
+/* ---- Выбор оформления игроком ---- */
+
+.theme-choice {
+  max-width: 420px;
+}
+html[data-skin] .theme-choice > span {
+  color: var(--ct-hmuted);
+}
+
 /* ---- Индикатор связи ---- */
 
 .conn {

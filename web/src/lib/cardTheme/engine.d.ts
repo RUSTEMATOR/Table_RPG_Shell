@@ -1,6 +1,9 @@
 // Типы к engine.js (перенос из артефакта). Только то, что использует клиент.
 export interface ThemeBrief {
   label: string;
+  bg: string;
+  panel: string;
+  ink: string;
   glyph?: string;
   [k: string]: unknown;
 }
@@ -32,3 +35,5 @@ export function primsSvgBody(prims: Prim[], cmap: Record<string, string>): strin
 export function svgDoc(body: string, w: number, h: number): string;
 export function svgUrl(svg: string): string;
 export function themeCmap(T: ThemeBrief): Record<string, string>;
+export function mixHex(a: string, b: string, t: number): string;
+export function relLum(h: string): number;

@@ -1,5 +1,4 @@
 import { SCHEME_LABEL, nextScheme, useScheme } from '../lib/colorScheme.ts';
-import { useSkinId } from '../lib/cardTheme/skin.ts';
 
 const ICON = {
   auto: 'M12 3a9 9 0 1 0 0 18zM12 3a9 9 0 0 1 0 18',
@@ -7,11 +6,9 @@ const ICON = {
   dark: 'M15 3a9 9 0 1 0 6 13a7 7 0 0 1-6-13z',
 } as const;
 
-/** Переключатель «Авто → День → Ночь» в шапке. Скрыт, когда экран в теме персонажа со своей палитрой. */
+/** Переключатель «Авто → День → Ночь» в шапке. На теме персонажа «День» и «Ночь» — её светлый и тёмный вариант (variant.ts). */
 export function SchemeToggle() {
   const scheme = useScheme();
-  const skin = useSkinId();
-  if (skin && skin !== 'other') return null;
   return (
     <button
       type="button"

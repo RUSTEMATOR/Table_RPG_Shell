@@ -11,7 +11,9 @@ import { RoleScreen } from '../components/Shell.tsx';
 import { api } from '../lib/api.ts';
 import { useConnection, useSocketEvent } from '../lib/socket.ts';
 import { useWakeLock } from '../lib/wakeLock.ts';
-import { resolveTheme } from '../lib/cardTheme/index.ts';
+import { resolveTheme, themeVariant } from '../lib/cardTheme/index.ts';
+import { useScheme } from '../lib/colorScheme.ts';
+import { ThemeChoice } from '../components/ThemeChoice.tsx';
 import { useSkin } from '../lib/cardTheme/skin.ts';
 import { noteCardChange, noteDiaryChange, rememberCard, setActiveTab, useUnread } from '../lib/unread.ts';
 
@@ -24,7 +26,7 @@ export function Player() {
   );
 }
 
-function PlayerHome() {
+function PlayerHome({ theme, base, choice, onChoice }: { theme: string; base: string; choice: string; onChoice: (k: string) => void }) {
   const [character, setCharacter] = useState<PlayerCharacter | null | undefined>(undefined);
   const load = useCallback(async () => {
     const r = await api<{ character: PlayerCharacter | null }>('GET', '/api/player/character');
@@ -54,13 +56,17 @@ function PlayerHome() {
       </section>
     );
   return (
-    <PlayerCard
-      c={character}
-      onChange={(c) => {
-        setCharacter(c);
-        rememberCard(c);
-      }}
-    />
+    <>
+      <ThemeChoice base={base} value={choice} onChange={onChoice} />
+      <PlayerCard
+        c={character}
+        theme={theme}
+        onChange={(c) => {
+          setCharacter(c);
+          rememberCard(c);
+        }}
+      />
+    </>
   );
 }
 
@@ -75,8 +81,18 @@ function PlayerTabs() {
   useEffect(() => setActiveTab(tab), [tab]);
   useEffect(() => () => setActiveTab(null), []);
   const unread = useUnread();
-  const skin = usePlayerSkin();
-  useSkin(skin);
+  // Тема экрана: выбор игрока на этом устройстве, иначе тема персонажа; «День» / «Ночь» — её вариант.
+  const { me } = useMe();
+  const base = usePlayerSkin();
+  const choiceKey = `zg:player:cardTheme:${me?.member.id ?? ''}`;
+  const [choice, setChoice] = useState(() => loadPref(choiceKey) ?? '');
+  const pickTheme = (k: string) => {
+    setChoice(k);
+    savePref(choiceKey, k);
+  };
+  const scheme = useScheme();
+  const theme = themeVariant(choice || base, scheme);
+  useSkin(theme);
   // Значки ставятся здесь, а не во вкладках: вкладка, которая не открыта, событий не слушает.
   useSocketEvent('diary:changed', ({ entry }) => noteDiaryChange(entry));
   useSocketEvent('character:updated', ({ character }) => noteCardChange(character));
@@ -102,7 +118,7 @@ function PlayerTabs() {
           <FeedCard />
         </>
       )}
-      {tab === 'card' && <PlayerHome />}
+      {tab === 'card' && <PlayerHome theme={theme} base={base} choice={choice} onChoice={pickTheme} />}
       {tab === 'diary' && <Diary />}
     </>
   );
