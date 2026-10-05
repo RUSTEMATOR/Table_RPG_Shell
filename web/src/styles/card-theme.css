@@ -1,0 +1,310 @@
+/* Оформление карточки (§12 артефакта «Переход в Зеленогорье»): перенос CSS из reference/randomizer-v5.17.html,
+   строки 82–135, 250–278, 317–510. При переносе: .card → .ctc и .summary → .ctc-sum (эти классы заняты приложением),
+   правила .chip (бейджи уровней, штампы мастера) не перенесены, html[data-view="player"] заменён на .p-card.
+   Базовые токены артефакта заданы внутри .card-theme; тема перекрывает их своим правилом (themeCss, <style id="ct-css">). */
+
+.card-theme {
+  --bg:#f3f5ef; --panel:#ffffff; --fg:#1d241c; --muted:#5d6a5a; --line:#d5dccf;
+  --accent:#1f7a4d; --accent-soft:#dff0e6;
+  --cursed:#8a2b2b; --cursed-soft:#f5e3e1;
+  --common:#4d5a63; --common-soft:#e6eaed;
+  --dual:#9a6a12; --dual-soft:#f6ecd4;
+  --legend:#5b3d9a; --legend-soft:#e9e2f6;
+  --on-accent:#ffffff; --scrim:rgba(20,26,21,.55);
+  --display:'Oranienbaum', Georgia, 'Times New Roman', serif;
+  --body:'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono:'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size:15px; line-height:1.5; overflow-wrap:break-word; text-align:left;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .card-theme {
+    --bg:#141a15; --panel:#1c241e; --fg:#e6ebe2; --muted:#9aa897; --line:#2e3a31;
+    --accent:#4fc38a; --accent-soft:#1e3a2b; --cursed:#e07a7a; --cursed-soft:#3a2222;
+    --common:#a9b7c0; --common-soft:#2a3339; --dual:#e2b35a; --dual-soft:#3b3020;
+    --legend:#b89cf0; --legend-soft:#2d2540; --on-accent:#0e1a12; --scrim:rgba(0,0,0,.62);
+  }
+}
+:root[data-theme='dark'] .card-theme {
+  --bg:#141a15; --panel:#1c241e; --fg:#e6ebe2; --muted:#9aa897; --line:#2e3a31;
+  --accent:#4fc38a; --accent-soft:#1e3a2b; --cursed:#e07a7a; --cursed-soft:#3a2222;
+  --common:#a9b7c0; --common-soft:#2a3339; --dual:#e2b35a; --dual-soft:#3b3020;
+  --legend:#b89cf0; --legend-soft:#2d2540; --on-accent:#0e1a12; --scrim:rgba(0,0,0,.62);
+}
+/* общие правила артефакта, нужные карточке (в артефакте глобальные, здесь внутри .card-theme; :where — чтобы не перебивать правила артефакта) */
+.card-theme *, .card-theme *::before, .card-theme *::after { box-sizing:border-box }
+.card-theme :where(h2, h3) { margin:0 }
+.card-theme .view-title { font-family:var(--display); font-weight:400; font-size:1.7rem; line-height:1.15; margin:0 }
+.card-theme .hint { font-size:.85rem; color:var(--muted); margin:0 }
+.card-theme .meta { font-family:var(--mono); font-size:.8rem; color:var(--muted); display:flex; gap:14px; flex-wrap:wrap }
+.card-theme .actions { display:flex; gap:10px; flex-wrap:wrap; align-items:center }
+.card-theme :where(button) { font:inherit; font-weight:600; font-size:.95rem; border-radius:6px; padding:10px 16px; border:1px solid var(--line); background:var(--panel); color:var(--fg); cursor:pointer }
+.card-theme :where(button.primary) { background:var(--accent); border-color:var(--accent); color:var(--on-accent) }
+.card-theme :where(button:disabled) { opacity:.5; cursor:not-allowed }
+.card-theme :where(input, textarea, select) { font:inherit; font-size:.95rem; color:var(--fg); background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:9px 10px; width:100% }
+.card-theme :where(textarea) { resize:vertical; line-height:1.45 }
+.card-theme :where(label) { display:grid; gap:4px; font-size:.8rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; min-width:0 }
+
+/* Cards (v4) */
+.result{display:grid;gap:12px}
+.ctc{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:grid;gap:8px;min-width:0}
+.ctc.fixed{border-left:4px solid var(--accent)}
+.ctc.cursed{border-left:4px solid var(--cursed)}
+.ctc.common{border-left:4px solid var(--common)}
+.ctc.dual{border-left:4px solid var(--dual)}
+.ctc.legend{border-left:4px solid var(--legend)}
+.top{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap}
+.cat{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.name{font-family:var(--display);font-size:1.55rem;line-height:1.15;margin:0}
+.ctc p{margin:0}
+.k{font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:4px}
+.card-theme ol{margin:0;padding-left:1.2em;display:grid;gap:3px}
+.card-theme ol li::marker{color:var(--muted);font-family:var(--mono);font-size:.8rem}
+.note{background:var(--accent-soft);border-radius:6px;padding:8px 10px;font-size:.9rem}
+.card-actions{display:flex;gap:8px;flex-wrap:wrap;padding-top:8px;margin-top:4px;border-top:1px dashed var(--line)}
+/* Card entrance (§6.2): rotateY 90 -> 0, 160 ms stagger per --i. The back face is a leaf with a transition seal
+   (gradient + ring + glyph built from borders); it covers the card for the first half of the turn. Off when reduced. */
+.ctc .seal{display:none}
+@media (prefers-reduced-motion:no-preference){
+  .ctc.enter{position:relative;animation:cardin 520ms cubic-bezier(.2,.75,.25,1) calc(var(--i,0)*160ms) backwards}
+  @keyframes cardin{from{transform:perspective(1600px) rotateY(90deg);opacity:0}22%{opacity:1}to{transform:none;opacity:1}}
+  .ctc.enter::before{content:"";position:absolute;inset:0;z-index:1;border-radius:inherit;border:1px solid var(--accent);
+    background:repeating-linear-gradient(115deg,transparent 0 13px,var(--line) 13px 14px),linear-gradient(135deg,var(--accent-soft) 0%,var(--panel) 50%,var(--accent-soft) 100%);
+    animation:sealout 520ms linear calc(var(--i,0)*160ms) both}
+  .ctc.enter .seal{display:block;position:absolute;z-index:2;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;
+    border:3px solid var(--accent);background:var(--panel);box-shadow:inset 0 0 0 4px var(--accent-soft),inset 0 0 0 5px var(--accent);
+    animation:sealout 520ms linear calc(var(--i,0)*160ms) both}
+  .ctc.enter .seal::before{content:"";position:absolute;left:50%;top:50%;width:16px;height:16px;margin:-9px 0 0 -9px;border:3px solid var(--accent);border-radius:2px 100% 2px 100%;transform:rotate(-8deg)}
+  .ctc.enter .seal::after{content:"";position:absolute;left:50%;top:50%;width:0;height:10px;margin:0 0 0 -1px;border-left:2px solid var(--accent);transform:translateY(2px) rotate(-8deg)}
+  @keyframes sealout{0%,42%{opacity:1;visibility:visible}68%{opacity:0;visibility:visible}100%{opacity:0;visibility:hidden}}
+}
+
+/* Four-segment stage bar (filled by step 2; segment colour follows the tier) */
+.stages{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;--seg:var(--accent)}
+.stages.cursed{--seg:var(--cursed)}.stages.common{--seg:var(--common)}.stages.dual{--seg:var(--dual)}.stages.legend{--seg:var(--legend)}
+.stages i{height:6px;border-radius:3px;background:var(--line);position:relative;overflow:hidden}
+.stages i.on{background:var(--seg)}
+/* §6.4: a segment that just filled grows 0 -> 100% over 400 ms (--ad lets a re-render continue the same animation) */
+.stages i.on.grow{background:var(--line)}
+.stages i.on.grow::after{content:"";position:absolute;left:0;top:0;bottom:0;width:100%;background:var(--seg);animation:segw 400ms cubic-bezier(.3,.7,.3,1) var(--ad,0ms) backwards}
+@keyframes segw{from{width:0}to{width:100%}}
+@media (prefers-reduced-motion:reduce){.stages i.on.grow{background:var(--seg)}.stages i.on.grow::after{display:none}}
+
+
+/* v5.13 player view: the interactive card. Phone first; bigger text and 44 px targets; tablet/desktop widen the page and split the slots in two columns */
+#magic{position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:44}
+#magic[hidden]{display:none}
+.card-theme.p-card{font-size:16px}
+.p-card button{min-height:44px}
+.p-card .actions button{flex:1 1 180px}
+.card-theme.p-card{padding:18px 16px 20px;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.p-card .p-head{align-items:center}
+@media (max-width:520px){.p-card .p-head{flex-direction:column;align-items:flex-start;gap:12px;padding-right:0}.p-card .p-head>div{width:100%}}
+.p-card .view-title.ct-title{font-size:calc(clamp(1.6rem,6.4vw,2.3rem) * var(--ct-ds,1));line-height:1.22}
+.p-card .ctc.pub p,.p-card .ctc.pub li,.p-card .sum-body{font-size:1.02rem}
+.p-spin{appearance:none;-webkit-appearance:none;background:none;border:0;padding:0;margin:0;min-height:0;flex:none;cursor:pointer;border-radius:14px;perspective:700px;line-height:0;color:inherit}
+.p-spin:focus-visible{outline:2px solid var(--ct-accent);outline-offset:4px}
+.p-spin>*{display:block;transform-style:preserve-3d;backface-visibility:visible;will-change:transform}
+.p-card .p-spin .p-portrait{width:96px;height:96px;border-radius:12px}
+.p-sigil{width:88px;height:88px;border-radius:50%;border:2px solid var(--ct-accent);display:grid;place-items:center;color:var(--ct-accent);background:radial-gradient(circle,var(--ct-panel) 0 58%,transparent 74%)}
+.p-sigil svg{width:46px;height:46px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.p-snd{position:absolute;top:12px;right:12px;z-index:2;width:44px;height:44px;min-height:44px;padding:0;border-radius:50%;display:grid;place-items:center;border:1px solid var(--ct-line);background:var(--ct-panel);color:var(--ct-ink)}
+.p-snd svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.p-snd[aria-pressed="true"]{border-color:var(--ct-accent);color:var(--ct-accent);box-shadow:0 0 0 3px var(--ct-glow,transparent)}
+.p-snd:focus-visible{outline:2px solid var(--ct-accent);outline-offset:3px}
+@media (min-width:700px){.card-theme.p-card{font-size:17px}.p-card .p-spin .p-portrait{width:124px;height:124px}.p-sigil{width:112px;height:112px}.p-sigil svg{width:58px;height:58px}.card-theme.p-card{padding:24px 24px 26px}}
+@media (prefers-reduced-motion:reduce){#fx,#rollfx{display:none}}
+
+
+/* §12 card themes. .card-theme[data-ct] wraps the journal character card, the roll result and the player card. Theme colours arrive as --ct-*
+   custom properties from one injected rule per theme (themeCss in the script); inside the wrapper the app tokens are remapped to the theme, so
+   controls stay readable. Shapes come from data-frame / data-seg / data-chip. data-ct="other" is the app's own look (app tokens, no chrome). */
+:root{--gold-a:#c9971f;--gold-b:#f4df8c;--gold-fg:#2a1c00;--gold-e:#8a6410;
+  --tc-cursed-bg:var(--cursed);--tc-cursed-fg:var(--panel);--tc-cursed-edge:var(--cursed);
+  --tc-common-bg:var(--common-soft);--tc-common-fg:var(--common);--tc-common-edge:var(--line);
+  --tc-dual-a:var(--dual);--tc-dual-b:var(--accent);--tc-dual-fg:var(--panel);
+  --tc-fixed-bg:var(--accent);--tc-fixed-fg:var(--panel)}
+.ctc{position:relative;font-size:16px;line-height:1.5}
+.ctc .top{align-items:center}
+.ctc .gm-body{font-size:15px}
+[hidden]{display:none!important}
+/* craft block «Ремесло в Зеленогорье» (card level) and its demand pips */
+.ctc.craft .name{font-size:1.3rem}
+.pips{display:flex;align-items:center;gap:5px}
+.pips i{width:11px;height:11px;border-radius:50%;background:var(--ct-seg-off,var(--line));box-shadow:inset 0 0 0 1.5px var(--ct-seg,var(--accent))}
+.pips i.on{background:var(--ct-seg,var(--accent))}
+.pips span{margin-left:6px}
+.cchip[data-cat="craft"]{border-radius:3px 12px 12px 3px}
+.prof-ref .ref-list{margin-top:10px}
+.slot-cap{flex-basis:100%}
+/* «Уровень силы» panel */
+.ctc.power .top{justify-content:space-between}
+.pw-band{font-weight:600;font-size:.95rem}
+.pw-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.pw-row input{flex:1 1 90px;width:auto;min-width:0;text-align:center;font-size:1.1rem;font-weight:600}
+.pw-scale{position:relative;height:14px;border-radius:7px;background:var(--ct-seg-off,var(--line));margin:6px 6px 0}
+.pw-seg{position:absolute;top:0;bottom:0;border-right:2px solid var(--panel)}
+.pw-seg:first-child{border-radius:7px 0 0 7px}.pw-seg:last-child{border-radius:0 7px 7px 0;border-right:0}
+.pw-seg.on{background:var(--ct-seg,var(--accent))}
+.pw-mark{position:absolute;top:-5px;width:6px;height:24px;margin-left:-3px;border-radius:3px;background:var(--fg);box-shadow:0 0 0 2px var(--panel)}
+.pw-ticks{position:relative;height:16px;margin:0 6px;font-size:.68rem;color:var(--muted)}
+.pw-tick{position:absolute;top:0;transform:translateX(-2px)}
+.pw-cmp{text-transform:none;letter-spacing:0;font-size:.85rem}
+.ctc.power .check{padding-top:0}
+.pw-hist summary{display:flex;align-items:center;gap:8px;min-height:40px;cursor:pointer;font-size:.88rem;font-weight:600;color:var(--accent);list-style:none}
+.pw-hist summary::-webkit-details-marker{display:none}
+.pw-hist summary::before{content:"";width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg);flex:none}
+.pw-hist[open] summary::before{transform:rotate(45deg)}
+.pw-hist{border-top:1px dashed var(--line)}
+.pw-rule{margin:0;font-size:.9rem}
+.cchip[data-cat="power"]{border-radius:3px}
+.sum-cta-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0}
+.sum-cta-t{flex:1 1 auto;color:var(--muted);font-size:.92rem}
+.ex-sum{display:grid;gap:6px}
+.ex-sum-gen{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ex-sum .hint:empty{display:none}
+/* «Сводка» panel and the player's «Вступление» */
+.ctc.ctc-sum .sum-body{display:grid;gap:14px;min-width:0;line-height:1.6}
+.sum-body h4+p,.sum-body h4+ul{margin-top:-6px}
+.sum-opts{display:grid;grid-template-columns:max-content minmax(0,1fr);align-items:center;gap:8px 10px;min-width:0}
+.sum-opt{display:contents}
+.sum-opt select{width:auto;min-width:0;max-width:100%;justify-self:start;text-transform:none;letter-spacing:0}
+.sum-cta-row .sum-opt{display:flex;align-items:center;gap:8px;min-width:0}
+.sum-body h4{font-family:var(--ct-name,var(--display));font-weight:var(--ct-nw,400);font-size:1.15rem;line-height:1.2;margin:6px 0 0}
+.sum-body ul{margin:0;padding-left:1.2em;display:grid;gap:4px}
+.sum-body p{margin:0}
+.sum-body textarea{min-height:240px}
+.sum-tabs{display:flex;gap:4px;border-bottom:1px solid var(--line)}
+.sum-tab{flex:1 1 0;min-width:0;background:none;border:0;border-bottom:2px solid transparent;border-radius:0;padding:6px 4px;margin-bottom:-1px;color:var(--muted);font-size:.88rem}
+.sum-tab[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--accent)}
+.sum-badge{font-size:.66rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;border-radius:4px;border:1.5px solid currentColor;color:var(--muted);white-space:nowrap}
+.sum-badge.warn{color:var(--cursed)}
+.sum-badge.ok{color:var(--accent)}
+.sum-msg{font-size:.85rem;margin:0;color:var(--muted)}
+.sum-msg.warn{color:var(--cursed)}
+.sum-off{margin:0}
+.cchip[data-cat="summary"]{border-radius:10px 3px 10px 3px}
+@media (prefers-reduced-motion:no-preference){html:not([data-fx="off"]) .sum-think{animation:sumpulse 1.4s ease-in-out infinite}}
+@keyframes sumpulse{50%{opacity:.45}}
+.prof-ref .chips .cchip{text-transform:none;letter-spacing:0}
+.ct-fr,.ct-tr{position:absolute;inset:0;pointer-events:none;border-radius:inherit}
+.card-theme{position:relative;display:grid;gap:14px;padding:16px 14px 18px;border-radius:14px;min-width:0;color:var(--ct-ink);font-family:var(--ct-body);
+  background-color:var(--ct-bg);background-image:var(--ct-pat,none),var(--ct-grad,none);background-repeat:var(--ct-pat-rep,repeat),no-repeat;
+  background-position:var(--ct-pat-pos,0 0),0 0;background-size:var(--ct-pat-size,auto),100% 100%;box-shadow:0 0 0 1px var(--line)}
+.card-theme[data-ct="other"]{padding:0;background:none;box-shadow:none;border-radius:0}
+.card-theme>*{min-width:0}
+.card-theme>.result{gap:16px}
+.card-theme .ctc>:not(.ct-fr):not(.ct-tr):not(.seal){position:relative}
+.ct-head{display:flex;gap:12px;align-items:flex-start;min-width:0;color:var(--ct-hink);margin:0}
+.ct-head>div{flex:1 1 auto;min-width:0}
+.ct-title,.view-title.ct-title{font-family:var(--ct-display);font-weight:var(--ct-dw,400);font-size:calc(1.9rem * var(--ct-ds,1));line-height:1.28;padding-top:2px;margin:0;color:var(--ct-hink);overflow-wrap:anywhere}
+.ct-sub{margin:3px 0 0;font-size:.85rem;color:var(--ct-hmuted)}
+.ct-head .meta{color:var(--ct-hmuted);margin-top:4px}
+.ct-head .hint{color:var(--ct-hmuted)}
+.ct-portrait,.ct-head .p-portrait{width:72px;height:72px;border-radius:10px;object-fit:cover;border:2px solid var(--ct-accent);flex:none}
+.card-theme[data-ct="other"] .ct-portrait,.card-theme[data-ct="other"] .p-portrait{border:1px solid var(--line)}
+.ct-orn{display:block;width:100%;height:22px;overflow:visible}
+.card-theme[data-ct="other"] .ct-orn{display:none}
+.ct-badge{flex:none;align-self:flex-start;max-width:46%;font:700 .68rem/1.25 var(--ct-body);letter-spacing:.06em;text-transform:uppercase;text-align:center;padding:4px 7px;border:2px solid currentColor;border-radius:4px;transform:rotate(-3deg);color:var(--ct-ok)}
+.ct-badge.warn{color:var(--ct-warn)}
+.ct-bar{display:grid;grid-template-columns:max-content minmax(0,1fr);align-items:center;gap:8px 10px;min-width:0;max-width:440px;margin-left:auto;width:100%}
+.ct-pick{display:contents}
+.ct-pick select{width:100%;min-width:0;text-transform:none;letter-spacing:0}
+/* themed slots (every theme but the app look) */
+.card-theme:not([data-ct="other"]) .ctc{background:var(--ct-panel);color:var(--ct-ink);border:1px solid var(--ct-line);border-radius:var(--ct-r)}
+.card-theme:not([data-ct="other"]) .name{font-family:var(--ct-name);font-weight:var(--ct-nw,400);font-size:calc(1.5rem * var(--ct-ns,1))}
+.card-theme:not([data-ct="other"]) .stages,.card-theme:not([data-ct="other"]) .stages[class]{--seg:var(--ct-seg)}
+.card-theme:not([data-ct="other"]) .stages i:not(.on),.card-theme:not([data-ct="other"]) .stages i.on.grow{background:var(--ct-seg-off)}
+/* category chips (§12.2): pictogram + form per category; colours from --cc-* (theme) or app tokens */
+.cchip{display:inline-flex;align-items:center;gap:6px;min-width:0;max-width:100%;padding:3px 10px 3px 8px;font-size:.7rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;line-height:1.3;color:var(--cc-fg,var(--fg));background:var(--cc-bg,var(--accent-soft));border-radius:6px;font-family:var(--ct-body,inherit)}
+.cchip .pi{color:var(--cc-ic,var(--accent));width:15px;height:15px}
+.cchip>span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.pi{width:1em;height:1em;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.cchip[data-cat="class"]{border-radius:4px 4px 12px 12px/4px 4px 8px 8px}
+.cchip[data-cat="green"]{border-radius:999px 4px 999px 4px}
+.cchip[data-cat="mark"]{border-radius:0;padding-inline:13px;clip-path:polygon(9px 0,calc(100% - 9px) 0,100% 50%,calc(100% - 9px) 100%,9px 100%,0 50%)}
+.cchip[data-cat="relation"]{border-radius:3px 0 0 3px;padding-right:17px;clip-path:polygon(0 0,100% 0,calc(100% - 8px) 50%,100% 100%,0 100%)}
+.cchip[data-cat="lang"]{border-radius:3px;padding-inline:11px;box-shadow:inset 3px 0 0 var(--cc-ic,var(--accent)),inset -3px 0 0 var(--cc-ic,var(--accent))}
+.cchip[data-cat="ability"]{border-radius:0;padding-inline:13px;clip-path:polygon(7px 0,100% 0,calc(100% - 7px) 100%,0 100%)}
+.cchip[data-cat="flaw"]{background:transparent;border:1.5px dashed var(--cc-ic,var(--accent));padding-block:2px}
+.cchip[data-cat="old"]{border-radius:12px 12px 3px 3px}
+.cchip[data-cat="setting"]{background:var(--sc-bg);color:var(--sc-fg);border-radius:4px;box-shadow:inset 4px 0 0 var(--sc-ln),inset 0 0 0 1px var(--sc-ln);padding-left:10px}
+.cchip[data-cat="setting"] .pi{color:var(--sc-ic)}
+/* tier chips (GM only): cracked cursed, plain common, diagonal dual, gilded legend with a sheen, round «всегда» seal */
+.tchip{display:inline-flex;align-items:center;gap:5px;font-size:.68rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;line-height:1.3;padding:3px 9px;border-radius:999px;position:relative;overflow:hidden;white-space:nowrap;font-family:var(--ct-body,inherit)}
+.tchip .pi{width:13px;height:13px}
+.tchip.t-cursed{background:var(--tc-cursed-bg);color:var(--tc-cursed-fg);border-radius:4px 0 0 4px;padding-right:14px;clip-path:polygon(0 0,calc(100% - 6px) 0,100% 22%,calc(100% - 4px) 44%,100% 64%,calc(100% - 7px) 82%,calc(100% - 3px) 100%,0 100%)}
+.tchip.t-common{background:var(--tc-common-bg);color:var(--tc-common-fg);box-shadow:inset 0 0 0 1px var(--tc-common-edge)}
+.tchip.t-dual{background:linear-gradient(120deg,var(--tc-dual-a) 0 50%,var(--tc-dual-b) 50% 100%);color:var(--tc-dual-fg)}
+.tchip.t-legend{background:linear-gradient(120deg,var(--gold-a) 0%,var(--gold-b) 44%,#fff3c4 52%,var(--gold-b) 60%,var(--gold-a) 100%);color:var(--gold-fg);box-shadow:inset 0 0 0 1px var(--gold-e)}
+.tchip.t-legend::after{content:"";position:absolute;top:0;bottom:0;left:-70%;width:45%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.6),transparent);pointer-events:none}
+@media (prefers-reduced-motion:no-preference){html:not([data-fx="off"]) .tchip.t-legend::after{animation:tshine 3.6s ease-in-out infinite}}
+@keyframes tshine{0%,55%{left:-70%}100%{left:130%}}
+.tchip.t-fixed{background:var(--tc-fixed-bg);color:var(--tc-fixed-fg);border-radius:999px;padding-inline:10px;box-shadow:inset 0 0 0 2px var(--tc-fixed-bg),inset 0 0 0 3px var(--tc-fixed-fg)}
+.card-theme[data-chip="stamp"] .tchip:not(.t-cursed):not(.t-fixed),.card-theme[data-chip="plate"] .tchip:not(.t-cursed):not(.t-fixed),.card-theme[data-chip="cell"] .tchip:not(.t-cursed):not(.t-fixed){border-radius:3px;outline:1px solid currentColor;outline-offset:-4px;padding:4px 10px}
+.card-theme[data-chip="stamp"] .tchip{transform:rotate(-2deg)}
+.card-theme[data-chip="ribbon"] .tchip:not(.t-cursed):not(.t-fixed){border-radius:0;padding-inline:14px;clip-path:polygon(0 0,100% 0,calc(100% - 7px) 50%,100% 100%,0 100%,7px 50%)}
+.card-theme[data-chip="tag"] .tchip:not(.t-cursed):not(.t-fixed){border-radius:0;padding-left:12px;clip-path:polygon(7px 0,100% 0,100% 100%,0 100%,0 7px)}
+.card-theme[data-chip="hex"] .tchip:not(.t-cursed):not(.t-fixed){border-radius:0;padding-inline:13px;clip-path:polygon(7px 0,calc(100% - 7px) 0,100% 50%,calc(100% - 7px) 100%,7px 100%,0 50%)}
+.card-theme[data-chip="pixel"] .tchip:not(.t-cursed){border-radius:0;clip-path:polygon(3px 0,calc(100% - 3px) 0,calc(100% - 3px) 3px,100% 3px,100% calc(100% - 3px),calc(100% - 3px) calc(100% - 3px),calc(100% - 3px) 100%,3px 100%,3px calc(100% - 3px),0 calc(100% - 3px),0 3px,3px 3px)}
+.card-theme[data-chip="bubble"] .tchip:not(.t-cursed):not(.t-fixed){border-radius:10px 10px 10px 2px}
+.card-theme[data-chip="seal"] .tchip:not(.t-cursed):not(.t-legend),.card-theme[data-chip="coin"] .tchip:not(.t-cursed):not(.t-legend){outline:1px solid currentColor;outline-offset:-4px;padding:4px 11px}
+/* GM stamps «вручную» / «доп. слот»: a hand-written mark */
+/* tier treatments of a slot (GM only) */
+.ctc.cursed>.ct-tr{background:radial-gradient(ellipse at 50% 45%,transparent 58%,rgba(15,0,0,.24) 100%),var(--ct-crack,none) right 6px bottom 6px/56px 56px no-repeat}
+.ctc.dual>.ct-tr{background:linear-gradient(var(--tc-dual-a) 0 50%,var(--tc-dual-b) 50% 100%) left top/5px 100% no-repeat,var(--ct-scales,none) right 8px bottom 8px/24px 24px no-repeat}
+.ctc.legend>.ct-tr{box-shadow:inset 0 0 0 2px var(--gold-a),inset 0 0 0 4px var(--panel),inset 0 0 0 5px var(--gold-b);background:var(--ct-spark,none) right 7px bottom 7px/24px 24px no-repeat}
+.ctc.legend .stages i.on{box-shadow:inset 0 0 0 2px var(--gold-a)}
+/* stage segments per theme */
+.card-theme[data-seg="pixel"] .stages i{border-radius:0;height:9px}
+.card-theme[data-seg="hp"] .stages i{border-radius:0;height:12px;outline:2px solid var(--ct-ink);outline-offset:-2px}
+.card-theme[data-seg="rune"] .stages i{height:10px;border-radius:0;clip-path:polygon(6px 0,calc(100% - 6px) 0,100% 50%,calc(100% - 6px) 100%,6px 100%,0 50%)}
+.card-theme[data-seg="gauge"] .stages i{height:7px;border-radius:0;border-left:2px solid var(--ct-ink)}
+.card-theme[data-seg="petal"] .stages i{height:10px;border-radius:10px 2px 10px 2px}
+.card-theme[data-seg="slash"] .stages{gap:7px;padding-inline:4px}
+.card-theme[data-seg="slash"] .stages i{height:8px;border-radius:0;transform:skewX(-24deg)}
+.card-theme[data-seg="notch"] .stages i{height:8px;border-radius:0;clip-path:polygon(0 0,calc(100% - 7px) 0,100% 100%,0 100%)}
+.card-theme[data-seg="dot"] .stages i{height:10px;border-radius:999px}
+/* frames */
+.card-theme[data-frame="form"] .ctc{border-radius:2px}
+.card-theme[data-frame="form"] .ct-fr{border-top:4px solid var(--ct-accent);border-radius:2px 2px 0 0}
+.card-theme[data-frame="double"] .ct-fr{inset:4px;border:1px solid var(--ct-accent);border-radius:max(0px,calc(var(--ct-r) - 3px))}
+.card-theme[data-frame="hud"] .ct-fr,.card-theme[data-frame="deco"] .ct-fr{--k:var(--ct-accent);--L:16px;--T:2px;background:
+  linear-gradient(var(--k),var(--k)) top left/var(--L) var(--T),linear-gradient(var(--k),var(--k)) top left/var(--T) var(--L),
+  linear-gradient(var(--k),var(--k)) top right/var(--L) var(--T),linear-gradient(var(--k),var(--k)) top right/var(--T) var(--L),
+  linear-gradient(var(--k),var(--k)) bottom left/var(--L) var(--T),linear-gradient(var(--k),var(--k)) bottom left/var(--T) var(--L),
+  linear-gradient(var(--k),var(--k)) bottom right/var(--L) var(--T),linear-gradient(var(--k),var(--k)) bottom right/var(--T) var(--L);background-repeat:no-repeat}
+.card-theme[data-frame="deco"] .ctc{border-radius:0;border-color:var(--ct-accent)}
+.card-theme[data-frame="deco"] .ct-fr{inset:4px;border:1px solid var(--ct-accent);border-radius:0;--L:12px;--T:3px}
+.card-theme[data-frame="cut"] .ctc{border-radius:0;border-color:var(--ct-accent);box-shadow:0 0 12px var(--ct-glow)}
+.card-theme[data-frame="cut"] .ct-fr{inset:-1px;border-radius:0;background:linear-gradient(135deg,var(--ct-bg) 0 11px,var(--ct-accent) 11px 13px,transparent 13px) top left/26px 26px no-repeat,linear-gradient(-45deg,var(--ct-bg) 0 11px,var(--ct-accent) 11px 13px,transparent 13px) bottom right/26px 26px no-repeat}
+.card-theme[data-frame="rivet"] .ctc{border-width:2px}
+.card-theme[data-frame="rivet"] .ct-fr{--rv:radial-gradient(circle,var(--ct-accent) 0 2.5px,var(--ct-ink) 3px 3.6px,transparent 4px);background:var(--rv) top 4px left 4px/10px 10px,var(--rv) top 4px right 4px/10px 10px,var(--rv) bottom 4px left 4px/10px 10px,var(--rv) bottom 4px right 4px/10px 10px;background-repeat:no-repeat}
+.card-theme[data-frame="brass"] .ctc{border:2px solid var(--ct-accent);box-shadow:inset 0 0 0 3px var(--ct-panel),inset 0 0 0 4px var(--ct-line)}
+.card-theme[data-frame="brass"] .ct-fr,.card-theme[data-frame="gothic"] .ct-fr,.card-theme[data-frame="seal"] .ct-fr{background:var(--ct-cg) top 4px left 4px/16px 16px,var(--ct-cg) top 4px right 4px/16px 16px,var(--ct-cg) bottom 4px left 4px/16px 16px,var(--ct-cg) bottom 4px right 4px/16px 16px;background-repeat:no-repeat}
+.card-theme[data-frame="gothic"] .ctc{border:2px solid var(--ct-accent);border-radius:0;box-shadow:inset 0 0 0 4px var(--ct-panel),inset 0 0 0 5px var(--ct-line)}
+.card-theme[data-frame="seal"] .ctc{border-color:var(--ct-accent)}
+.card-theme[data-frame="torn"] .ctc{border-color:transparent;border-radius:0;margin-block:7px}
+.card-theme[data-frame="torn"] .ct-fr::before,.card-theme[data-frame="torn"] .ct-fr::after{content:"";position:absolute;left:0;right:0;height:7px;background-repeat:repeat-x;background-size:14px 7px}
+.card-theme[data-frame="torn"] .ct-fr::before{top:-7px;background-image:linear-gradient(45deg,var(--ct-panel) 35%,transparent 36%),linear-gradient(-45deg,var(--ct-panel) 35%,transparent 36%);background-position:0 100%,0 100%}
+.card-theme[data-frame="torn"] .ct-fr::after{bottom:-7px;background-image:linear-gradient(135deg,var(--ct-panel) 35%,transparent 36%),linear-gradient(-135deg,var(--ct-panel) 35%,transparent 36%);background-position:0 0,0 0}
+.card-theme[data-frame="comic"] .ctc{border:3px solid var(--ct-ink);border-radius:3px;box-shadow:5px 5px 0 var(--ct-ink);margin-right:5px}
+.card-theme[data-frame="pixel"] .ctc{border:0;border-radius:0;box-shadow:0 -4px 0 var(--ct-accent),0 4px 0 var(--ct-accent),-4px 0 0 var(--ct-accent),4px 0 0 var(--ct-accent);margin:4px}
+.card-theme[data-frame="chronicle"] .ctc{border:3px double var(--ct-accent2);border-radius:0}
+.card-theme[data-frame="chronicle"] .ct-fr{inset:4px;border:1px solid var(--ct-accent);border-radius:0;--q:linear-gradient(var(--ct-accent),var(--ct-accent));background:var(--q) top -1px left -1px/7px 7px,var(--q) top -1px right -1px/7px 7px,var(--q) bottom -1px left -1px/7px 7px,var(--q) bottom -1px right -1px/7px 7px;background-repeat:no-repeat}
+.card-theme[data-frame="meander"] .ctc{padding-block:24px}
+.card-theme[data-frame="meander"] .ct-fr{inset:6px 8px;border-radius:0;background:var(--ct-band) left top/auto 11px repeat-x,var(--ct-band) left bottom/auto 11px repeat-x}
+.card-theme[data-frame="manga"] .ctc{border:2.5px solid var(--ct-ink);border-radius:5px}
+.card-theme[data-frame="manga"] .ct-fr{background:radial-gradient(var(--ct-ink) 1px,transparent 1.4px) 0 0/6px 6px;-webkit-mask:linear-gradient(-45deg,#000 0,rgba(0,0,0,.6) 13%,transparent 26%);mask:linear-gradient(-45deg,#000 0,rgba(0,0,0,.6) 13%,transparent 26%);opacity:.35}
+.card-theme[data-frame="scroll"] .ctc{margin-block:10px}
+.card-theme[data-frame="scroll"] .ct-fr::before,.card-theme[data-frame="scroll"] .ct-fr::after{content:"";position:absolute;left:-7px;right:-7px;height:10px;border-radius:5px;
+  background:radial-gradient(circle,var(--ct-accent) 0 4px,transparent 4.5px) left center/10px 10px no-repeat,radial-gradient(circle,var(--ct-accent) 0 4px,transparent 4.5px) right center/10px 10px no-repeat,var(--ct-accent2)}
+.card-theme[data-frame="scroll"] .ct-fr::before{top:-10px}
+.card-theme[data-frame="scroll"] .ct-fr::after{bottom:-10px}
+.card-theme[data-frame="terminal"] .ctc{border:2px solid var(--ct-accent);border-radius:0;padding-top:22px;box-shadow:0 0 10px var(--ct-glow)}
+.card-theme[data-frame="terminal"] .ct-fr::before{content:"";position:absolute;left:0;right:0;top:0;height:7px;background:var(--ct-accent)}
+.card-theme[data-frame="stripes"] .ctc{padding-left:28px}
+.card-theme[data-frame="stripes"] .ct-fr::before{content:"";position:absolute;left:0;top:0;bottom:0;width:10px;border-radius:var(--ct-r) 0 0 var(--ct-r);background:repeating-linear-gradient(45deg,var(--ct-accent) 0 6px,var(--ct-hz) 6px 12px)}
+.card-theme[data-frame="brush"] .ctc{border-color:transparent;border-radius:0;margin-bottom:9px}
+.card-theme[data-frame="brush"] .ct-fr::after{content:"";position:absolute;left:-4px;bottom:-9px;width:62%;height:12px;background:var(--ct-brush) left center/100% 100% no-repeat}
+.card-theme[data-frame="glitch"] .ctc{border-radius:0;border-color:var(--ct-ink);box-shadow:-3px 0 0 var(--ct-accent),3px 0 0 var(--ct-accent2)}
