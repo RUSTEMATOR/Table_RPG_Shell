@@ -14,13 +14,14 @@ import { useWakeLock } from '../lib/wakeLock.ts';
 import { resolveTheme, themeVariant } from '../lib/cardTheme/index.ts';
 import { useScheme } from '../lib/colorScheme.ts';
 import { ThemeChoice } from '../components/ThemeChoice.tsx';
+import { TAB_ICONS, TabBar } from '../components/TabBar.tsx';
 import { useSkin } from '../lib/cardTheme/skin.ts';
 import { noteCardChange, noteDiaryChange, rememberCard, setActiveTab, useUnread } from '../lib/unread.ts';
 
 export function Player() {
   useWakeLock();
   return (
-    <RoleScreen role="player">
+    <RoleScreen role="player" fill>
       <PlayerTabs />
     </RoleScreen>
   );
@@ -98,28 +99,26 @@ function PlayerTabs() {
   useSocketEvent('character:updated', ({ character }) => noteCardChange(character));
   return (
     <>
-      <nav className="gm-nav" aria-label="Разделы">
-        {(
-          [
-            ['rolls', 'Броски'],
-            ['card', 'Карточка'],
-            ['diary', 'Дневник'],
-          ] as const
-        ).map(([k, l]) => (
-          <button key={k} type="button" className={`tab ${tab === k ? 'tab-on' : ''}`} onClick={() => pick(k)}>
-            {l}
-            {k !== 'rolls' && unread[k] && <span className="unread-dot" aria-label="есть новое" />}
-          </button>
-        ))}
-      </nav>
-      {tab === 'rolls' && (
-        <>
-          <RollPanel role="player" />
-          <FeedCard />
-        </>
-      )}
-      {tab === 'card' && <PlayerHome theme={theme} base={base} choice={choice} onChoice={pickTheme} />}
-      {tab === 'diary' && <Diary />}
+      <div id={`pane-${tab}`} className="-mx-4 flex min-h-0 flex-1 flex-col gap-3.5 overflow-y-auto overscroll-contain px-4 pt-1 pb-4">
+        {tab === 'rolls' && (
+          <>
+            <RollPanel role="player" />
+            <FeedCard />
+          </>
+        )}
+        {tab === 'card' && <PlayerHome theme={theme} base={base} choice={choice} onChoice={pickTheme} />}
+        {tab === 'diary' && <Diary />}
+      </div>
+      <TabBar
+        value={tab}
+        onChange={pick}
+        controls={(v) => `pane-${v}`}
+        items={[
+          { value: 'rolls', label: 'Броски', icon: TAB_ICONS.rolls },
+          { value: 'card', label: 'Карточка', icon: TAB_ICONS.card, dot: unread.card },
+          { value: 'diary', label: 'Дневник', icon: TAB_ICONS.diary, dot: unread.diary },
+        ]}
+      />
     </>
   );
 }

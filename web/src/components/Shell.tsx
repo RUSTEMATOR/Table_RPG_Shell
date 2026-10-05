@@ -7,9 +7,13 @@ import { connectSocket, disconnectSocket, useConnection } from '../lib/socket.ts
 import { ConnectionDot } from './ConnectionDot.tsx';
 import { useSkin } from '../lib/cardTheme/skin.ts';
 import { SchemeToggle } from './SchemeToggle.tsx';
+import { cn } from '../lib/cn.ts';
 
-/** Экран для одной роли: без нужной роли — на вход, данные не запрашиваются. */
-export function RoleScreen({ role, children, wide }: { role: Role; children: ReactNode; wide?: boolean }) {
+/**
+ * Экран для одной роли: без нужной роли — на вход, данные не запрашиваются.
+ * fill — экран ровно в высоту окна (телефон игрока): прокручиваются вкладки внутри, панель вкладок внизу.
+ */
+export function RoleScreen({ role, children, wide, fill }: { role: Role; children: ReactNode; wide?: boolean; fill?: boolean }) {
   const { me, loading, refresh } = useMe();
   const navigate = useNavigate();
   const conn = useConnection();
@@ -42,7 +46,7 @@ export function RoleScreen({ role, children, wide }: { role: Role; children: Rea
   };
 
   return (
-    <div className={`screen ${wide ? 'screen-wide' : ''}`}>
+    <div className={cn('screen', wide && 'screen-wide', fill && 'flex h-dvh flex-col overflow-hidden pb-0')}>
       <header className="topbar">
         <div className="topbar-title">
           <strong>{me.room.name}</strong>
@@ -58,7 +62,7 @@ export function RoleScreen({ role, children, wide }: { role: Role; children: Rea
           </button>
         )}
       </header>
-      <main>{children}</main>
+      <main className={cn(fill && 'min-h-0 flex-1 gap-0')}>{children}</main>
     </div>
   );
 }
