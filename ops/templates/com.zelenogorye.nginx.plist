@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.zelenogorye.nginx</string>
+    <key>UserName</key>
+    <string>{{USER}}</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>HOME</key>
+        <string>{{HOME}}</string>
+        <key>ZG_ENV_FILE</key>
+        <string>{{ENV_FILE}}</string>
+        <key>ZG_ROOT</key>
+        <string>{{ZG_ROOT}}</string>
+        <key>NODE_BIN</key>
+        <string>{{NODE_BIN}}</string>
+        <key>NGINX_BIN</key>
+        <string>{{NGINX_BIN}}</string>
+        <key>PATH</key>
+        <string>{{NODE_DIR}}:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+    <key>ProgramArguments</key>
+    <array>
+        <string>{{NGINX_BIN}}</string>
+        <string>-g</string>
+        <string>daemon off;</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+    <key>StandardErrorPath</key>
+    <string>{{ZG_ROOT}}/logs/nginx-launchd.log</string>
+</dict>
+</plist>

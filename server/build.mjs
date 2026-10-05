@@ -14,6 +14,7 @@ await build({
     setup: 'src/cli/setup.ts',
     invite: 'src/cli/invite.ts',
     seed: 'src/cli/seed.ts',
+    backup: 'src/cli/backup.ts',
   },
   outdir: 'dist',
   outExtension: { '.js': '.mjs' },

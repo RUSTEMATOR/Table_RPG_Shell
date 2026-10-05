@@ -17,6 +17,11 @@ const ConfigSchema = z.object({
   PORT: z.coerce.number().int().default(3000),
   DB_PATH: z.string().min(1),
   MEDIA_DIR: z.string().optional(),
+  BACKUP_DIR: z.string().optional(),
+  BACKUP_MIRROR: z.string().optional(),
+  OPS_STATE_DIR: z.string().optional(),
+  NGINX_BIN: z.string().optional(),
+  CF_IPS_FILE: z.string().optional(),
   COOKIE_SECURE: bool(true),
   PUBLIC_ORIGIN: z.string().url().optional(),
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
@@ -41,6 +46,9 @@ if (!parsed.success) {
 export const config = {
   ...parsed.data,
   MEDIA_DIR: parsed.data.MEDIA_DIR ?? join(dirname(parsed.data.DB_PATH), 'media'),
+  BACKUP_DIR: parsed.data.BACKUP_DIR ?? join(dirname(parsed.data.DB_PATH), 'backups'),
+  // Сюда скрипты ops пишут отметки: последний бэкап, обновление IP Cloudflare, DDNS.
+  OPS_STATE_DIR: parsed.data.OPS_STATE_DIR ?? join(dirname(parsed.data.DB_PATH), 'ops-state'),
   HOST: '127.0.0.1',
   envFile,
   isDev: parsed.data.NODE_ENV === 'development',

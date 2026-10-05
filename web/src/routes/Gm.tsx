@@ -7,6 +7,7 @@ import { RollPanel } from '../components/RollPanel.tsx';
 import { RoleScreen } from '../components/Shell.tsx';
 import { GmNav } from '../components/GmNav.tsx';
 import { OverloadPanel } from '../components/OverloadPanel.tsx';
+import { StatusPanel } from '../components/StatusPanel.tsx';
 import { api } from '../lib/api.ts';
 import { useSocketEvent } from '../lib/socket.ts';
 import { useWakeLock } from '../lib/wakeLock.ts';
@@ -172,6 +173,7 @@ export function GmMembers() {
           Песочница Jev
         </Link>
       </section>
+      <StatusPanel />
     </RoleScreen>
   );
 }

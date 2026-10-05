@@ -980,3 +980,19 @@ input[type='range'] {
   min-height: 220px;
   line-height: 1.5;
 }
+.status {
+  margin: 0;
+  display: grid;
+  gap: 4px;
+}
+.status-row {
+  display: grid;
+  grid-template-columns: 10em 1fr;
+  gap: 8px;
+}
+.status-row dt {
+  color: var(--muted);
+}
+.status-row dd {
+  margin: 0;
+}

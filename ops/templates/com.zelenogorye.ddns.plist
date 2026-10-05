@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.zelenogorye.ddns</string>
+    <key>UserName</key>
+    <string>{{USER}}</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>HOME</key>
+        <string>{{HOME}}</string>
+        <key>ZG_ENV_FILE</key>
+        <string>{{ENV_FILE}}</string>
+        <key>ZG_ROOT</key>
+        <string>{{ZG_ROOT}}</string>
+        <key>NODE_BIN</key>
+        <string>{{NODE_BIN}}</string>
+        <key>NGINX_BIN</key>
+        <string>{{NGINX_BIN}}</string>
+        <key>PATH</key>
+        <string>{{NODE_DIR}}:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+    <key>ProgramArguments</key>
+    <array>
+        <string>{{NODE_BIN}}</string>
+        <string>{{ZG_ROOT}}/current/ops/scripts/update-dns.mjs</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>StartInterval</key>
+    <integer>300</integer>
+    <key>StandardOutPath</key>
+    <string>{{ZG_ROOT}}/logs/ops.log</string>
+    <key>StandardErrorPath</key>
+    <string>{{ZG_ROOT}}/logs/ops.log</string>
+</dict>
+</plist>

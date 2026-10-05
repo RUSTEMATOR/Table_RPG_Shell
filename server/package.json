@@ -10,7 +10,8 @@
     "db:migrate": "tsx src/db/migrate.ts",
     "setup": "tsx src/cli/setup.ts",
     "invite": "tsx src/cli/invite.ts",
-    "seed": "tsx src/cli/seed.ts"
+    "seed": "tsx src/cli/seed.ts",
+    "backup": "tsx src/cli/backup.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",
