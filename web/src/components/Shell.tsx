@@ -13,7 +13,7 @@ import { cn } from '../lib/cn.ts';
  * Экран для одной роли: без нужной роли — на вход, данные не запрашиваются.
  * fill — экран ровно в высоту окна (телефон игрока): прокручиваются вкладки внутри, панель вкладок внизу.
  */
-export function RoleScreen({ role, children, wide, fill }: { role: Role; children: ReactNode; wide?: boolean; fill?: boolean }) {
+export function RoleScreen({ role, children, wide, fill, actions }: { role: Role; children: ReactNode; wide?: boolean; fill?: boolean; actions?: ReactNode }) {
   const { me, loading, refresh } = useMe();
   const navigate = useNavigate();
   const conn = useConnection();
@@ -54,6 +54,7 @@ export function RoleScreen({ role, children, wide, fill }: { role: Role; childre
             {ru.roles[me.member.role]} · {me.member.name}
           </span>
         </div>
+        {actions}
         <ConnectionDot />
         {role !== 'table' && <SchemeToggle />}
         {role !== 'table' && (

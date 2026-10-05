@@ -302,16 +302,11 @@ input[type='range'] {
 
 /* ---- Вкладки и разделы ---- */
 
-.tabs,
-.gm-nav {
+.tabs {
   display: flex;
   gap: 4px;
   overflow-x: auto;
   scrollbar-width: none;
-}
-.gm-nav {
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 4px;
 }
 .tab {
   font: inherit;
@@ -333,18 +328,6 @@ input[type='range'] {
   background: var(--primary);
   border-color: var(--primary);
   color: var(--primary-text);
-}
-.gm-nav .tab {
-  border: 0;
-  border-radius: 0;
-  background: none;
-  padding: 10px 12px;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-}
-.gm-nav .tab-on {
-  color: var(--text);
-  border-bottom-color: var(--accent);
 }
 .tabs {
   margin-bottom: 14px;

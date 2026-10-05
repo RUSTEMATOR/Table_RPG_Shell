@@ -2,7 +2,6 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 import type { GmDraftView, RollParamsInput } from '@zg/shared';
 import { GmSlot } from '../components/GmSlot.tsx';
-import { RoleScreen } from '../components/Shell.tsx';
 import { api } from '../lib/api.ts';
 import { OWNER_ERRORS, useCatalog, usePlayers } from '../lib/gm.ts';
 import { load, save } from '../lib/storage.ts';
@@ -33,7 +32,7 @@ type Mode = 'roll' | 'local' | 'import';
 export function GmNew() {
   const [mode, setMode] = useState<Mode>('roll');
   return (
-    <RoleScreen role="gm">
+    <>
       <section className="card">
         <div className="row spread">
           <h2>Новый персонаж</h2>
@@ -58,7 +57,7 @@ export function GmNew() {
       {mode === 'roll' && <RollForm />}
       {mode === 'local' && <LocalForm />}
       {mode === 'import' && <ImportForm />}
-    </RoleScreen>
+    </>
   );
 }
 

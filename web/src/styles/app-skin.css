@@ -76,16 +76,6 @@ html[data-skin] .topbar .btn-ghost {
   color: var(--ct-hink);
   border-color: color-mix(in srgb, var(--ct-hmuted) 50%, transparent);
 }
-html[data-skin] .gm-nav {
-  border-bottom-color: color-mix(in srgb, var(--ct-hmuted) 40%, transparent);
-}
-html[data-skin] .gm-nav .tab {
-  color: var(--ct-hmuted);
-}
-html[data-skin] .gm-nav .tab-on {
-  color: var(--ct-hink);
-  border-bottom-color: var(--ct-accent);
-}
 
 /* Заголовки — шрифтом названий черт темы */
 html[data-skin] :is(h1, h2, h3) {

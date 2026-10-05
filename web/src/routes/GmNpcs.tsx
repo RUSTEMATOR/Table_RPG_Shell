@@ -1,16 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { GmNpc } from '@zg/shared';
-import { GmNav } from '../components/GmNav.tsx';
-import { RoleScreen } from '../components/Shell.tsx';
 import { api } from '../lib/api.ts';
 import { useConnection, useSocketEvent } from '../lib/socket.ts';
 
 export function GmNpcs() {
   return (
-    <RoleScreen role="gm">
-      <GmNav />
+    <>
       <Npcs />
-    </RoleScreen>
+    </>
   );
 }
 

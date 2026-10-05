@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { GmNote, GmPastNote } from '@zg/shared';
-import { GmNav } from '../components/GmNav.tsx';
-import { RoleScreen } from '../components/Shell.tsx';
 import { api } from '../lib/api.ts';
 import { useConnection, useSocketEvent } from '../lib/socket.ts';
 
@@ -9,11 +7,10 @@ const SAVE_DELAY = 800;
 
 export function GmNotes() {
   return (
-    <RoleScreen role="gm">
-      <GmNav />
+    <>
       <Notes />
       <PastNotes />
-    </RoleScreen>
+    </>
   );
 }
 

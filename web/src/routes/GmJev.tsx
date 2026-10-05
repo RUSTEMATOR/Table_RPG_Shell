@@ -1,6 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
-import { RoleScreen } from '../components/Shell.tsx';
 import { api } from '../lib/api.ts';
 import { load, save } from '../lib/storage.ts';
 
@@ -154,7 +153,7 @@ export function GmJev() {
     setTraits((ts) => ts.map((t, j) => (j === i ? { ...t, ...patch } : t)));
 
   return (
-    <RoleScreen role="gm">
+    <>
       <section className="card">
         <div className="row spread">
           <h2>Песочница Jev</h2>
@@ -254,6 +253,6 @@ export function GmJev() {
           </ul>
         </section>
       )}
-    </RoleScreen>
+    </>
   );
 }

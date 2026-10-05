@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { GmDiaryEntry } from '@zg/shared';
-import { GmNav } from '../components/GmNav.tsx';
-import { RoleScreen } from '../components/Shell.tsx';
 import { api } from '../lib/api.ts';
 import { useConnection, useSocketEvent } from '../lib/socket.ts';
 
@@ -9,10 +7,9 @@ const when = (t: number) => new Date(t).toLocaleString('ru-RU', { day: '2-digit'
 
 export function GmRequests() {
   return (
-    <RoleScreen role="gm">
-      <GmNav />
+    <>
       <Requests />
-    </RoleScreen>
+    </>
   );
 }
 

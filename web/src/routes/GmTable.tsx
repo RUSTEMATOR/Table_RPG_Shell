@@ -1,16 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { GmScene, HintCheck } from '@zg/shared';
-import { GmNav } from '../components/GmNav.tsx';
-import { RoleScreen } from '../components/Shell.tsx';
 import { api } from '../lib/api.ts';
 import { useSocketEvent } from '../lib/socket.ts';
 
 export function GmTable() {
   return (
-    <RoleScreen role="gm">
-      <GmNav />
+    <>
       <Scenes />
-    </RoleScreen>
+    </>
   );
 }
 
