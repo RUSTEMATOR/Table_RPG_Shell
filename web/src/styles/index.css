@@ -100,3 +100,30 @@
     transform: scale(1.14) translate(-2%, -1.5%);
   }
 }
+
+/* Карты: туман расходится над только что открытым регионом; маркер партии дышит. */
+@keyframes zg-fog-open {
+  from {
+    opacity: 0;
+  }
+}
+.zg-fog-open {
+  animation: zg-fog-open 1.6s ease-out;
+}
+@keyframes zg-party-pulse {
+  50% {
+    transform: scale(1.5);
+    opacity: 0.05;
+  }
+}
+.zg-party-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: zg-party-pulse 2.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .zg-fog-open,
+  .zg-party-pulse {
+    animation: none;
+  }
+}
