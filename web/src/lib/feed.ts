@@ -11,6 +11,13 @@ const rolls = new Map<string, FeedRoll>();
 let lastSeq: Partial<Record<AudienceKey, number>> = {};
 let snapshot: FeedRoll[] = [];
 const listeners = new Set<() => void>();
+const live = new Set<(r: FeedRoll) => void>();
+
+/** Подписка на броски, пришедшие вживую (не досинхронизация после переподключения). Для 3D на столе и у мастера. */
+export function onLiveRoll(cb: (r: FeedRoll) => void): () => void {
+  live.add(cb);
+  return () => live.delete(cb);
+}
 
 function emit() {
   snapshot = [...rolls.values()].sort((a, b) => b.at - a.at).slice(0, 200);
@@ -33,9 +40,11 @@ export function ingest(ev: FeedEvent): 'ok' | 'gap' | 'dup' {
   const last = lastSeq[ev.aud] ?? 0;
   if (ev.seq <= last) return 'dup';
   if (ev.seq > last + 1) return 'gap';
+  const fresh = !rolls.has(ev.roll.id);
   upsert(ev.roll);
   lastSeq[ev.aud] = ev.seq;
   emit();
+  if (fresh) live.forEach((cb) => cb(ev.roll));
   return 'ok';
 }
 
