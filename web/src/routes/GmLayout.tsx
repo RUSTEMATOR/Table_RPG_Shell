@@ -8,7 +8,7 @@ import { OpenRequestsProvider, useOpenRequests } from '../lib/openRequests.tsx';
 import { api } from '../lib/api.ts';
 import { useSocketEvent } from '../lib/socket.ts';
 import { useWakeLock } from '../lib/wakeLock.ts';
-import { Button, buttonVariants, Card, CardTitle, Sheet } from '../ui/index.ts';
+import { Button, buttonVariants, Card, CardTitle, Sheet, toast } from '../ui/index.ts';
 import { cn } from '../lib/cn.ts';
 
 /**
@@ -107,7 +107,10 @@ function OnTable({ onNavigate }: { onNavigate?: () => void }) {
   useSocketEvent('gm:scenes.changed', () => void load());
   const hide = async () => {
     const r = await api('POST', '/api/gm/table/show', { sceneId: null });
-    if (r.ok) setShown(null);
+    if (r.ok) {
+      setShown(null);
+      toast('Сцена убрана со стола');
+    }
   };
   return (
     <Card className="gap-2">

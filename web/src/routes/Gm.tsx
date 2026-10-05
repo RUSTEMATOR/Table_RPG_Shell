@@ -9,6 +9,7 @@ import { StatusPanel } from '../components/StatusPanel.tsx';
 import { api } from '../lib/api.ts';
 import { useSocketEvent } from '../lib/socket.ts';
 import { errorText } from './errors.ts';
+import { toast } from '../ui/index.ts';
 
 function memberStatus(m: GmMember): string {
   if (m.role === 'gm') return 'мастер';
@@ -24,6 +25,7 @@ function InviteBox({ invite, name }: { invite: InviteCreated; name: string }) {
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
+      toast('Ссылка скопирована');
     } catch {
       setCopied(false);
     }
@@ -102,6 +104,7 @@ export function GmMembers() {
     const r = await api<InviteCreated>('POST', '/api/gm/members', { name, role });
     if (!r.ok) return setError(errorText(r.error));
     setInvite({ data: r.data, name });
+    toast(`Ссылка для ${name} создана`);
     setName('');
     void reload();
   };

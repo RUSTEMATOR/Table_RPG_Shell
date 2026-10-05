@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { GmScene, HintCheck } from '@zg/shared';
 import { api } from '../lib/api.ts';
 import { useSocketEvent } from '../lib/socket.ts';
+import { toast } from '../ui/index.ts';
 
 export function GmTable() {
   return (
@@ -31,7 +32,8 @@ function Scenes() {
     else setError('Не создалось');
   };
   const hide = async () => {
-    await api('POST', '/api/gm/table/show', { sceneId: null });
+    const r = await api('POST', '/api/gm/table/show', { sceneId: null });
+    if (r.ok) toast('Сцена убрана со стола');
   };
   const anyShown = list.some((s) => s.shown);
 
@@ -98,8 +100,10 @@ function SceneEditor({ s, onChange }: { s: GmScene; onChange: (s: GmScene) => vo
       }
     }
     setCheck(null);
-    await api('POST', '/api/gm/table/show', { sceneId: s.id });
+    const r = await api('POST', '/api/gm/table/show', { sceneId: s.id });
     setBusy(false);
+    if (r.ok) toast(`«${title}» на столе`);
+    else setMsg('Не показалось');
   };
 
   const upload = async (file: File | undefined) => {

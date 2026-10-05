@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { SIGN_TEXT, type GmOverload } from '@zg/shared';
 import { api } from '../lib/api.ts';
 import { useSocketEvent } from '../lib/socket.ts';
+import { toast } from '../ui/index.ts';
 
 /** Перегрузка зелёной магией: видит только мастер. Столу по кнопке уходит лишь видимый признак. */
 export function OverloadPanel() {
@@ -26,6 +27,7 @@ export function OverloadPanel() {
   const show = async (o: GmOverload) => {
     const r = await api('POST', `/api/gm/overload/${encodeURIComponent(o.characterId)}/show`);
     if (r.ok) {
+      toast('Знаки перегрузки показаны на столе');
       setShown(o.characterId);
       window.setTimeout(() => setShown((s) => (s === o.characterId ? null : s)), 2500);
     }

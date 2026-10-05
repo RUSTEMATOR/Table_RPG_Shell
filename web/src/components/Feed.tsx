@@ -6,6 +6,7 @@ import { isGmRoll, useFeed, type FeedRoll } from '../lib/feed.ts';
 import { emitGm } from '../lib/socket.ts';
 import { api } from '../lib/api.ts';
 import { dismissGreen, useGreenSuggestions } from '../lib/suggestions.ts';
+import { toast } from '../ui/index.ts';
 
 const time = (t: number) => new Date(t).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 
@@ -36,7 +37,10 @@ function Override({ r }: { r: FeedRoll }) {
           className="btn btn-secondary"
           onClick={async () => {
             const res = await emitGm('gm:roll.override', { rollId: r.id, effect, note });
-            if (res.ok) setOpen(false);
+            if (res.ok) {
+              setOpen(false);
+              toast('Бросок исправлен');
+            }
             else setErr(res.error ?? 'ошибка');
           }}
         >

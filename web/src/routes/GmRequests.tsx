@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { GmDiaryEntry } from '@zg/shared';
 import { api } from '../lib/api.ts';
 import { useConnection, useSocketEvent } from '../lib/socket.ts';
+import { toast } from '../ui/index.ts';
 
 const when = (t: number) => new Date(t).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 
@@ -65,8 +66,10 @@ function DiaryItem({ e }: { e: GmDiaryEntry }) {
   useEffect(() => setReply(e.reply), [e.reply]);
   const send = async (close: boolean) => {
     setBusy(true);
-    await api('POST', `/api/gm/diary/${encodeURIComponent(e.id)}/reply`, { reply, close });
+    const r = await api('POST', `/api/gm/diary/${encodeURIComponent(e.id)}/reply`, { reply, close });
     setBusy(false);
+    if (r.ok) toast(close && e.request ? 'Ответ отправлен, запрос закрыт' : 'Ответ отправлен');
+    else toast.error('Ответ не ушёл, попробуйте ещё раз');
   };
   return (
     <li className={`diary-gm ${e.request && e.requestState === 'open' ? 'diary-open' : ''}`}>

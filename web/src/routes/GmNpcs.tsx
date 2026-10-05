@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { GmNpc } from '@zg/shared';
 import { api } from '../lib/api.ts';
 import { useConnection, useSocketEvent } from '../lib/socket.ts';
+import { toast } from '../ui/index.ts';
 
 export function GmNpcs() {
   return (
@@ -34,7 +35,8 @@ function Npcs() {
     else setError('Не создалось');
   };
   const hide = async () => {
-    await api('POST', '/api/gm/table/npc', { npcId: null });
+    const r = await api('POST', '/api/gm/table/npc', { npcId: null });
+    if (r.ok) toast('Противник убран со стола');
   };
   const anyShown = list?.some((n) => n.shown);
 
@@ -95,10 +97,12 @@ function NpcEditor({ n, onChange }: { n: GmNpc; onChange: (n: GmNpc) => void }) 
     if (dirty && !(await save())) return;
     const r = await api('POST', '/api/gm/session/opponent', { name: '', power: null, npcId: n.id });
     if (!r.ok) setMsg('Не получилось');
+    else toast(`«${name}» — противник сессии`);
   };
   const show = async (on: boolean) => {
     if (on && dirty && !(await save())) return;
-    await api('POST', '/api/gm/table/npc', { npcId: on ? n.id : null });
+    const r = await api('POST', '/api/gm/table/npc', { npcId: on ? n.id : null });
+    if (r.ok) toast(on ? `«${name}» на столе` : 'Противник убран со стола');
   };
   const upload = async (file: File | undefined) => {
     if (!file) return;

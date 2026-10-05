@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import type { GmNpc, GmSessionView } from '@zg/shared';
 import { api } from '../lib/api.ts';
 import { useSocketEvent } from '../lib/socket.ts';
+import { toast } from '../ui/index.ts';
 
 const when = (t: number) => new Date(t).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 
@@ -38,6 +39,7 @@ export function OpponentBox() {
       setS(r.data);
       setName(r.data.opponentName);
       setPower(r.data.opponentPower ? String(r.data.opponentPower) : '');
+      toast(`Противник сессии: ${r.data.opponentName}`);
     }
   };
 
@@ -45,7 +47,10 @@ export function OpponentBox() {
     e.preventDefault();
     const p = Math.trunc(Number(power));
     const r = await api<GmSessionView>('POST', '/api/gm/session/opponent', { name, power: p > 0 ? p : null });
-    if (r.ok) setS(r.data);
+    if (r.ok) {
+      setS(r.data);
+      toast('Противник задан');
+    }
   };
   const [confirmNew, setConfirmNew] = useState(false);
   const startNew = async () => {
@@ -53,6 +58,7 @@ export function OpponentBox() {
     setConfirmNew(false);
     const r = await api<GmSessionView>('POST', '/api/gm/session/new');
     if (r.ok) {
+      toast('Новая сессия начата');
       setS(r.data);
       setName('');
       setPower('');
