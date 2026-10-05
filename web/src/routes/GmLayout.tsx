@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, Outlet, useNavigate } from 'react-router';
+import { Link, Outlet, useMatches, useNavigate } from 'react-router';
 import type { GmScene } from '@zg/shared';
 import { RoleScreen } from '../components/Shell.tsx';
 import { GM_SECTIONS, GmNav, Icon } from '../components/GmNav.tsx';
@@ -22,6 +22,8 @@ export function GmLayout() {
   useWakeLock();
   const navigate = useNavigate();
   const [palette, setPalette] = useState(false);
+  // Страница со своей правой колонкой (персонаж — «Как увидит игрок»): «Сейчас в игре» только листом из шапки.
+  const ownRail = useMatches().some((m) => (m.handle as { ownRail?: boolean } | undefined)?.ownRail);
   useHotkeys({
     'mod+k': () => setPalette((o) => !o),
     ...Object.fromEntries(GM_SECTIONS.map((s) => [`g ${s.key}`, () => navigate(s.to, { viewTransition: true })])),
@@ -34,21 +36,28 @@ export function GmLayout() {
         actions={
           <>
             <PaletteButton onOpen={() => setPalette(true)} />
-            <RailButton />
+            <RailButton always={ownRail} />
           </>
         }
       >
         <CommandPalette open={palette} onOpenChange={setPalette} />
         <div className="@container/gm">
-          <div className="grid items-start gap-5 @3xl/gm:grid-cols-[210px_minmax(0,1fr)] @5xl/gm:grid-cols-[210px_minmax(0,1fr)_minmax(300px,360px)] @7xl/gm:gap-6">
+          <div
+            className={cn(
+              'grid items-start gap-5 @3xl/gm:grid-cols-[210px_minmax(0,1fr)] @7xl/gm:gap-6',
+              !ownRail && '@5xl/gm:grid-cols-[210px_minmax(0,1fr)_minmax(300px,360px)]',
+            )}
+          >
             <GmNav className="sticky top-[76px] hidden @3xl/gm:grid" />
             <GmNav variant="tabs" className="@3xl/gm:hidden" />
             <div className="flex min-w-0 flex-col gap-4">
               <Outlet />
             </div>
-            <aside aria-label="Сейчас в игре" className="sticky top-[76px] hidden max-h-[calc(100dvh-92px)] flex-col gap-4 overflow-y-auto overscroll-contain @5xl/gm:flex">
-              <Rail />
-            </aside>
+            {!ownRail && (
+              <aside aria-label="Сейчас в игре" className="sticky top-[76px] hidden max-h-[calc(100dvh-92px)] flex-col gap-4 overflow-y-auto overscroll-contain @5xl/gm:flex">
+                <Rail />
+              </aside>
+            )}
           </div>
         </div>
       </RoleScreen>
@@ -74,12 +83,12 @@ function PaletteButton({ onOpen }: { onOpen: () => void }) {
 }
 
 /** Узко: правая колонка открывается листом. Кнопка в шапке скрыта, когда колонка и так на экране. */
-function RailButton() {
+function RailButton({ always }: { always?: boolean }) {
   const [open, setOpen] = useState(false);
   const requests = useOpenRequests().length;
   return (
     <>
-      <Button variant="ghost" size="sm" className="min-[1056px]:hidden" onClick={() => setOpen(true)} aria-haspopup="dialog">
+      <Button variant="ghost" size="sm" className={cn(!always && 'min-[1056px]:hidden')} onClick={() => setOpen(true)} aria-haspopup="dialog">
         Сейчас в игре{requests > 0 && <span className="rounded-full bg-accent px-1.5 font-mono text-xs leading-5 text-surface">{requests}</span>}
       </Button>
       <Sheet open={open} onOpenChange={setOpen} title="Сейчас в игре">
