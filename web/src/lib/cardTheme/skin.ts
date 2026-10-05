@@ -1,6 +1,6 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import { ensureTheme } from './index.ts';
-import { THEMES, isDarkTheme, isTheme, patPrims, patSpec, primsSvgBody, svgDoc, svgUrl, themeCmap, themeCss } from './engine.js';
+import { THEMES, isDarkTheme, isTheme, patPrims, patSpec, primsSvgBody, svgDoc, svgUrl, themeCmap, themeCss } from './engine.mjs';
 
 // Оформление всего экрана по теме карточки («кожа»): тема задаёт токены приложения (styles/app-skin.css),
 // рамку всех .card и узор фона. Игроку — тема его персонажа, мастеру — «Зеленогорье» артефакта (id "other").

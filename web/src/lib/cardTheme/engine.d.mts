@@ -1,4 +1,4 @@
-// Типы к engine.js (перенос из артефакта). Только то, что использует клиент.
+// Типы к engine.mjs (перенос из артефакта). Только то, что использует клиент.
 export interface ThemeBrief {
   label: string;
   bg: string;

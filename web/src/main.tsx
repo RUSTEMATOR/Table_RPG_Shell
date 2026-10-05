@@ -6,7 +6,7 @@ import { RouteError } from './components/RouteError.tsx';
 import { MotionProvider } from './lib/motion.tsx';
 import { Toaster } from './ui/Toaster.tsx';
 import './lib/colorScheme.ts'; // день/ночь до первой отрисовки, без мигания
-import './styles/index.css';
+import './styles/main.css';
 
 // Экраны грузятся отдельными чанками по ролям: игрок не скачивает код мастера и стола, и наоборот.
 function lazy(load: () => Promise<Record<string, unknown>>, name: string): RouteObject['lazy'] {

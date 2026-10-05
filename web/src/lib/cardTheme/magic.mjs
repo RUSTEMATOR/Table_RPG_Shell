@@ -2,7 +2,7 @@
 // Отличия («// ZG:»): холст создаётся при mountMagic и убирается при unmount; звук не переносится (в артефакте выключен);
 // «уменьшить движение» — из prefers-reduced-motion (в артефакте ещё переключатель «Эффекты»).
 /* eslint-disable */
-import {FALLBACK_COLORS,magicFamily} from './engine.js';
+import {FALLBACK_COLORS,magicFamily} from './engine.mjs';
 
 const MG={cv:null,ctx:null,dpr:1,w:0,h:0,raf:0,last:0,P:[],B:[],R:[],card:null,theme:"",fam:null,col:null,visible:true,io:null,inited:false,spin:null,taps:0,draws:0};
 const mgR=Math.random;                                     // cosmetic only

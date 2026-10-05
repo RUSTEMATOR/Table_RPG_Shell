@@ -1,5 +1,5 @@
 import type { Scheme } from '../colorScheme.ts';
-import { THEMES, isTheme, mixHex, relLum } from './engine.js';
+import { THEMES, isTheme, mixHex, relLum } from './engine.mjs';
 
 // День и ночь для тем артефакта. У тем одна палитра, поэтому «День» и «Ночь» строят светлый или тёмный вариант
 // из её же цветов (светлый и тёмный из пары «панель / текст», акценты те же — контраст подгоняет themeCss).

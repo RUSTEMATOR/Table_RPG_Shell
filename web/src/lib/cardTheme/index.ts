@@ -1,7 +1,7 @@
-import { THEMES, fontsHref, isTheme, themeCss, themeFamilies, themeFor } from './engine.js';
+import { THEMES, fontsHref, isTheme, themeCss, themeFamilies, themeFor } from './engine.mjs';
 
-export { catChipHtml, dot, esc, mdLite, ornSvg, pictoSvg, settingThemeOf, DEMAND_WORDS, THEMES } from './engine.js';
-export { magicSpin, mountMagic } from './magic.js';
+export { catChipHtml, dot, esc, mdLite, ornSvg, pictoSvg, settingThemeOf, DEMAND_WORDS, THEMES } from './engine.mjs';
+export { magicSpin, mountMagic } from './magic.mjs';
 export { baseTheme, themeVariant } from './variant.ts';
 
 // DOM-часть оформления (ensureTheme / requestFonts артефакта): правило темы — один раз в <style id="ct-css">,
