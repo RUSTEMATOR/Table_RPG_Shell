@@ -16,6 +16,7 @@ import { resolveTheme, themeVariant } from '../lib/cardTheme/index.ts';
 import { useScheme } from '../lib/colorScheme.ts';
 import { ThemeChoice } from '../components/ThemeChoice.tsx';
 import { TAB_ICONS, TabBar } from '../components/TabBar.tsx';
+import { PlayerMap } from '../components/PlayerMap.tsx';
 import { Card, CardTitle, Segmented, Skeleton } from '../ui/index.ts';
 import { useSkin } from '../lib/cardTheme/skin.ts';
 import { noteCardChange, noteDiaryChange, rememberCard, setActiveTab, useUnread } from '../lib/unread.ts';
@@ -64,8 +65,8 @@ function PlayerHome({ active, theme, base, choice, onChoice }: { active: boolean
   );
 }
 
-type Tab = 'card' | 'rolls' | 'diary';
-const TABS: Tab[] = ['rolls', 'card', 'diary'];
+type Tab = 'card' | 'rolls' | 'diary' | 'map';
+const TABS: Tab[] = ['rolls', 'card', 'diary', 'map'];
 const isTab = (v: string | null | undefined): v is Tab => TABS.includes(v as Tab);
 
 /**
@@ -79,7 +80,8 @@ function PlayerTabs() {
   });
   const [mounted, setMounted] = useState<ReadonlySet<Tab>>(() => new Set([tab]));
   useEffect(() => {
-    const t = window.setTimeout(() => setMounted(new Set(TABS)), 900);
+    // карта (рельеф ~100 КБ и данные) — только когда игрок до неё дойдёт
+    const t = window.setTimeout(() => setMounted((m) => new Set([...m, ...TABS.filter((x) => x !== 'map')])), 900);
     return () => window.clearTimeout(t);
   }, []);
   useEffect(() => {
@@ -183,6 +185,7 @@ function PlayerTabs() {
         )}
         {pane('card', <PlayerHome active={tab === 'card'} theme={theme} base={base} choice={choice} onChoice={pickTheme} />)}
         {pane('diary', <Diary active={tab === 'diary'} />)}
+        {pane('map', <PlayerMap active={tab === 'map'} />)}
       </div>
       <TabBar
         value={tab}
@@ -192,13 +195,14 @@ function PlayerTabs() {
           { value: 'rolls', label: LABELS.rolls, icon: TAB_ICONS.rolls },
           { value: 'card', label: LABELS.card, icon: TAB_ICONS.card, dot: unread.card },
           { value: 'diary', label: LABELS.diary, icon: TAB_ICONS.diary, dot: unread.diary },
+          { value: 'map', label: LABELS.map, icon: TAB_ICONS.map },
         ]}
       />
     </>
   );
 }
 
-const LABELS: Record<Tab, string> = { rolls: 'Броски', card: 'Карточка', diary: 'Дневник' };
+const LABELS: Record<Tab, string> = { rolls: 'Броски', card: 'Карточка', diary: 'Дневник', map: 'Карта' };
 
 /** Лента игрока с фильтром «Все» / «Мои». Выбор запоминается на устройстве. */
 function FeedCard() {
