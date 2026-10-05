@@ -2,14 +2,13 @@ import { useCallback, useEffect, useState } from 'react';
 import type { GmScene, HintCheck } from '@zg/shared';
 import { api } from '../lib/api.ts';
 import { useSocketEvent } from '../lib/socket.ts';
-import { toast } from '../ui/index.ts';
+import { AnimatePresence, m } from 'motion/react';
+import { spring } from '../lib/motion.tsx';
+import { cn } from '../lib/cn.ts';
+import { Badge, Button, buttonVariants, Card, CardTitle, Field, Input, Textarea, toast } from '../ui/index.ts';
 
 export function GmTable() {
-  return (
-    <>
-      <Scenes />
-    </>
-  );
+  return <Scenes />;
 }
 
 type Check = { status: HintCheck['status']; others: HintCheck['others'] };
@@ -39,26 +38,28 @@ function Scenes() {
 
   return (
     <>
-      <section className="card">
-        <div className="row spread">
-          <h2>Сцены для стола</h2>
-          <div className="row">
-            {anyShown && (
-              <button type="button" className="btn btn-ghost" onClick={hide}>
-                Убрать со стола
-              </button>
-            )}
-            <button type="button" className="btn" onClick={create}>
-              Новая
-            </button>
-          </div>
+      <Card>
+        <div className="flex flex-wrap items-center gap-3">
+          <CardTitle className="grow">Сцены для стола</CardTitle>
+          {anyShown && (
+            <Button variant="ghost" onClick={hide}>
+              Убрать со стола
+            </Button>
+          )}
+          <Button variant="primary" onClick={create}>
+            Новая
+          </Button>
         </div>
-        <p className="small muted">На стол уходят только название, текст для стола и картинка. Заметки мастера к сцене остаются здесь.</p>
-        {error && <p className="error">{error}</p>}
-      </section>
-      {list.map((s) => (
-        <SceneEditor key={s.id} s={s} onChange={(n) => setList((l) => l.map((x) => (x.id === n.id ? n : x)))} />
-      ))}
+        <p className="m-0 text-[13.6px] text-muted">На стол уходят только название, текст для стола и картинка. Заметки мастера к сцене остаются здесь.</p>
+        {error && <p className="error m-0">{error}</p>}
+      </Card>
+      <AnimatePresence initial={false}>
+        {list.map((s) => (
+          <m.div key={s.id} layout="position" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={spring.soft}>
+            <SceneEditor s={s} onChange={(n) => setList((l) => l.map((x) => (x.id === n.id ? n : x)))} />
+          </m.div>
+        ))}
+      </AnimatePresence>
     </>
   );
 }
@@ -135,46 +136,45 @@ function SceneEditor({ s, onChange }: { s: GmScene; onChange: (s: GmScene) => vo
   };
 
   return (
-    <section className={`card scene ${s.shown ? 'scene-shown' : ''}`}>
-      {s.shown && <p className="small jev-note">Сейчас на столе</p>}
-      <label className="field">
-        <span>Название</span>
-        <input value={title} maxLength={200} onChange={(e) => setTitle(e.target.value)} />
-      </label>
-      <label className="field">
-        <span>Текст для стола</span>
-        <textarea rows={3} value={textPublic} maxLength={4000} onChange={(e) => setPublic(e.target.value)} />
-      </label>
-      <label className="field">
-        <span>Заметки мастера к сцене (на стол не уходят)</span>
-        <textarea rows={3} value={textGm} maxLength={20000} onChange={(e) => setGm(e.target.value)} />
-      </label>
-      {s.image && (
-        <div className="scene-img">
-          <img src={s.image.url} alt="" width={s.image.w} height={s.image.h} loading="lazy" />
-          <span className="small muted">
-            {s.image.w}×{s.image.h}, {Math.round(s.image.bytes / 1024)} КБ
-          </span>
-        </div>
+    <Card className={cn(s.shown && 'outline-2 outline-offset-[-2px] outline-accent')}>
+      {s.shown && (
+        <Badge tone="ok" className="justify-self-start">
+          Сейчас на столе
+        </Badge>
       )}
-      <label className="btn btn-secondary file-btn">
-        {s.image ? 'Заменить картинку' : 'Добавить картинку'}
-        <input type="file" accept="image/*" className="visually-hidden" onChange={(e) => upload(e.target.files?.[0])} disabled={busy} />
-      </label>
-      <div className="row">
-        {dirty && (
-          <button type="button" className="btn btn-secondary" disabled={busy} onClick={saveText}>
-            Сохранить
-          </button>
-        )}
-        <button type="button" className="btn" disabled={busy} onClick={() => show(false)}>
-          {s.shown ? 'Обновить на столе' : 'Показать на столе'}
-        </button>
-        <button type="button" className="btn btn-ghost" disabled={busy || s.shown} onClick={remove} onBlur={() => setConfirmDel(false)}>
-          {confirmDel ? 'Точно удалить?' : 'Удалить'}
-        </button>
+      <Field label="Название">{(id) => <Input id={id} value={title} maxLength={200} onChange={(e) => setTitle(e.target.value)} className="font-name text-lg" />}</Field>
+      <div className="grid gap-3 lg:grid-cols-2">
+        <Field label="Текст для стола">{(id) => <Textarea id={id} rows={4} value={textPublic} maxLength={4000} onChange={(e) => setPublic(e.target.value)} />}</Field>
+        <Field label="Заметки мастера (на стол не уходят)">{(id) => <Textarea id={id} rows={4} value={textGm} maxLength={20000} onChange={(e) => setGm(e.target.value)} />}</Field>
       </div>
-      {msg && <p className="small muted">{msg}</p>}
+      <div className="flex flex-wrap items-end gap-3">
+        {s.image && (
+          <figure className="m-0 grid gap-1">
+            <img src={s.image.url} alt="" width={s.image.w} height={s.image.h} loading="lazy" className="h-auto max-h-40 w-auto max-w-[280px] rounded-control object-cover" />
+            <figcaption className="text-xs text-muted">
+              {s.image.w}×{s.image.h}, {Math.round(s.image.bytes / 1024)} КБ
+            </figcaption>
+          </figure>
+        )}
+        <label className={cn(buttonVariants({ size: 'sm' }), busy && 'pointer-events-none opacity-50')}>
+          {s.image ? 'Заменить картинку' : 'Добавить картинку'}
+          <input type="file" accept="image/*" className="sr-only" onChange={(e) => upload(e.target.files?.[0])} disabled={busy} />
+        </label>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <Button variant="primary" disabled={busy} onClick={() => show(false)}>
+          {s.shown ? 'Обновить на столе' : 'Показать на столе'}
+        </Button>
+        {dirty && (
+          <Button disabled={busy} onClick={async () => ((await saveText()) ? toast('Сцена сохранена') : setMsg('Не сохранилось'))}>
+            Сохранить
+          </Button>
+        )}
+        <Button variant={confirmDel ? 'danger' : 'ghost'} className="ml-auto" disabled={busy || s.shown} onClick={remove} onBlur={() => setConfirmDel(false)}>
+          {confirmDel ? 'Точно удалить?' : 'Удалить'}
+        </Button>
+      </div>
+      {msg && <p className="m-0 text-[13.6px] text-muted">{msg}</p>}
       {check && (
         <div className="jev-warn">
           {check.status === 'unavailable' ? (
@@ -186,16 +186,14 @@ function SceneEditor({ s, onChange }: { s: GmScene; onChange: (s: GmScene) => vo
               </p>
             ))
           )}
-          <div className="row">
-            <button type="button" className="btn btn-secondary" onClick={() => show(true)}>
-              Показать всё равно
-            </button>
-            <button type="button" className="btn btn-ghost" onClick={() => setCheck(null)}>
+          <div className="flex gap-2">
+            <Button onClick={() => show(true)}>Показать всё равно</Button>
+            <Button variant="ghost" onClick={() => setCheck(null)}>
               Поправить
-            </button>
+            </Button>
           </div>
         </div>
       )}
-    </section>
+    </Card>
   );
 }

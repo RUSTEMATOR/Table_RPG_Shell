@@ -2,14 +2,13 @@ import { useCallback, useEffect, useState } from 'react';
 import type { GmNpc } from '@zg/shared';
 import { api } from '../lib/api.ts';
 import { useConnection, useSocketEvent } from '../lib/socket.ts';
-import { toast } from '../ui/index.ts';
+import { AnimatePresence, m } from 'motion/react';
+import { spring } from '../lib/motion.tsx';
+import { cn } from '../lib/cn.ts';
+import { Badge, Button, buttonVariants, Card, CardTitle, Field, Input, Textarea, toast } from '../ui/index.ts';
 
 export function GmNpcs() {
-  return (
-    <>
-      <Npcs />
-    </>
-  );
+  return <Npcs />;
 }
 
 /** Библиотека противников: заранее заведённые NPC, противник сессии одним нажатием, портрет на стол. */
@@ -42,29 +41,29 @@ function Npcs() {
 
   return (
     <>
-      <section className="card">
-        <div className="row spread">
-          <h2>Противники</h2>
-          <div className="row">
-            {anyShown && (
-              <button type="button" className="btn btn-ghost" onClick={hide}>
-                Убрать портрет со стола
-              </button>
-            )}
-            <button type="button" className="btn" onClick={create}>
-              Новый
-            </button>
-          </div>
+      <Card>
+        <div className="flex flex-wrap items-center gap-3">
+          <CardTitle className="grow">Противники</CardTitle>
+          {anyShown && (
+            <Button variant="ghost" onClick={hide}>
+              Убрать портрет со стола
+            </Button>
+          )}
+          <Button variant="primary" onClick={create}>
+            Новый
+          </Button>
         </div>
-        <p className="small muted">
-          Игроки противников не видят. На стол по кнопке уходят только имя и портрет; сила и заметки остаются здесь.
-        </p>
-        {list?.length === 0 && <p className="muted">Пока никого.</p>}
-        {error && <p className="error">{error}</p>}
-      </section>
-      {list?.map((n) => (
-        <NpcEditor key={n.id} n={n} onChange={(x) => setList((l) => (l ?? []).map((y) => (y.id === x.id ? x : y)))} />
-      ))}
+        <p className="m-0 text-[13.6px] text-muted">Игроки противников не видят. На стол по кнопке уходят только имя и портрет; сила и заметки остаются здесь.</p>
+        {list?.length === 0 && <p className="m-0 text-muted">Пока никого.</p>}
+        {error && <p className="error m-0">{error}</p>}
+      </Card>
+      <AnimatePresence initial={false}>
+        {list?.map((n) => (
+          <m.div key={n.id} layout="position" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={spring.soft}>
+            <NpcEditor n={n} onChange={(x) => setList((l) => (l ?? []).map((y) => (y.id === x.id ? x : y)))} />
+          </m.div>
+        ))}
+      </AnimatePresence>
     </>
   );
 }
@@ -131,55 +130,67 @@ function NpcEditor({ n, onChange }: { n: GmNpc; onChange: (n: GmNpc) => void }) 
   };
 
   return (
-    <section className={`card scene ${n.shown ? 'scene-shown' : ''}`}>
+    <Card className={cn((n.shown || n.opponent) && 'outline-2 outline-offset-[-2px] outline-accent')}>
       {(n.opponent || n.shown) && (
-        <p className="small jev-note">{[n.opponent ? 'Противник сессии' : '', n.shown ? 'Портрет на столе' : ''].filter(Boolean).join(' · ')}</p>
-      )}
-      <div className="grid2">
-        <label className="field">
-          <span>Имя</span>
-          <input value={name} maxLength={120} onChange={(e) => setName(e.target.value)} />
-        </label>
-        <label className="field">
-          <span>Уровень силы{n.band ? ` · ${n.band}` : ''}</span>
-          <input value={power} inputMode="numeric" onChange={(e) => setPower(e.target.value.replace(/\D/g, ''))} placeholder="не задан" />
-        </label>
-      </div>
-      <label className="field">
-        <span>Заметки мастера (никуда не уходят)</span>
-        <textarea rows={3} value={notes} maxLength={20000} onChange={(e) => setNotes(e.target.value)} />
-      </label>
-      {n.image && (
-        <div className="scene-img">
-          <img src={n.image.url} alt="" width={n.image.w} height={n.image.h} loading="lazy" />
-          <span className="small muted">
-            {n.image.w}×{n.image.h}, {Math.round(n.image.bytes / 1024)} КБ
-          </span>
+        <div className="flex gap-2">
+          {n.opponent && <Badge tone="accent">Противник сессии</Badge>}
+          {n.shown && <Badge tone="ok">Портрет на столе</Badge>}
         </div>
       )}
-      <label className="btn btn-secondary file-btn">
-        {n.image ? 'Заменить портрет' : 'Добавить портрет'}
-        <input type="file" accept="image/*" className="visually-hidden" onChange={(e) => upload(e.target.files?.[0])} disabled={busy} />
-      </label>
-      <div className="row">
-        {dirty && (
-          <button type="button" className="btn btn-secondary" disabled={busy} onClick={save}>
-            Сохранить
-          </button>
-        )}
-        {!n.opponent && (
-          <button type="button" className="btn" disabled={busy} onClick={makeOpponent}>
-            Сделать противником
-          </button>
-        )}
-        <button type="button" className="btn btn-secondary" disabled={busy} onClick={() => show(!n.shown)}>
-          {n.shown ? 'Убрать со стола' : 'Показать на столе'}
-        </button>
-        <button type="button" className="btn btn-ghost" disabled={busy} onClick={remove} onBlur={() => setConfirmDel(false)}>
-          {confirmDel ? 'Точно удалить?' : 'Удалить'}
-        </button>
+      <div className="grid items-start gap-4 sm:grid-cols-[auto_minmax(0,1fr)]">
+        <div className="grid justify-items-start gap-2">
+          <div className="grid size-28 place-items-center overflow-hidden rounded-card border border-solid border-border bg-surface-2 text-muted">
+            {n.image ? (
+              <img src={n.image.url} alt="" width={n.image.w} height={n.image.h} loading="lazy" className="size-full object-cover" />
+            ) : (
+              <span className="text-xs">без портрета</span>
+            )}
+          </div>
+          <label className={cn(buttonVariants({ size: 'sm' }), busy && 'pointer-events-none opacity-50')}>
+            {n.image ? 'Заменить' : 'Портрет'}
+            <input type="file" accept="image/*" className="sr-only" onChange={(e) => upload(e.target.files?.[0])} disabled={busy} />
+          </label>
+        </div>
+        <div className="grid gap-3">
+          <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_200px]">
+            <Field label="Имя">{(id) => <Input id={id} value={name} maxLength={120} onChange={(e) => setName(e.target.value)} className="font-name text-lg" />}</Field>
+            <Field label={`Уровень силы${n.band ? ` · ${n.band}` : ''}`}>
+              {(id) => (
+                <Input
+                  id={id}
+                  value={power}
+                  inputMode="numeric"
+                  onChange={(e) => setPower(e.target.value.replace(/\D/g, ''))}
+                  placeholder="не задан"
+                  className="font-mono tabular-nums"
+                />
+              )}
+            </Field>
+          </div>
+          <Field label="Заметки мастера (никуда не уходят)">
+            {(id) => <Textarea id={id} rows={3} value={notes} maxLength={20000} onChange={(e) => setNotes(e.target.value)} />}
+          </Field>
+        </div>
       </div>
-      {msg && <p className="small muted">{msg}</p>}
-    </section>
+      <div className="flex flex-wrap gap-2">
+        {!n.opponent && (
+          <Button variant="primary" disabled={busy} onClick={makeOpponent}>
+            Сделать противником
+          </Button>
+        )}
+        <Button disabled={busy} onClick={() => show(!n.shown)}>
+          {n.shown ? 'Убрать со стола' : 'Показать на столе'}
+        </Button>
+        {dirty && (
+          <Button disabled={busy} onClick={async () => (await save()) && toast('Противник сохранён')}>
+            Сохранить
+          </Button>
+        )}
+        <Button variant={confirmDel ? 'danger' : 'ghost'} className="ml-auto" disabled={busy} onClick={remove} onBlur={() => setConfirmDel(false)}>
+          {confirmDel ? 'Точно удалить?' : 'Удалить'}
+        </Button>
+      </div>
+      {msg && <p className="m-0 text-[13.6px] text-muted">{msg}</p>}
+    </Card>
   );
 }
