@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, Outlet } from 'react-router';
+import { Link, Outlet, useNavigate } from 'react-router';
 import type { GmScene } from '@zg/shared';
 import { RoleScreen } from '../components/Shell.tsx';
-import { GmNav } from '../components/GmNav.tsx';
+import { GM_SECTIONS, GmNav, Icon } from '../components/GmNav.tsx';
+import { CommandPalette } from '../components/CommandPalette.tsx';
+import { MOD, useHotkeys } from '../lib/hotkeys.ts';
 import { Feed } from '../components/Feed.tsx';
 import { OpenRequestsProvider, useOpenRequests } from '../lib/openRequests.tsx';
 import { api } from '../lib/api.ts';
@@ -18,9 +20,25 @@ import { cn } from '../lib/cn.ts';
  */
 export function GmLayout() {
   useWakeLock();
+  const navigate = useNavigate();
+  const [palette, setPalette] = useState(false);
+  useHotkeys({
+    'mod+k': () => setPalette((o) => !o),
+    ...Object.fromEntries(GM_SECTIONS.map((s) => [`g ${s.key}`, () => navigate(s.to, { viewTransition: true })])),
+  });
   return (
     <OpenRequestsProvider>
-      <RoleScreen role="gm" wide actions={<RailButton />}>
+      <RoleScreen
+        role="gm"
+        wide
+        actions={
+          <>
+            <PaletteButton onOpen={() => setPalette(true)} />
+            <RailButton />
+          </>
+        }
+      >
+        <CommandPalette open={palette} onOpenChange={setPalette} />
         <div className="@container/gm">
           <div className="grid items-start gap-5 @3xl/gm:grid-cols-[210px_minmax(0,1fr)] @5xl/gm:grid-cols-[210px_minmax(0,1fr)_minmax(300px,360px)] @7xl/gm:gap-6">
             <GmNav className="sticky top-[76px] hidden @3xl/gm:grid" />
@@ -35,6 +53,23 @@ export function GmLayout() {
         </div>
       </RoleScreen>
     </OpenRequestsProvider>
+  );
+}
+
+/** Кнопка палитры в шапке: на широком экране — как поле поиска, на узком — значок. */
+function PaletteButton({ onOpen }: { onOpen: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      aria-label="Команды и поиск"
+      aria-keyshortcuts="Meta+K Control+K"
+      className="flex min-h-10 cursor-pointer items-center gap-2.5 rounded-control border border-solid border-border bg-surface-2 px-3 font-ui text-[15px] text-muted transition-colors hover:text-text focus-visible:outline-2 focus-visible:outline-accent min-[900px]:w-[300px]"
+    >
+      <Icon d="M11 4a7 7 0 1 0 0 14a7 7 0 0 0 0-14zM21 21l-5-5" />
+      <span className="hidden grow text-left min-[900px]:inline">Команды и поиск</span>
+      <kbd className="hidden rounded border border-solid border-border px-1.5 font-mono text-xs min-[900px]:inline">{MOD}K</kbd>
+    </button>
   );
 }
 

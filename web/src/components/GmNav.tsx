@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router';
 import { useOpenRequests } from '../lib/openRequests.tsx';
 import { cn } from '../lib/cn.ts';
+import { MOD } from '../lib/hotkeys.ts';
 
 /** Разделы мастера: путь, подпись, значок (как в макете), буква для «G + буква». */
 export const GM_SECTIONS = [
@@ -61,6 +62,13 @@ export function GmNav({ variant = 'side', className }: { variant?: 'side' | 'tab
           )}
         </NavLink>
       ))}
+      {side && (
+        <p className="m-0 mt-3 px-3 font-ui text-xs leading-5 text-muted">
+          <kbd className="font-mono">{MOD}K</kbd> — команды
+          <br />
+          <kbd className="font-mono">G</kbd>, затем буква — раздел
+        </p>
+      )}
     </nav>
   );
 }
