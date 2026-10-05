@@ -128,6 +128,7 @@ export function MapView({
   onRegion,
   onNote,
   camera: external,
+  instant,
   className,
   children,
 }: {
@@ -143,6 +144,8 @@ export function MapView({
   onRegion?: (r: ViewRegion) => void;
   onNote?: (n: MapNote) => void;
   camera?: (c: Camera) => void;
+  /** без полётов камеры (стол с «Анимация выкл.») */
+  instant?: boolean;
   className?: string;
   /** кнопки поверх карты (масштаб, легенда) */
   children?: ReactNode;
@@ -151,7 +154,7 @@ export function MapView({
   const art = useArt(data.id);
   const box = useRef<HTMLDivElement>(null);
   const reduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-  const cam = useCamera(box, { reducedMotion: reduced });
+  const cam = useCamera(box, { reducedMotion: reduced || instant });
   // Камеру отдаём наружу один раз: её функции работают через ref и motion-значения и не устаревают.
   useEffect(() => external?.(cam), []); // только при появлении карты
   const p = useMemo(() => `zgm${++seq}`, []);

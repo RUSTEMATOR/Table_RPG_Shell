@@ -15,6 +15,7 @@ import { cn } from '../lib/cn.ts';
 import { capabilities } from '../lib/capabilities.ts';
 import { TvScene } from '../tv/TvScene.tsx';
 import { TvNpc } from '../tv/TvNpc.tsx';
+import { TvMap } from '../tv/TvMap.tsx';
 import { TvBigRoll } from '../tv/TvBigRoll.tsx';
 import { TvParticles } from '../tv/TvParticles.tsx';
 import { TvSigns, type Sign } from '../tv/TvSigns.tsx';
@@ -87,6 +88,7 @@ function TableScreen({ room }: { room: string }) {
       >
         <TvScene scene={scene} motion={!still && !lite} idle={loaded && !state.npc} />
         {!still && !lite && !capabilities.reducedMotion() && <TvParticles onSlow={slow} />}
+        <TvMap show={state.map} still={still} />
 
         <header className="absolute inset-x-[5vw] top-[3vh] flex items-center gap-4 text-[clamp(14px,1.1vw,22px)] opacity-70">
           <span className="grow tracking-[.08em] text-[var(--tv-muted)] uppercase">
@@ -108,7 +110,11 @@ function TableScreen({ room }: { room: string }) {
         <TvNpc npc={state.npc} />
         <TvBigRoll filter={isTableRoll} three={!still && !lite} onFlying={setFlying} />
 
-        <aside aria-label="Последние броски" aria-live="polite" className="absolute top-[11vh] right-[4vw] grid w-[min(22vw,400px)] min-w-[260px] gap-[1.4vh] portrait:top-[8vh] portrait:right-[5vw] portrait:left-[5vw] portrait:w-auto portrait:[&>div:nth-child(n+5)]:hidden">
+        <aside
+          aria-label="Последние броски"
+          aria-live="polite"
+          className="absolute top-[11vh] right-[4vw] grid w-[min(22vw,400px)] min-w-[260px] gap-[1.4vh] portrait:top-[8vh] portrait:right-[5vw] portrait:left-[5vw] portrait:w-auto portrait:[&>div:nth-child(n+5)]:hidden"
+        >
           {rolls.length > 0 && <span className="text-[clamp(14px,1.15vw,24px)] tracking-[.08em] text-[var(--tv-muted)] uppercase">Броски</span>}
           <AnimatePresence initial={false}>
             {rolls.map((r, i) => (
