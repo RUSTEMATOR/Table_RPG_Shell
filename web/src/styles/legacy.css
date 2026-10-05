@@ -70,9 +70,7 @@ a {
 .trait p,
 .pcard-bio,
 .slot > p,
-.diary-item p,
 .diary-gm p,
-.reply,
 .summary-text,
 .notes,
 .gm-layers,
@@ -154,13 +152,6 @@ main {
   width: 100%;
   box-shadow: var(--shadow);
 }
-.narrow {
-  max-width: 400px;
-}
-.card.narrow h1 {
-  text-align: center;
-  margin-bottom: 18px;
-}
 .stack {
   display: flex;
   flex-direction: column;
@@ -235,13 +226,6 @@ textarea:focus {
 .linkish:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
-}
-.code-input {
-  font-size: 1.4rem;
-  letter-spacing: 0.35em;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-  font-weight: 500;
 }
 .check {
   display: flex;
@@ -385,15 +369,6 @@ input[type='range'] {
   .scheme-toggle span {
     display: none;
   }
-}
-
-/* ---- Выбор оформления игроком ---- */
-
-.theme-choice {
-  max-width: 420px;
-}
-html[data-skin] .theme-choice > span {
-  color: var(--ct-hmuted);
 }
 
 /* ---- Индикатор связи ---- */
@@ -908,29 +883,15 @@ html[data-skin] .theme-choice > span {
   padding: 4px 8px;
 }
 
-.diary-gm,
-.diary-item {
+.diary-gm {
   display: grid;
   gap: 8px;
   padding: 14px 0;
   border-bottom: 1px solid var(--border);
 }
-.diary-list .diary-item:last-child {
-  border-bottom: 0;
-}
 .diary-open {
   border-left: 3px solid var(--accent);
   padding-left: 12px;
-}
-.reply {
-  background: var(--surface-2);
-  border-radius: var(--radius-sm);
-  padding: 10px 12px;
-}
-.reply b {
-  font-family: var(--ui);
-  font-weight: 500;
-  font-size: 0.85rem;
 }
 .jev-note {
   color: var(--link);
@@ -1283,13 +1244,4 @@ html[data-skin] .theme-choice > span {
 }
 .sheet-hidden {
   opacity: 0.7;
-}
-.unread-dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  margin-left: 6px;
-  vertical-align: middle;
-  border-radius: 50%;
-  background: var(--accent, #d97757);
 }
