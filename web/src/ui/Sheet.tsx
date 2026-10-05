@@ -4,8 +4,9 @@ import { m } from 'motion/react';
 import { cn } from '../lib/cn.ts';
 import { spring } from '../lib/motion.tsx';
 import { overlayClass } from './Dialog.tsx';
+import { useKeyboardInset } from '../lib/keyboard.ts';
 
-/** Лист снизу (телефон): закрывается свайпом вниз, тапом по затемнению и «Назад». Учитывает безопасную зону. */
+/** Лист снизу (телефон): закрывается свайпом вниз, тапом по затемнению и «Назад». Учитывает безопасную зону и клавиатуру. */
 export function Sheet({
   open,
   onOpenChange,
@@ -21,6 +22,7 @@ export function Sheet({
   children: ReactNode;
   className?: string;
 }) {
+  const kb = useKeyboardInset(open);
   return (
     <D.Root open={open} onOpenChange={onOpenChange}>
       <D.Portal>
@@ -30,6 +32,7 @@ export function Sheet({
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             transition={spring.sheet}
+            style={kb ? { bottom: kb, maxHeight: `calc(100dvh - ${kb}px - 16px)`, paddingBottom: 16 } : undefined}
             drag="y"
             dragConstraints={{ top: 0, bottom: 0 }}
             dragElastic={{ top: 0, bottom: 0.6 }}
