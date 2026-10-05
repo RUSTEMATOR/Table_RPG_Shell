@@ -5,6 +5,7 @@ import { api } from '../lib/api.ts';
 import { homeFor, useMe } from '../lib/me.tsx';
 import { connectSocket, disconnectSocket, useConnection } from '../lib/socket.ts';
 import { ConnectionDot } from './ConnectionDot.tsx';
+import { useSkin } from '../lib/cardTheme/skin.ts';
 
 /** Экран для одной роли: без нужной роли — на вход, данные не запрашиваются. */
 export function RoleScreen({ role, children, wide }: { role: Role; children: ReactNode; wide?: boolean }) {
@@ -12,6 +13,8 @@ export function RoleScreen({ role, children, wide }: { role: Role; children: Rea
   const navigate = useNavigate();
   const conn = useConnection();
   const allowed = me?.member.role === role;
+  // Мастер — в оформлении «Зеленогорье» артефакта; тему игрока ставит экран игрока (по его персонажу), стол не оформляется.
+  useSkin(role === 'gm' && allowed ? 'other' : undefined);
 
   useEffect(() => {
     if (loading) return;

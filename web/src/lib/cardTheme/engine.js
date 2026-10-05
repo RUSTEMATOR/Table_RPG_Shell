@@ -467,4 +467,4 @@ function magicFamily(id,genre){
 /* a theme can later get a real ambience file: {themeId: url}. Empty: every theme uses its synth recipe. */
 
 export {THEMES,isTheme,themeFor,themeName,settingThemeOf,themeFamilies,fontsHref,PRELOADED_FONTS,FALLBACK_COLORS,themeCss,themeAttrs,ornSvg,
-  pictoSvg,PICTO,catChipHtml,mdLite,esc,dot,DEMAND_WORDS,magicFamily};
+  pictoSvg,PICTO,catChipHtml,mdLite,esc,dot,DEMAND_WORDS,magicFamily,isDarkTheme,patPrims,patSpec,primsSvgBody,svgDoc,svgUrl,themeCmap};

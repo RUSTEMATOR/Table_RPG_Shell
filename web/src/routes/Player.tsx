@@ -11,6 +11,8 @@ import { RoleScreen } from '../components/Shell.tsx';
 import { api } from '../lib/api.ts';
 import { useConnection, useSocketEvent } from '../lib/socket.ts';
 import { useWakeLock } from '../lib/wakeLock.ts';
+import { resolveTheme } from '../lib/cardTheme/index.ts';
+import { useSkin } from '../lib/cardTheme/skin.ts';
 import { noteCardChange, noteDiaryChange, rememberCard, setActiveTab, useUnread } from '../lib/unread.ts';
 
 export function Player() {
@@ -73,6 +75,8 @@ function PlayerTabs() {
   useEffect(() => setActiveTab(tab), [tab]);
   useEffect(() => () => setActiveTab(null), []);
   const unread = useUnread();
+  const skin = usePlayerSkin();
+  useSkin(skin);
   // Значки ставятся здесь, а не во вкладках: вкладка, которая не открыта, событий не слушает.
   useSocketEvent('diary:changed', ({ entry }) => noteDiaryChange(entry));
   useSocketEvent('character:updated', ({ character }) => noteCardChange(character));
@@ -131,3 +135,19 @@ function FeedCard() {
     </section>
   );
 }
+
+/** Тема экрана игрока — тема его персонажа. Запоминается на устройстве, чтобы при открытии не мигал обычный вид. */
+function usePlayerSkin(): string {
+  const [skin, setSkin] = useState(() => loadPref('zg:player:skin') ?? 'other');
+  const take = useCallback((c: PlayerCharacter | null) => {
+    const th = c ? resolveTheme(c.look) : 'other';
+    setSkin(th);
+    savePref('zg:player:skin', th);
+  }, []);
+  useEffect(() => {
+    void api<{ character: PlayerCharacter | null }>('GET', '/api/player/character').then((r) => r.ok && take(r.data.character));
+  }, [take]);
+  useSocketEvent('character:updated', ({ character }) => take(character));
+  return skin;
+}
+
