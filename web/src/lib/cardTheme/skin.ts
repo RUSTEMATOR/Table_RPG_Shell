@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import { ensureTheme } from './index.ts';
 import { THEMES, isDarkTheme, isTheme, patPrims, patSpec, primsSvgBody, svgDoc, svgUrl, themeCmap, themeCss } from './engine.js';
 
@@ -51,12 +51,27 @@ function inject(id: string): void {
   done.add(id);
 }
 
+const skinListeners = new Set<() => void>();
+const notify = () => skinListeners.forEach((l) => l());
+
+/** Текущая тема экрана (null — без оформления): шапке нужно знать, есть ли у темы своя палитра. */
+export function useSkinId(): string | null {
+  return useSyncExternalStore(
+    (l) => {
+      skinListeners.add(l);
+      return () => skinListeners.delete(l);
+    },
+    () => document.documentElement.dataset.skin ?? null,
+  );
+}
+
 export function applySkin(id: string | null): void {
   const html = document.documentElement;
   if (!id) {
     delete html.dataset.skin;
     delete html.dataset.frame;
     delete html.dataset.dark;
+    notify();
     return;
   }
   const th = isTheme(id) ? id : 'other';
@@ -70,6 +85,7 @@ export function applySkin(id: string | null): void {
   html.dataset.frame = String(T.frame);
   if (th !== 'other' && isDarkTheme(T)) html.dataset.dark = '1';
   else delete html.dataset.dark;
+  notify();
 }
 
 /** Оформление экрана на время жизни компонента. null — обычный вид, undefined — не трогать (решает другой компонент). */

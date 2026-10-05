@@ -6,6 +6,7 @@ import { homeFor, useMe } from '../lib/me.tsx';
 import { connectSocket, disconnectSocket, useConnection } from '../lib/socket.ts';
 import { ConnectionDot } from './ConnectionDot.tsx';
 import { useSkin } from '../lib/cardTheme/skin.ts';
+import { SchemeToggle } from './SchemeToggle.tsx';
 
 /** Экран для одной роли: без нужной роли — на вход, данные не запрашиваются. */
 export function RoleScreen({ role, children, wide }: { role: Role; children: ReactNode; wide?: boolean }) {
@@ -50,6 +51,7 @@ export function RoleScreen({ role, children, wide }: { role: Role; children: Rea
           </span>
         </div>
         <ConnectionDot />
+        {role !== 'table' && <SchemeToggle />}
         {role !== 'table' && (
           <button className="btn btn-ghost" onClick={logout}>
             Выйти

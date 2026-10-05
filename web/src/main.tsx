@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Route, Routes } from 'react-router';
 import { MeProvider } from './lib/me.tsx';
+import './lib/colorScheme.ts'; // день/ночь до первой отрисовки, без мигания
 import { Gm, GmMembers, GmParty } from './routes/Gm.tsx';
 import { GmNotes } from './routes/GmNotes.tsx';
 import { GmRequests } from './routes/GmRequests.tsx';
