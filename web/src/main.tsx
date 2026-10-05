@@ -2,6 +2,7 @@ import { StrictMode, type ComponentType } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createBrowserRouter, RouterProvider, type RouteObject } from 'react-router';
 import { MeProvider } from './lib/me.tsx';
+import { MotionProvider } from './lib/motion.tsx';
 import './lib/colorScheme.ts'; // день/ночь до первой отрисовки, без мигания
 import './styles/index.css';
 
@@ -32,8 +33,10 @@ const router = createBrowserRouter([
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <MeProvider>
-      <RouterProvider router={router} />
-    </MeProvider>
+    <MotionProvider>
+      <MeProvider>
+        <RouterProvider router={router} />
+      </MeProvider>
+    </MotionProvider>
   </StrictMode>,
 );
