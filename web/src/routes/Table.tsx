@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { AnimatePresence, m, MotionConfig } from 'motion/react';
 import { EFFECT_LABELS, SIGN_TEXT, type OverloadSign, type TableState } from '@zg/shared';
 import { ConnectionDot } from '../components/ConnectionDot.tsx';
 import { api } from '../lib/api.ts';
-import { useFeed, type FeedRoll } from '../lib/feed.ts';
+import { useFeed } from '../lib/feed.ts';
 import { homeFor, useMe } from '../lib/me.tsx';
 import { connectSocket, useConnection, useSocketEvent } from '../lib/socket.ts';
 import { load, save } from '../lib/storage.ts';
@@ -15,29 +15,11 @@ import { cn } from '../lib/cn.ts';
 import { capabilities } from '../lib/capabilities.ts';
 import { TvScene } from '../tv/TvScene.tsx';
 import { TvNpc } from '../tv/TvNpc.tsx';
+import { TvBigRoll } from '../tv/TvBigRoll.tsx';
+import { TV_VARS, effectColor, isTableRoll } from '../tv/palette.ts';
 
 // Общий экран для ТВ и трансляции. Только публичное: сцена (без текста мастера), портрет противника (имя и картинка),
 // публичные броски, признаки перегрузки. Палитра своя и постоянная: экран смотрят издалека, в тёмной комнате.
-
-/** Палитра стола (макет «Стол · бросок»). Не зависит от тем игроков и «Дня/Ночи». */
-const TV_VARS = {
-  '--tv-bg': '#0d0f0d',
-  '--tv-ink': '#f5f7f2',
-  '--tv-soft': '#dfe6dc',
-  '--tv-muted': '#c2cbbf',
-  '--tv-line': '#3a463c',
-  '--tv-card': '#161a16',
-  '--tv-accent': '#6fe0a6',
-  '--tv-ok': '#8ef0b0',
-  '--tv-bad': '#ff8b8b',
-  '--tv-warn': '#f0c46f',
-} as CSSProperties;
-
-const OK = new Set(['crit', 'crit_damage', 'strong', 'success', 'luck']);
-const BAD = new Set(['complication', 'notable_damage', 'fail']);
-export const effectColor = (e: string) =>
-  e === 'scratch' ? 'text-[var(--tv-warn)]' : OK.has(e) ? 'text-[var(--tv-ok)]' : BAD.has(e) ? 'text-[var(--tv-bad)]' : 'text-[var(--tv-muted)]';
-export const isTableRoll = (r: FeedRoll) => !('memberId' in r) && !r.private;
 
 export function Table() {
   const { me, loading } = useMe();
@@ -67,6 +49,7 @@ function TableScreen({ room }: { room: string }) {
   // Облегчённый режим: ?lite=1, слабое устройство или нет WebGL2 (этап 20, шаг 5 добавит замер кадров).
   const [lite] = useState(() => capabilities.lite());
   const rolls = useFeed().filter(isTableRoll).slice(0, 5);
+  const [flying, setFlying] = useState<string | null>(null);
 
   const loadState = useCallback(async () => {
     const r = await api<TableState>('GET', '/api/table/state');
@@ -124,6 +107,7 @@ function TableScreen({ room }: { room: string }) {
         </header>
 
         <TvNpc npc={state.npc} />
+        <TvBigRoll filter={isTableRoll} three={!still && !lite} onFlying={setFlying} />
 
         <aside aria-label="Последние броски" aria-live="polite" className="absolute top-[11vh] right-[4vw] grid w-[min(22vw,400px)] min-w-[260px] gap-[1.4vh]">
           {rolls.length > 0 && <span className="text-[clamp(14px,1.15vw,24px)] tracking-[.08em] text-[var(--tv-muted)] uppercase">Броски</span>}
@@ -141,12 +125,23 @@ function TableScreen({ room }: { room: string }) {
                   i === 0 ? 'border-2 border-solid border-[var(--tv-accent)]' : 'border border-solid border-[var(--tv-line)]',
                 )}
               >
-                <b className="text-center font-['IBM_Plex_Mono',monospace] text-[clamp(32px,2.7vw,56px)] leading-none font-medium tabular-nums">{r.value}</b>
+                {flying === r.id ? (
+                  // число ещё катится на большом кубике: место держим, само число прилетит с плашки
+                  <b aria-hidden="true" className="invisible text-center font-['IBM_Plex_Mono',monospace] text-[clamp(32px,2.7vw,56px)] leading-none font-medium">
+                    {r.value}
+                  </b>
+                ) : (
+                  <m.b layoutId={`tv-roll-${r.id}`} className="text-center font-['IBM_Plex_Mono',monospace] text-[clamp(32px,2.7vw,56px)] leading-none font-medium tabular-nums">
+                    {r.value}
+                  </m.b>
+                )}
                 <div className="grid min-w-0 gap-0.5">
                   <span className="truncate text-[clamp(16px,1.25vw,26px)]">
                     {r.character ?? r.who} <span className="text-[var(--tv-muted)]">· {r.kind}</span>
                   </span>
-                  <span className={cn('text-[clamp(15px,1.15vw,24px)] font-semibold', effectColor(r.effect))}>{EFFECT_LABELS[r.effect]}</span>
+                  <span className={cn('text-[clamp(15px,1.15vw,24px)] font-semibold', flying === r.id ? 'text-[var(--tv-muted)]' : effectColor(r.effect))}>
+                    {flying === r.id ? 'бросает…' : EFFECT_LABELS[r.effect]}
+                  </span>
                 </div>
               </m.div>
             ))}
