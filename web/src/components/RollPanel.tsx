@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState, type PointerEvent } from 'react';
 import { EFFECT_LABELS } from '@zg/shared';
-import { addOwn, type FeedRoll } from '../lib/feed.ts';
+import { addOwn, holdOwn, type FeedRoll } from '../lib/feed.ts';
+import { useMe } from '../lib/me.tsx';
 import { requestRoll } from '../lib/socket.ts';
 import { capabilities, fullEffects } from '../lib/capabilities.ts';
 import { haptics } from '../lib/haptics.ts';
@@ -53,6 +54,13 @@ export function RollPanel({ role }: { role: 'gm' | 'player' }) {
   const [spin, setSpin] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const landed = useRef<{ id: string; roll: FeedRoll } | null>(null);
+  const { me } = useMe();
+  const release = useRef<(() => void) | null>(null);
+  const unhold = () => {
+    release.current?.();
+    release.current = null;
+  };
+  useEffect(() => unhold, []);
   const spinTimer = useRef<number | null>(null);
 
   useEffect(() => {
@@ -62,6 +70,7 @@ export function RollPanel({ role }: { role: 'gm' | 'player' }) {
 
   const finish = (roll: FeedRoll) => {
     addOwn(roll);
+    unhold();
     setShown(roll);
     setPending(null);
     setLabel('');
@@ -75,6 +84,8 @@ export function RollPanel({ role }: { role: 'gm' | 'player' }) {
     setPending({ id, kind: k });
     setError(null);
     setShown(null);
+    unhold();
+    if (me) release.current = holdOwn(me.member.name, k);
     const sides = k === 'd10' ? 10 : 20;
     const physics = three ? simulateThrow(k, angle, power) : Promise.resolve(null);
     if (three) setStage({ key: id, kind: k, traj: null, value: null });
@@ -85,6 +96,7 @@ export function RollPanel({ role }: { role: 'gm' | 'player' }) {
     const started = Date.now();
     const res = await requestRoll({ clientRequestId: id, kind: k, visibility, label: label.trim() });
     if (!res.ok) {
+      unhold();
       if (spinTimer.current) window.clearInterval(spinTimer.current);
       setSpin(null);
       if (three) setStage((s) => ({ ...s, key: '' }));

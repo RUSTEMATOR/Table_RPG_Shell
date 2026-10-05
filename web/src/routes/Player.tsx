@@ -16,6 +16,7 @@ import { resolveTheme, themeVariant } from '../lib/cardTheme/index.ts';
 import { useScheme } from '../lib/colorScheme.ts';
 import { ThemeChoice } from '../components/ThemeChoice.tsx';
 import { TAB_ICONS, TabBar } from '../components/TabBar.tsx';
+import { Card, CardTitle, Segmented } from '../ui/index.ts';
 import { useSkin } from '../lib/cardTheme/skin.ts';
 import { noteCardChange, noteDiaryChange, rememberCard, setActiveTab, useUnread } from '../lib/unread.ts';
 
@@ -211,20 +212,21 @@ function FeedCard() {
   const name = me?.member.name;
   const only = mine ? (r: FeedRoll) => isOwnRoll(r.id) || r.who === name : undefined;
   return (
-    <section className="card">
-      <div className="row spread">
-        <h2>Лента</h2>
-        <div className="row">
-          <button type="button" className={`tab ${!mine ? 'tab-on' : ''}`} onClick={() => pick(false)}>
-            Все
-          </button>
-          <button type="button" className={`tab ${mine ? 'tab-on' : ''}`} onClick={() => pick(true)}>
-            Мои
-          </button>
-        </div>
+    <Card>
+      <div className="flex items-center justify-between gap-3">
+        <CardTitle>Лента</CardTitle>
+        <Segmented
+          label="Чьи броски"
+          value={mine ? 'mine' : 'all'}
+          onChange={(v) => pick(v === 'mine')}
+          options={[
+            { value: 'all', label: 'Все' },
+            { value: 'mine', label: 'Мои' },
+          ]}
+        />
       </div>
       <Feed only={only} />
-    </section>
+    </Card>
   );
 }
 

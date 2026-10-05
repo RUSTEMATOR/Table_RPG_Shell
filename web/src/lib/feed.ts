@@ -19,8 +19,33 @@ export function onLiveRoll(cb: (r: FeedRoll) => void): () => void {
   return () => live.delete(cb);
 }
 
+// Свой бросок не показывается в ленте, пока кубик не лёг: событие ленты приходит раньше посадки.
+// Придерживаются только новые броски того, кто бросает с этого устройства, тем же кубиком.
+let hold: { who: string; kind: string } | null = null;
+const held = new Set<string>();
+
+/** Придержать свой следующий бросок в ленте. Вернёт «отпустить»; сам отпускается через 4 с. */
+export function holdOwn(who: string, kind: string): () => void {
+  const h = { who, kind };
+  hold = h;
+  const release = () => {
+    window.clearTimeout(timer);
+    if (hold !== h) return;
+    hold = null;
+    if (held.size) {
+      held.clear();
+      emit();
+    }
+  };
+  const timer = window.setTimeout(release, 4000);
+  return release;
+}
+
 function emit() {
-  snapshot = [...rolls.values()].sort((a, b) => b.at - a.at).slice(0, 200);
+  snapshot = [...rolls.values()]
+    .filter((r) => !held.has(r.id))
+    .sort((a, b) => b.at - a.at)
+    .slice(0, 200);
   listeners.forEach((l) => l());
 }
 
@@ -41,6 +66,7 @@ export function ingest(ev: FeedEvent): 'ok' | 'gap' | 'dup' {
   if (ev.seq <= last) return 'dup';
   if (ev.seq > last + 1) return 'gap';
   const fresh = !rolls.has(ev.roll.id);
+  if (fresh && hold && ev.roll.who === hold.who && ev.roll.kind === hold.kind) held.add(ev.roll.id);
   upsert(ev.roll);
   lastSeq[ev.aud] = ev.seq;
   emit();
@@ -73,6 +99,7 @@ export const isOwnRoll = (id: string) => own.has(id);
 /** Ответ на свой бросок приходит раньше события ленты — показываем сразу. */
 export function addOwn(r: FeedRoll) {
   own.add(r.id);
+  held.delete(r.id);
   upsert(r);
   emit();
 }
