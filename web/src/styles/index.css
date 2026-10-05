@@ -61,3 +61,14 @@
 
 /* Вариант для экрана стола (всегда тёмный, крупный). */
 @custom-variant tv (&:where(.tv, .tv *));
+
+/* Переходы между экранами (View Transitions API, ссылки с viewTransition). Шапка остаётся на месте,
+   содержимое плавно сменяется. Где API нет (iOS 17), переход просто мгновенный. */
+.topbar { view-transition-name: topbar; }
+::view-transition-old(root) { animation: 160ms ease-in both zg-vt-out; }
+::view-transition-new(root) { animation: 220ms cubic-bezier(.2, .8, .2, 1) both zg-vt-in; }
+@keyframes zg-vt-out { to { opacity: 0; transform: translateY(-4px); } }
+@keyframes zg-vt-in { from { opacity: 0; transform: translateY(6px); } }
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+}

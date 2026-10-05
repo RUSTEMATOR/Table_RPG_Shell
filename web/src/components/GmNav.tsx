@@ -16,7 +16,7 @@ export function GmNav() {
   return (
     <nav className="gm-nav" aria-label="Разделы мастера">
       {ITEMS.map(([to, label]) => (
-        <NavLink key={to} to={to} end className={({ isActive }) => `tab ${isActive ? 'tab-on' : ''}`}>
+        <NavLink key={to} to={to} end viewTransition className={({ isActive }) => `tab ${isActive ? 'tab-on' : ''}`}>
           {label}
           {to === '/gm/requests' && open > 0 && <span className="nav-count"> · {open}</span>}
         </NavLink>

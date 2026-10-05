@@ -1,46 +1,39 @@
-import { StrictMode } from 'react';
+import { StrictMode, type ComponentType } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, Route, Routes } from 'react-router';
+import { createBrowserRouter, RouterProvider, type RouteObject } from 'react-router';
 import { MeProvider } from './lib/me.tsx';
 import './lib/colorScheme.ts'; // день/ночь до первой отрисовки, без мигания
-import { Gm, GmMembers, GmParty } from './routes/Gm.tsx';
-import { GmNotes } from './routes/GmNotes.tsx';
-import { GmRequests } from './routes/GmRequests.tsx';
-import { GmNpcs } from './routes/GmNpcs.tsx';
-import { GmTable } from './routes/GmTable.tsx';
-import { GmCharacter } from './routes/GmCharacter.tsx';
-import { GmJev } from './routes/GmJev.tsx';
-import { GmNew } from './routes/GmNew.tsx';
-import { Home } from './routes/Home.tsx';
-import { Join } from './routes/Join.tsx';
-import { Login } from './routes/Login.tsx';
-import { Player } from './routes/Player.tsx';
-import { Table } from './routes/Table.tsx';
 import './styles/index.css';
+
+// Экраны грузятся отдельными чанками по ролям: игрок не скачивает код мастера и стола, и наоборот.
+function lazy(load: () => Promise<Record<string, unknown>>, name: string): RouteObject['lazy'] {
+  return async () => ({ Component: (await load())[name] as ComponentType });
+}
+const gm = () => import('./routes/Gm.tsx');
+
+const router = createBrowserRouter([
+  { path: '/', lazy: lazy(() => import('./routes/Home.tsx'), 'Home') },
+  { path: '/login', lazy: lazy(() => import('./routes/Login.tsx'), 'Login') },
+  { path: '/join/:token', lazy: lazy(() => import('./routes/Join.tsx'), 'Join') },
+  { path: '/player', lazy: lazy(() => import('./routes/Player.tsx'), 'Player') },
+  { path: '/gm', lazy: lazy(gm, 'Gm') },
+  { path: '/gm/party', lazy: lazy(gm, 'GmParty') },
+  { path: '/gm/members', lazy: lazy(gm, 'GmMembers') },
+  { path: '/gm/requests', lazy: lazy(() => import('./routes/GmRequests.tsx'), 'GmRequests') },
+  { path: '/gm/notes', lazy: lazy(() => import('./routes/GmNotes.tsx'), 'GmNotes') },
+  { path: '/gm/table', lazy: lazy(() => import('./routes/GmTable.tsx'), 'GmTable') },
+  { path: '/gm/npcs', lazy: lazy(() => import('./routes/GmNpcs.tsx'), 'GmNpcs') },
+  { path: '/gm/jev', lazy: lazy(() => import('./routes/GmJev.tsx'), 'GmJev') },
+  { path: '/gm/new', lazy: lazy(() => import('./routes/GmNew.tsx'), 'GmNew') },
+  { path: '/gm/char/:id', lazy: lazy(() => import('./routes/GmCharacter.tsx'), 'GmCharacter') },
+  { path: '/table', lazy: lazy(() => import('./routes/Table.tsx'), 'Table') },
+  { path: '*', lazy: lazy(() => import('./routes/Home.tsx'), 'Home') },
+]);
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <MeProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/join/:token" element={<Join />} />
-          <Route path="/player" element={<Player />} />
-          <Route path="/gm" element={<Gm />} />
-          <Route path="/gm/party" element={<GmParty />} />
-          <Route path="/gm/requests" element={<GmRequests />} />
-          <Route path="/gm/notes" element={<GmNotes />} />
-          <Route path="/gm/table" element={<GmTable />} />
-          <Route path="/gm/npcs" element={<GmNpcs />} />
-          <Route path="/gm/members" element={<GmMembers />} />
-          <Route path="/gm/jev" element={<GmJev />} />
-          <Route path="/gm/new" element={<GmNew />} />
-          <Route path="/gm/char/:id" element={<GmCharacter />} />
-          <Route path="/table" element={<Table />} />
-          <Route path="*" element={<Home />} />
-        </Routes>
-      </BrowserRouter>
+      <RouterProvider router={router} />
     </MeProvider>
   </StrictMode>,
 );

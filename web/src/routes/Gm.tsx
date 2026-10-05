@@ -169,7 +169,7 @@ export function GmMembers() {
 
       <section className="card">
         <h2>Инструменты</h2>
-        <Link className="btn btn-secondary" to="/gm/jev">
+        <Link viewTransition className="btn btn-secondary" to="/gm/jev">
           Песочница Jev
         </Link>
       </section>
@@ -192,7 +192,7 @@ function Characters() {
     <section className="card">
       <div className="row spread">
         <h2>Персонажи</h2>
-        <Link className="btn" to="/gm/new">
+        <Link viewTransition className="btn" to="/gm/new">
           Новый
         </Link>
       </div>
@@ -201,7 +201,7 @@ function Characters() {
       <ul className="list">
         {list?.map((c) => (
           <li key={c.id}>
-            <Link to={`/gm/char/${c.id}`} className="list-row list-link">
+            <Link viewTransition to={`/gm/char/${c.id}`} className="list-row list-link">
               <div>
                 <strong>{c.name}</strong>
                 <div className="small muted">

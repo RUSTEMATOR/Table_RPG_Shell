@@ -158,7 +158,7 @@ export function GmJev() {
       <section className="card">
         <div className="row spread">
           <h2>Песочница Jev</h2>
-          <Link to="/gm/members" className="btn btn-ghost">
+          <Link viewTransition to="/gm/members" className="btn btn-ghost">
             Назад
           </Link>
         </div>
