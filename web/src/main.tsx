@@ -16,9 +16,7 @@ import { Join } from './routes/Join.tsx';
 import { Login } from './routes/Login.tsx';
 import { Player } from './routes/Player.tsx';
 import { Table } from './routes/Table.tsx';
-import './styles.css';
-import './styles/card-theme.css';
-import './styles/app-skin.css';
+import './styles/index.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

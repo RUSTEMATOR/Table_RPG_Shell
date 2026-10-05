@@ -1,102 +1,4 @@
-/* Зеленогорье — оформление в стиле Claude (Anthropic brand):
-   кремовый фон, почти чёрный текст, оранжевый акцент, Poppins для интерфейса и заголовков, Lora для чтения.
-   Все цвета — токены; тёмная тема по системной настройке или data-theme="dark". Общий экран (/table) всегда тёмный. */
-
-:root {
-  --bg: #faf9f5;
-  --surface: #ffffff;
-  --surface-2: #f0eee6;
-  --surface-3: #e8e6dc;
-  --text: #141413;
-  --muted: #6b6a64;
-  --faint: #b0aea5;
-  --border: #e8e6dc;
-  --border-strong: #d6d3c6;
-  --accent: #d97757;
-  --accent-soft: #f6e5dc;
-  --link: #b5532d;
-  --primary: #141413;
-  --primary-text: #faf9f5;
-  --ok: #5d6e46;
-  --ok-soft: #e7ecdc;
-  --warn: #9a6f12;
-  --warn-soft: #f6ecd2;
-  --danger: #b0413a;
-  --danger-soft: #f6dfdc;
-  --tier-cursed: #bf4d43;
-  --tier-common: #87867f;
-  --tier-dual: #4f86ba;
-  --tier-legend: #8a68c2;
-  --tier-fixed: #788c5d;
-  --shadow: 0 1px 2px rgba(20, 20, 19, 0.04), 0 4px 16px rgba(20, 20, 19, 0.05);
-  --radius: 14px;
-  --radius-sm: 10px;
-  --ui: 'Poppins', 'Helvetica Neue', Arial, sans-serif;
-  --read: 'Lora', Georgia, 'Times New Roman', serif;
-  color-scheme: light;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    --bg: #262624;
-    --surface: #30302e;
-    --surface-2: #3a3a37;
-    --surface-3: #45443f;
-    --text: #faf9f5;
-    --muted: #b0aea5;
-    --faint: #7d7b74;
-    --border: #45443f;
-    --border-strong: #5a5953;
-    --accent: #d97757;
-    --accent-soft: #4a3329;
-    --link: #eb9a7b;
-    --primary: #faf9f5;
-    --primary-text: #141413;
-    --ok: #a9bd8b;
-    --ok-soft: #36402b;
-    --warn: #e0b45a;
-    --warn-soft: #483c22;
-    --danger: #ec8f84;
-    --danger-soft: #4d2c29;
-    --tier-cursed: #e3796e;
-    --tier-common: #b0aea5;
-    --tier-dual: #83b3e0;
-    --tier-legend: #b89cf0;
-    --tier-fixed: #a9bd8b;
-    --shadow: none;
-    color-scheme: dark;
-  }
-}
-
-:root[data-theme='dark'] {
-  --bg: #262624;
-  --surface: #30302e;
-  --surface-2: #3a3a37;
-  --surface-3: #45443f;
-  --text: #faf9f5;
-  --muted: #b0aea5;
-  --faint: #7d7b74;
-  --border: #45443f;
-  --border-strong: #5a5953;
-  --accent: #d97757;
-  --accent-soft: #4a3329;
-  --link: #eb9a7b;
-  --primary: #faf9f5;
-  --primary-text: #141413;
-  --ok: #a9bd8b;
-  --ok-soft: #36402b;
-  --warn: #e0b45a;
-  --warn-soft: #483c22;
-  --danger: #ec8f84;
-  --danger-soft: #4d2c29;
-  --tier-cursed: #e3796e;
-  --tier-common: #b0aea5;
-  --tier-dual: #83b3e0;
-  --tier-legend: #b89cf0;
-  --tier-fixed: #a9bd8b;
-  --shadow: none;
-  color-scheme: dark;
-}
+/* Стили приложения до редизайна (этап 16: бывший styles.css без токенов). Удаляются по мере перевода экранов, целиком — на этапе 22. */
 
 /* ---- Основа ---- */
 
@@ -175,7 +77,7 @@ a {
 .notes,
 .gm-layers,
 .steps,
-.table-text {
+.tv-text {
   font-family: var(--read);
 }
 
@@ -1132,7 +1034,7 @@ html[data-skin] .theme-choice > span {
 
 /* ---- Общий экран: всегда тёмный, под ТВ ---- */
 
-.table {
+.tv {
   position: fixed;
   inset: 0;
   background: #1a1a18;
@@ -1140,14 +1042,14 @@ html[data-skin] .theme-choice > span {
   overflow: hidden;
   font-family: var(--ui);
 }
-.table-art {
+.tv-art {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
-.table-overlay {
+.tv-overlay {
   position: absolute;
   inset: 0;
   display: grid;
@@ -1157,17 +1059,17 @@ html[data-skin] .theme-choice > span {
     linear-gradient(to top, rgba(20, 20, 19, 0.88), rgba(20, 20, 19, 0) 55%),
     linear-gradient(to bottom, rgba(20, 20, 19, 0.55), rgba(20, 20, 19, 0) 22%);
 }
-.table-top {
+.tv-top {
   display: flex;
   align-items: center;
   gap: 14px;
 }
-.table-room {
+.tv-room {
   flex: 1;
   font-weight: 600;
   letter-spacing: 0.02em;
 }
-.table-room::before {
+.tv-room::before {
   content: '';
   display: inline-block;
   width: 10px;
@@ -1177,31 +1079,31 @@ html[data-skin] .theme-choice > span {
   background: #d97757;
   transform: rotate(45deg) translateY(-1px);
 }
-.table .conn {
+.tv .conn {
   color: #d6d3c6;
 }
-.table-btn {
+.tv-btn {
   color: #faf9f5;
   border-color: rgba(250, 249, 245, 0.3);
   min-height: 34px;
   padding: 4px 12px;
   font-size: 0.78rem;
 }
-.table-btn:hover:not(:disabled) {
+.tv-btn:hover:not(:disabled) {
   background: rgba(250, 249, 245, 0.1);
 }
-.table-main {
+.tv-main {
   display: grid;
   grid-template-columns: 1fr minmax(260px, 30%);
   gap: clamp(20px, 4vw, 64px);
   align-items: end;
 }
 @media (max-aspect-ratio: 1/1) {
-  .table-main {
+  .tv-main {
     grid-template-columns: 1fr;
   }
 }
-.table-title {
+.tv-title {
   font-size: clamp(2.2rem, 5vw, 4.6rem);
   font-weight: 600;
   letter-spacing: -0.02em;
@@ -1209,7 +1111,7 @@ html[data-skin] .theme-choice > span {
   margin: 0 0 14px;
   text-shadow: 0 2px 18px rgba(0, 0, 0, 0.45);
 }
-.table-text {
+.tv-text {
   font-size: clamp(1.15rem, 2.2vw, 2rem);
   line-height: 1.4;
   margin: 0;
@@ -1217,11 +1119,11 @@ html[data-skin] .theme-choice > span {
   white-space: pre-wrap;
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
 }
-.table-rolls {
+.tv-rolls {
   display: grid;
   gap: 10px;
 }
-.table-roll {
+.tv-roll {
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 16px;
@@ -1233,7 +1135,7 @@ html[data-skin] .theme-choice > span {
   border-radius: 16px;
   padding: 12px 16px;
 }
-.table-roll-value {
+.tv-roll-value {
   font-size: clamp(2rem, 4vw, 3.4rem);
   font-weight: 600;
   min-width: 2ch;
@@ -1241,28 +1143,28 @@ html[data-skin] .theme-choice > span {
   font-variant-numeric: tabular-nums;
   color: #d97757;
 }
-.table-roll-who {
+.tv-roll-who {
   font-size: clamp(0.9rem, 1.4vw, 1.15rem);
   color: #d6d3c6;
 }
-.table-roll-effect {
+.tv-roll-effect {
   font-size: clamp(1.1rem, 2vw, 1.7rem);
   font-weight: 600;
 }
-.table .effect-crit,
-.table .effect-crit_damage,
-.table .effect-strong {
+.tv .effect-crit,
+.tv .effect-crit_damage,
+.tv .effect-strong {
   color: #b9cf98;
 }
-.table .effect-complication,
-.table .effect-notable_damage {
+.tv .effect-complication,
+.tv .effect-notable_damage {
   color: #f09a8f;
 }
-.table .effect-scratch {
+.tv .effect-scratch {
   color: #f0c45a;
 }
 @media (prefers-reduced-motion: no-preference) {
-  .table:not(.table-still) .table-roll-new {
+  .tv:not(.tv-still) .tv-roll-new {
     animation: rollin 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
   @keyframes rollin {
@@ -1276,14 +1178,14 @@ html[data-skin] .theme-choice > span {
     }
   }
 }
-.table-npc {
+.tv-npc {
   margin: 0 0 18px;
   display: inline-flex;
   flex-direction: column;
   gap: 8px;
   max-width: min(420px, 60vw);
 }
-.table-npc img {
+.tv-npc img {
   display: block;
   width: 100%;
   height: auto;
@@ -1293,24 +1195,24 @@ html[data-skin] .theme-choice > span {
   border: 2px solid rgba(250, 249, 245, 0.25);
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
 }
-.table-npc figcaption {
+.tv-npc figcaption {
   font-size: clamp(1.4rem, 3vw, 2.6rem);
   font-weight: 600;
   text-shadow: 0 2px 18px rgba(0, 0, 0, 0.45);
 }
 @media (prefers-reduced-motion: no-preference) {
-  .table:not(.table-still) .table-npc {
+  .tv:not(.tv-still) .tv-npc {
     animation: rollin 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 }
-.table-signs {
+.tv-signs {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
   justify-content: center;
   margin-top: 14px;
 }
-.table-sign {
+.tv-sign {
   font-size: clamp(1.1rem, 2.4vw, 2rem);
   font-weight: 600;
   padding: 10px 22px;

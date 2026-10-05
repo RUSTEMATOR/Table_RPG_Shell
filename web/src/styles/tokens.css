@@ -1,0 +1,99 @@
+/* Токены приложения (этап 16: вынесены из styles.css без изменений). Зеленогорье — оформление в стиле Claude (Anthropic brand):
+   кремовый фон, почти чёрный текст, оранжевый акцент, Poppins для интерфейса и заголовков, Lora для чтения.
+   Все цвета — токены; тёмная тема по системной настройке или data-theme="dark". Общий экран (/table) всегда тёмный. */
+
+:root {
+  --bg: #faf9f5;
+  --surface: #ffffff;
+  --surface-2: #f0eee6;
+  --surface-3: #e8e6dc;
+  --text: #141413;
+  --muted: #6b6a64;
+  --faint: #b0aea5;
+  --border: #e8e6dc;
+  --border-strong: #d6d3c6;
+  --accent: #d97757;
+  --accent-soft: #f6e5dc;
+  --link: #b5532d;
+  --primary: #141413;
+  --primary-text: #faf9f5;
+  --ok: #5d6e46;
+  --ok-soft: #e7ecdc;
+  --warn: #9a6f12;
+  --warn-soft: #f6ecd2;
+  --danger: #b0413a;
+  --danger-soft: #f6dfdc;
+  --tier-cursed: #bf4d43;
+  --tier-common: #87867f;
+  --tier-dual: #4f86ba;
+  --tier-legend: #8a68c2;
+  --tier-fixed: #788c5d;
+  --shadow: 0 1px 2px rgba(20, 20, 19, 0.04), 0 4px 16px rgba(20, 20, 19, 0.05);
+  --radius: 14px;
+  --radius-sm: 10px;
+  --ui: 'Poppins', 'Helvetica Neue', Arial, sans-serif;
+  --read: 'Lora', Georgia, 'Times New Roman', serif;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #262624;
+    --surface: #30302e;
+    --surface-2: #3a3a37;
+    --surface-3: #45443f;
+    --text: #faf9f5;
+    --muted: #b0aea5;
+    --faint: #7d7b74;
+    --border: #45443f;
+    --border-strong: #5a5953;
+    --accent: #d97757;
+    --accent-soft: #4a3329;
+    --link: #eb9a7b;
+    --primary: #faf9f5;
+    --primary-text: #141413;
+    --ok: #a9bd8b;
+    --ok-soft: #36402b;
+    --warn: #e0b45a;
+    --warn-soft: #483c22;
+    --danger: #ec8f84;
+    --danger-soft: #4d2c29;
+    --tier-cursed: #e3796e;
+    --tier-common: #b0aea5;
+    --tier-dual: #83b3e0;
+    --tier-legend: #b89cf0;
+    --tier-fixed: #a9bd8b;
+    --shadow: none;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme='dark'] {
+  --bg: #262624;
+  --surface: #30302e;
+  --surface-2: #3a3a37;
+  --surface-3: #45443f;
+  --text: #faf9f5;
+  --muted: #b0aea5;
+  --faint: #7d7b74;
+  --border: #45443f;
+  --border-strong: #5a5953;
+  --accent: #d97757;
+  --accent-soft: #4a3329;
+  --link: #eb9a7b;
+  --primary: #faf9f5;
+  --primary-text: #141413;
+  --ok: #a9bd8b;
+  --ok-soft: #36402b;
+  --warn: #e0b45a;
+  --warn-soft: #483c22;
+  --danger: #ec8f84;
+  --danger-soft: #4d2c29;
+  --tier-cursed: #e3796e;
+  --tier-common: #b0aea5;
+  --tier-dual: #83b3e0;
+  --tier-legend: #b89cf0;
+  --tier-fixed: #a9bd8b;
+  --shadow: none;
+  color-scheme: dark;
+}

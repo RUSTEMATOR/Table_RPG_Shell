@@ -66,51 +66,51 @@ function TableScreen({ room }: { room: string }) {
 
   const scene = state.scene;
   return (
-    <div className={`table ${still ? 'table-still' : ''}`}>
-      {scene?.image && <img className="table-art" src={scene.image.url} alt="" width={scene.image.w} height={scene.image.h} />}
-      <div className="table-overlay">
-        <header className="table-top">
-          <span className="table-room">{room}</span>
+    <div className={`tv ${still ? 'tv-still' : ''}`}>
+      {scene?.image && <img className="tv-art" src={scene.image.url} alt="" width={scene.image.w} height={scene.image.h} />}
+      <div className="tv-overlay">
+        <header className="tv-top">
+          <span className="tv-room">{room}</span>
           <ConnectionDot />
-          <button type="button" className="btn btn-ghost table-btn" onClick={toggleStill} aria-pressed={still}>
+          <button type="button" className="btn btn-ghost tv-btn" onClick={toggleStill} aria-pressed={still}>
             {still ? 'Анимация выкл.' : 'Анимация вкл.'}
           </button>
         </header>
-        <main className="table-main">
-          <section className="table-scene">
+        <main className="tv-main">
+          <section className="tv-scene">
             {state.npc && (
-              <figure className="table-npc">
+              <figure className="tv-npc">
                 {state.npc.image && <img src={state.npc.image.url} alt="" width={state.npc.image.w} height={state.npc.image.h} />}
                 <figcaption>{state.npc.name}</figcaption>
               </figure>
             )}
             {scene ? (
               <>
-                {scene.title && <h1 className="table-title">{scene.title}</h1>}
-                {scene.text && <p className="table-text">{scene.text}</p>}
+                {scene.title && <h1 className="tv-title">{scene.title}</h1>}
+                {scene.text && <p className="tv-text">{scene.text}</p>}
               </>
             ) : (
-              !state.npc && <p className="table-title muted">Зеленогорье</p>
+              !state.npc && <p className="tv-title muted">Зеленогорье</p>
             )}
           </section>
-          <aside className="table-rolls" aria-live="polite">
+          <aside className="tv-rolls" aria-live="polite">
             {rolls.map((r, i) => (
-              <div key={r.id} className={`table-roll ${i === 0 ? 'table-roll-new' : ''}`}>
-                <span className="table-roll-value">{r.value}</span>
+              <div key={r.id} className={`tv-roll ${i === 0 ? 'tv-roll-new' : ''}`}>
+                <span className="tv-roll-value">{r.value}</span>
                 <div>
-                  <div className="table-roll-who">
+                  <div className="tv-roll-who">
                     {r.character ?? r.who} · {r.kind}
                   </div>
-                  <div className={`table-roll-effect effect-${r.effect}`}>{EFFECT_LABELS[r.effect]}</div>
+                  <div className={`tv-roll-effect effect-${r.effect}`}>{EFFECT_LABELS[r.effect]}</div>
                 </div>
               </div>
             ))}
           </aside>
         </main>
         {signs.length > 0 && (
-          <div className="table-signs">
+          <div className="tv-signs">
             {signs.map((s) => (
-              <div key={s.at} className={`table-sign sign-${s.sign}`}>
+              <div key={s.at} className={`tv-sign sign-${s.sign}`}>
                 {s.character}: {SIGN_TEXT[s.sign]}
               </div>
             ))}

@@ -1,0 +1,63 @@
+/* Точка входа стилей (этап 16).
+   Слои: theme (Tailwind) → base → legacy (старые стили приложения) → components → utilities (Tailwind).
+   Без слоя — токены и движок тем из артефакта: они должны оставаться сильнее утилит,
+   иначе тема персонажа перестанет перекрашивать интерфейс. Preflight Tailwind выключен до этапа 22. */
+
+@layer theme, base, legacy, components, utilities;
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "./legacy.css" layer(legacy);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@import "./tokens.css";
+@import "./card-theme.css";
+@import "./app-skin.css";
+
+@source not "../lib/cardTheme";
+
+/* Тема Tailwind = токены приложения. inline обязателен: значения читаются там, где стоит класс,
+   поэтому смена data-skin / data-theme перекрашивает и утилиты. Своя палитра Tailwind выключена. */
+@theme inline {
+  --color-*: initial;
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-link: var(--link);
+  --color-primary: var(--primary);
+  --color-on-primary: var(--primary-text);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-tier-cursed: var(--tier-cursed);
+  --color-tier-common: var(--tier-common);
+  --color-tier-dual: var(--tier-dual);
+  --color-tier-legend: var(--tier-legend);
+  --color-tier-fixed: var(--tier-fixed);
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  --font-ui: var(--ui);
+  --font-read: var(--read);
+  --font-display: var(--ct-display, var(--ui));
+  --font-name: var(--ct-name, var(--ui));
+
+  --radius-card: var(--radius);
+  --radius-control: var(--radius-sm);
+  --radius-sheet: 14px;
+
+  --shadow-card: var(--shadow);
+}
+
+/* Вариант для экрана стола (всегда тёмный, крупный). */
+@custom-variant tv (&:where(.tv, .tv *));
