@@ -5,6 +5,8 @@ import { GmSlot } from '../components/GmSlot.tsx';
 import { api } from '../lib/api.ts';
 import { OWNER_ERRORS, useCatalog, usePlayers } from '../lib/gm.ts';
 import { load, save } from '../lib/storage.ts';
+import { cn } from '../lib/cn.ts';
+import { Button, buttonVariants, Card, CardTitle, Field, Input, Segmented, Select, Skeleton, Switch, Textarea, toast } from '../ui/index.ts';
 
 const FORM_KEY = 'zg:gm:rollForm';
 const DEFAULT_FORM: Required<RollParamsInput> = {
@@ -28,32 +30,36 @@ function loadForm(): Required<RollParamsInput> {
 }
 
 type Mode = 'roll' | 'local' | 'import';
+const NONE = '__none';
+const PRONOUNS = [
+  { value: 'он', label: 'он' },
+  { value: 'она', label: 'она' },
+  { value: 'они', label: 'они' },
+];
 
 export function GmNew() {
   const [mode, setMode] = useState<Mode>('roll');
   return (
     <>
-      <section className="card">
-        <div className="row spread">
-          <h2>Новый персонаж</h2>
-          <Link viewTransition to="/gm/party" className="btn btn-ghost">
+      <Card>
+        <div className="flex flex-wrap items-center gap-3">
+          <CardTitle className="grow">Новый персонаж</CardTitle>
+          <Link viewTransition to="/gm/party" className={cn(buttonVariants({ variant: 'ghost' }), 'no-underline')}>
             Назад
           </Link>
         </div>
-        <div className="tabs">
-          {(
-            [
-              ['roll', 'Попаданец'],
-              ['local', 'Местный'],
-              ['import', 'Импорт из рандомизатора'],
-            ] as const
-          ).map(([k, l]) => (
-            <button key={k} type="button" className={`tab ${mode === k ? 'tab-on' : ''}`} onClick={() => setMode(k)}>
-              {l}
-            </button>
-          ))}
-        </div>
-      </section>
+        <Segmented
+          label="Как создать"
+          value={mode}
+          onChange={setMode}
+          className="justify-self-start"
+          options={[
+            { value: 'roll', label: 'Попаданец' },
+            { value: 'local', label: 'Местный' },
+            { value: 'import', label: 'Импорт из рандомизатора' },
+          ]}
+        />
+      </Card>
       {mode === 'roll' && <RollForm />}
       {mode === 'local' && <LocalForm />}
       {mode === 'import' && <ImportForm />}
@@ -61,21 +67,37 @@ export function GmNew() {
   );
 }
 
+/** Выбор из списка с подписью. empty — подпись пустого значения (Radix не умеет пустую строку, поэтому служебное значение). */
+function Pick({
+  label,
+  value,
+  onChange,
+  options,
+  empty,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+  empty?: string;
+}) {
+  return (
+    <Field label={label}>
+      {(id) => (
+        <Select
+          id={id}
+          value={value || (empty !== undefined ? NONE : '')}
+          onValueChange={(v) => onChange(v === NONE ? '' : v)}
+          options={[...(empty !== undefined ? [{ value: NONE, label: empty }] : []), ...options]}
+        />
+      )}
+    </Field>
+  );
+}
+
 function OwnerSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const players = usePlayers();
-  return (
-    <label className="field">
-      <span>Игрок</span>
-      <select value={value} onChange={(e) => onChange(e.target.value)}>
-        <option value="">пока никому</option>
-        {players.map((p) => (
-          <option key={p.id} value={p.id}>
-            {p.name}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
+  return <Pick label="Игрок" value={value} onChange={onChange} empty="пока никому" options={players.map((p) => ({ value: p.id, label: p.name }))} />;
 }
 
 function RollForm() {
@@ -112,103 +134,68 @@ function RollForm() {
     setBusy(true);
     const r = await api<{ id: string }>('POST', '/api/gm/characters', { draft: view.draft, ownerMemberId: owner || null });
     setBusy(false);
-    if (r.ok) navigate(`/gm/char/${r.data.id}`);
-    else setError(OWNER_ERRORS[r.error] ?? `Не сохранилось: ${r.error}`);
+    if (r.ok) {
+      toast('Персонаж сохранён');
+      navigate(`/gm/char/${r.data.id}`, { viewTransition: true });
+    } else setError(OWNER_ERRORS[r.error] ?? `Не сохранилось: ${r.error}`);
   };
 
-  if (!catalog) return <p className="muted">Загрузка…</p>;
+  if (!catalog) return <Skeleton className="h-64" />;
   const profActive = catalog.profArchs.includes(form.arch);
   const universes = catalog.universes.filter((u) => !form.source || u.genre === form.source || form.source === 'other');
   const draft = view?.draft as { seed?: string; slots?: unknown[] } | undefined;
 
   return (
     <>
-      <section className="card">
-        <form onSubmit={doRoll} className="stack">
-          <div className="grid2">
-            <label className="field">
-              <span>Имя</span>
-              <input value={form.name} onChange={(e) => set('name', e.target.value)} maxLength={120} />
-            </label>
-            <label className="field">
-              <span>Обращение</span>
-              <select value={form.pronoun} onChange={(e) => set('pronoun', e.target.value as typeof form.pronoun)}>
-                <option value="">не указано</option>
-                <option value="он">он</option>
-                <option value="она">она</option>
-                <option value="они">они</option>
-              </select>
-            </label>
-            <label className="field">
-              <span>Откуда</span>
-              <select value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value, universe: '' })}>
-                {catalog.sources.map((s) => (
-                  <option key={s.key} value={s.key}>
-                    {s.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="field">
-              <span>Вселенная</span>
-              <select value={form.universe} onChange={(e) => set('universe', e.target.value)}>
-                <option value="">не выбрана</option>
-                {universes.map((u) => (
-                  <option key={u.key} value={u.key}>
-                    {u.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="field">
-              <span>Архетип в родном мире</span>
-              <select value={form.arch} onChange={(e) => set('arch', e.target.value)}>
-                {catalog.archs.map((a) => (
-                  <option key={a.key} value={a.key}>
-                    {a.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+      <Card>
+        <form onSubmit={doRoll} className="grid gap-3">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Имя">{(id) => <Input id={id} value={form.name} onChange={(e) => set('name', e.target.value)} maxLength={120} />}</Field>
+            <Pick label="Обращение" value={form.pronoun} onChange={(v) => set('pronoun', v as typeof form.pronoun)} empty="не указано" options={PRONOUNS} />
+            <Pick
+              label="Откуда"
+              value={form.source}
+              onChange={(v) => setForm({ ...form, source: v, universe: '' })}
+              options={catalog.sources.map((x) => ({ value: x.key, label: x.label }))}
+            />
+            <Pick
+              label="Вселенная"
+              value={form.universe}
+              onChange={(v) => set('universe', v)}
+              empty="не выбрана"
+              options={universes.map((u) => ({ value: u.key, label: u.label }))}
+            />
+            <Pick label="Архетип в родном мире" value={form.arch} onChange={(v) => set('arch', v)} options={catalog.archs.map((a) => ({ value: a.key, label: a.label }))} />
             {profActive && (
-              <label className="field">
-                <span>Профессия</span>
-                <select value={form.profession} onChange={(e) => set('profession', e.target.value)}>
-                  <option value="">не выбрана</option>
-                  {catalog.professions.map((p) => (
-                    <option key={p.key} value={p.key}>
-                      {p.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <Pick
+                label="Профессия"
+                value={form.profession}
+                onChange={(v) => set('profession', v)}
+                empty="не выбрана"
+                options={catalog.professions.map((x) => ({ value: x.key, label: x.label }))}
+              />
             )}
             {profActive && form.profession === 'other' && (
-              <label className="field">
-                <span>Своя профессия</span>
-                <input value={form.professionText} onChange={(e) => set('professionText', e.target.value)} maxLength={80} />
-              </label>
+              <Field label="Своя профессия">{(id) => <Input id={id} value={form.professionText} onChange={(e) => set('professionText', e.target.value)} maxLength={80} />}</Field>
             )}
-            <label className="field">
-              <span>Сид (пусто — случайный)</span>
-              <input value={form.seed} onChange={(e) => setForm({ ...form, seed: e.target.value })} maxLength={64} inputMode="numeric" />
-            </label>
+            <Field label="Сид (пусто — случайный)">
+              {(id) => <Input id={id} value={form.seed} onChange={(e) => setForm({ ...form, seed: e.target.value })} maxLength={64} inputMode="numeric" className="font-mono" />}
+            </Field>
           </div>
-          <label className="check">
-            <input type="checkbox" checked={form.patron} onChange={(e) => set('patron', e.target.checked)} />
-            Есть покровитель в старом мире
-          </label>
-          <button className="btn" disabled={busy}>
-            {view ? 'Бросить заново' : 'Бросить'}
-          </button>
+          <Switch checked={form.patron} onCheckedChange={(v) => set('patron', v)} label="Есть покровитель в старом мире" />
+          <Button type="submit" variant="primary" size="lg" disabled={busy} className="justify-self-start">
+            {busy ? 'Бросаю…' : view ? 'Бросить заново' : 'Бросить'}
+          </Button>
         </form>
-        {error && <p className="error">{error}</p>}
-      </section>
+        {error && <p className="error m-0">{error}</p>}
+      </Card>
 
       {view && (
         <>
-          <section className="card">
-            <p className="small muted">Сид {draft?.seed}. Переброс меняет только один слот.</p>
+          <Card>
+            <p className="m-0 text-[13.6px] text-muted">
+              Сид <span className="font-mono">{draft?.seed}</span>. Переброс меняет только один слот.
+            </p>
             {view.craft && (
               <div className="slot">
                 <span className="trait-cat">Ремесло в Зеленогорье</span>
@@ -222,43 +209,40 @@ function RollForm() {
                 )}
               </div>
             )}
-          </section>
+          </Card>
           {view.slots.map((s) => (
             <GmSlot key={`${s.index}-${s.traitId}`} s={s}>
-              <div className="row">
-                <button type="button" className="btn btn-secondary" disabled={busy} onClick={() => call('/api/gm/roll/reroll', { draft: view.draft, index: s.index })}>
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" disabled={busy} onClick={() => call('/api/gm/roll/reroll', { draft: view.draft, index: s.index })}>
                   Перебросить
-                </button>
+                </Button>
                 {s.extra && (
-                  <button type="button" className="btn btn-ghost" disabled={busy} onClick={() => call('/api/gm/roll/remove', { draft: view.draft, index: s.index })}>
+                  <Button variant="ghost" size="sm" disabled={busy} onClick={() => call('/api/gm/roll/remove', { draft: view.draft, index: s.index })}>
                     Убрать
-                  </button>
+                  </Button>
                 )}
               </div>
             </GmSlot>
           ))}
           {view.combos.length > 0 && (
-            <section className="card">
-              <h3>Сочетания</h3>
+            <Card>
+              <h3 className="m-0">Сочетания</h3>
               {view.combos.map((c, i) => (
-                <p key={i}>{c.text}</p>
+                <p key={i} className="m-0">
+                  {c.text}
+                </p>
               ))}
-            </section>
+            </Card>
           )}
-          <section className="card stack">
-            <button
-              type="button"
-              className="btn btn-secondary"
-              disabled={busy || (draft?.slots?.length ?? 0) >= 10}
-              onClick={() => call('/api/gm/roll/extra', { draft: view.draft })}
-            >
+          <Card>
+            <Button className="justify-self-start" disabled={busy || (draft?.slots?.length ?? 0) >= 10} onClick={() => call('/api/gm/roll/extra', { draft: view.draft })}>
               + Случайный трейт
-            </button>
+            </Button>
             <OwnerSelect value={owner} onChange={setOwner} />
-            <button type="button" className="btn" disabled={busy} onClick={saveChar}>
+            <Button variant="primary" size="lg" className="justify-self-start" disabled={busy} onClick={saveChar}>
               Сохранить персонажа
-            </button>
-          </section>
+            </Button>
+          </Card>
         </>
       )}
     </>
@@ -276,40 +260,27 @@ function LocalForm() {
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     const r = await api<{ id: string }>('POST', '/api/gm/characters/local', { name, pronoun, publicBio, notes, ownerMemberId: owner || null });
-    if (r.ok) navigate(`/gm/char/${r.data.id}`);
-    else setError(OWNER_ERRORS[r.error] ?? `Не сохранилось: ${r.error}`);
+    if (r.ok) {
+      toast('Персонаж создан');
+      navigate(`/gm/char/${r.data.id}`, { viewTransition: true });
+    } else setError(OWNER_ERRORS[r.error] ?? `Не сохранилось: ${r.error}`);
   };
   return (
-    <section className="card">
-      <form onSubmit={submit} className="stack">
-        <label className="field">
-          <span>Имя</span>
-          <input value={name} onChange={(e) => setName(e.target.value)} required maxLength={120} />
-        </label>
-        <label className="field">
-          <span>Обращение</span>
-          <select value={pronoun} onChange={(e) => setPronoun(e.target.value as typeof pronoun)}>
-            <option value="">не указано</option>
-            <option value="он">он</option>
-            <option value="она">она</option>
-            <option value="они">они</option>
-          </select>
-        </label>
-        <label className="field">
-          <span>Описание для игрока</span>
-          <textarea rows={4} value={publicBio} onChange={(e) => setBio(e.target.value)} maxLength={4000} />
-        </label>
-        <label className="field">
-          <span>Заметки мастера (игрок не видит)</span>
-          <textarea rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={20000} />
-        </label>
+    <Card>
+      <form onSubmit={submit} className="grid gap-3">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Имя">{(id) => <Input id={id} value={name} onChange={(e) => setName(e.target.value)} required maxLength={120} />}</Field>
+          <Pick label="Обращение" value={pronoun} onChange={(v) => setPronoun(v as typeof pronoun)} empty="не указано" options={PRONOUNS} />
+        </div>
+        <Field label="Описание для игрока">{(id) => <Textarea id={id} rows={4} value={publicBio} onChange={(e) => setBio(e.target.value)} maxLength={4000} />}</Field>
+        <Field label="Заметки мастера (игрок не видит)">{(id) => <Textarea id={id} rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={20000} />}</Field>
         <OwnerSelect value={owner} onChange={setOwner} />
-        <button className="btn" disabled={!name.trim()}>
+        <Button type="submit" variant="primary" className="justify-self-start" disabled={!name.trim()}>
           Создать
-        </button>
+        </Button>
       </form>
-      {error && <p className="error">{error}</p>}
-    </section>
+      {error && <p className="error m-0">{error}</p>}
+    </Card>
   );
 }
 
@@ -325,24 +296,29 @@ function ImportForm() {
     e.preventDefault();
     setError(null);
     const r = await api<{ id: string }>('POST', '/api/gm/import', { json, ownerMemberId: owner || null });
-    if (r.ok) navigate(`/gm/char/${r.data.id}`);
-    else setError(OWNER_ERRORS[r.error] ?? r.message ?? `Не получилось: ${r.error}`);
+    if (r.ok) {
+      toast('Персонаж импортирован');
+      navigate(`/gm/char/${r.data.id}`, { viewTransition: true });
+    } else setError(OWNER_ERRORS[r.error] ?? r.message ?? `Не получилось: ${r.error}`);
   };
   return (
-    <section className="card">
-      <form onSubmit={submit} className="stack">
-        <p className="small muted">JSON персонажа из рандомизатора: «Экспорт» → JSON. Вставьте текст или выберите файл.</p>
-        <input type="file" accept="application/json,.json" onChange={(e) => onFile(e.target.files?.[0])} />
-        <label className="field">
-          <span>JSON</span>
-          <textarea rows={8} value={json} onChange={(e) => setJson(e.target.value)} spellCheck={false} />
+    <Card>
+      <form onSubmit={submit} className="grid gap-3">
+        <p className="m-0 text-[13.6px] text-muted">JSON персонажа из рандомизатора: «Экспорт» → JSON. Вставьте текст или выберите файл.</p>
+        <label className={cn(buttonVariants({ size: 'sm' }), 'justify-self-start')}>
+          Выбрать файл
+          <input type="file" accept="application/json,.json" className="sr-only" onChange={(e) => onFile(e.target.files?.[0])} />
         </label>
+        <Field label="JSON" error={error}>
+          {(id, d) => (
+            <Textarea id={id} aria-describedby={d} rows={8} value={json} onChange={(e) => setJson(e.target.value)} spellCheck={false} className="font-mono text-[13px]" />
+          )}
+        </Field>
         <OwnerSelect value={owner} onChange={setOwner} />
-        <button className="btn" disabled={!json.trim()}>
+        <Button type="submit" variant="primary" className="justify-self-start" disabled={!json.trim()}>
           Импортировать
-        </button>
+        </Button>
       </form>
-      {error && <p className="error">{error}</p>}
-    </section>
+    </Card>
   );
 }
