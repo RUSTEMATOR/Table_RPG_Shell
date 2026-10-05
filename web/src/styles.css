@@ -681,3 +681,113 @@ input[type='range'] {
   gap: 6px;
   margin-top: 6px;
 }
+
+/* ---- Экран мастера: разделы, перегрузка, запросы, заметки ---- */
+.gm-nav {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+.gm-nav .tab {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+.overload-row {
+  display: grid;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.overload-row:last-child {
+  border-bottom: 0;
+}
+.overload-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.overload-ctl {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.overload-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  min-width: 2ch;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.sign {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.sign-eyes {
+  color: var(--warn);
+}
+.sign-skin {
+  color: var(--ok);
+}
+.inline-num {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.inline-num input {
+  width: 4.5em;
+  min-height: 36px;
+  padding: 4px 8px;
+}
+.diary-gm,
+.diary-item {
+  display: grid;
+  gap: 6px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.diary-gm p,
+.diary-item p {
+  margin: 0;
+}
+.diary-open {
+  border-left: 3px solid var(--accent);
+  padding-left: 10px;
+}
+.reply {
+  background: var(--surface-2);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.jev-note {
+  color: var(--accent);
+}
+.jev-warn {
+  border: 1px solid var(--warn);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: grid;
+  gap: 6px;
+}
+.jev-warn p {
+  margin: 0;
+}
+.notes {
+  min-height: 50dvh;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+.conflict {
+  border: 1px solid var(--danger);
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+.conflict pre {
+  margin: 0 0 8px;
+  max-height: 30vh;
+  overflow: auto;
+}

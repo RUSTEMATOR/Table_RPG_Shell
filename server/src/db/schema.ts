@@ -134,3 +134,63 @@ export const event = sqliteTable(
   },
   (t) => [uniqueIndex('event_audience_seq_idx').on(t.roomId, t.audience, t.seq)],
 );
+
+// Счётчик перегрузки зелёной магией. Только мастер; столу — лишь видимый признак по кнопке.
+export const greenOverload = sqliteTable('green_overload', {
+  characterId: text('character_id')
+    .primaryKey()
+    .references(() => character.id, { onDelete: 'cascade' }),
+  value: integer('value').notNull().default(0),
+  eyesAt: integer('eyes_at').notNull().default(3),
+  skinAt: integer('skin_at').notNull().default(6),
+  updatedAt: integer('updated_at').notNull(),
+});
+
+// Дневник игрока. private = только для себя: не отдаётся мастеру и не уходит в ИИ.
+export const diaryEntry = sqliteTable(
+  'diary_entry',
+  {
+    id: text('id').primaryKey(),
+    roomId: text('room_id')
+      .notNull()
+      .references(() => room.id, { onDelete: 'cascade' }),
+    memberId: text('member_id')
+      .notNull()
+      .references(() => member.id, { onDelete: 'cascade' }),
+    characterId: text('character_id').references(() => character.id, { onDelete: 'set null' }),
+    text: text('text').notNull(),
+    private: integer('private', { mode: 'boolean' }).notNull().default(false),
+    request: integer('request', { mode: 'boolean' }).notNull().default(false),
+    requestState: text('request_state', { enum: ['open', 'answered'] }),
+    reply: text('reply').notNull().default(''),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  (t) => [index('diary_member_idx').on(t.memberId, t.createdAt), index('diary_room_idx').on(t.roomId, t.createdAt)],
+);
+
+// Заметки мастера к сессии.
+export const sessionNote = sqliteTable('session_note', {
+  sessionId: text('session_id')
+    .primaryKey()
+    .references(() => gameSession.id, { onDelete: 'cascade' }),
+  text: text('text').notNull().default(''),
+  updatedAt: integer('updated_at').notNull(),
+});
+
+// Сырые ответы Jev: для настройки порогов. Мастерские данные.
+export const aiJudgment = sqliteTable(
+  'ai_judgment',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    roomId: text('room_id')
+      .notNull()
+      .references(() => room.id, { onDelete: 'cascade' }),
+    kind: text('kind').notNull(),
+    subjectRef: text('subject_ref').notNull(),
+    model: text('model').notNull(),
+    answers: text('answers').notNull(),
+    createdAt: integer('created_at').notNull(),
+  },
+  (t) => [index('ai_judgment_subject_idx').on(t.kind, t.subjectRef)],
+);

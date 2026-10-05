@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
-import type { GmAck, GmCharacterView, GmSlotView } from '@zg/shared';
+import type { GmAck, GmCharacterView, GmSlotView, HintCheck } from '@zg/shared';
 import { GmSlot, SaveField } from '../components/GmSlot.tsx';
 import { PlayerCard } from '../components/PlayerCard.tsx';
 import { RoleScreen } from '../components/Shell.tsx';
@@ -162,7 +162,24 @@ function PowerBox({ c, onSave }: { c: GmCharacterView; onSave: (p: Record<string
 function SlotControls({ characterId, s, onAck }: { characterId: string; s: GmSlotView; onAck: (r: GmAck) => void }) {
   const target = { characterId, slot: s.index };
   const [hint, setHint] = useState(s.revealed.hint);
-  useEffect(() => setHint(s.revealed.hint), [s.revealed.hint]);
+  const [check, setCheck] = useState<HintCheck | null>(null);
+  const [checking, setChecking] = useState(false);
+  useEffect(() => {
+    setHint(s.revealed.hint);
+    setCheck(null);
+  }, [s.revealed.hint]);
+  // Страж: перед сохранением подсказки спрашиваем Jev, не выдаёт ли она лишнего.
+  const saveHint = async (force: boolean) => {
+    if (!force && hint.trim()) {
+      setChecking(true);
+      const r = await api<HintCheck>('POST', `/api/gm/characters/${encodeURIComponent(characterId)}/hint-check`, { slot: s.index, hint });
+      setChecking(false);
+      const res: HintCheck = r.ok ? r.data : { status: 'unavailable', selfScore: null, others: [] };
+      if (res.status === 'warn' || res.status === 'unavailable') return setCheck(res);
+    }
+    setCheck(null);
+    await reveal({ hint });
+  };
   const reveal = async (patch: Record<string, unknown>) => onAck(await emitGm('gm:trait.setReveal', { ...target, patch }));
   const stage = async (to: number) => onAck(await emitGm('gm:trait.setStage', { ...target, stage: to }));
 
@@ -231,12 +248,38 @@ function SlotControls({ characterId, s, onAck }: { characterId: string; s: GmSlo
         </label>
         {hint !== s.revealed.hint && (
           <div className="row">
-            <button type="button" className="btn btn-secondary" onClick={() => reveal({ hint })}>
-              Сохранить подсказку
+            <button type="button" className="btn btn-secondary" disabled={checking} onClick={() => saveHint(false)}>
+              {checking ? 'Проверяю…' : 'Сохранить подсказку'}
             </button>
-            <button type="button" className="btn btn-ghost" onClick={() => setHint(s.revealed.hint)}>
+            <button type="button" className="btn btn-ghost" onClick={() => (setHint(s.revealed.hint), setCheck(null))}>
               Отменить
             </button>
+          </div>
+        )}
+        {check && (
+          <div className="jev-warn">
+            {check.status === 'unavailable' ? (
+              <p>Проверка недоступна (Jev не ответил).</p>
+            ) : (
+              <>
+                {check.selfScore !== null && check.selfScore >= 3 && (
+                  <p>Подсказка почти раскрывает эту черту (оценка {check.selfScore.toFixed(1)} из 4).</p>
+                )}
+                {check.others.map((o) => (
+                  <p key={o.traitName}>
+                    Похоже, выдаёт другую скрытую черту «{o.traitName}» ({Math.round(o.probability * 100)}%).
+                  </p>
+                ))}
+              </>
+            )}
+            <div className="row">
+              <button type="button" className="btn btn-secondary" onClick={() => saveHint(true)}>
+                Сохранить всё равно
+              </button>
+              <button type="button" className="btn btn-ghost" onClick={() => setCheck(null)}>
+                Поправить
+              </button>
+            </div>
           </div>
         )}
       </fieldset>

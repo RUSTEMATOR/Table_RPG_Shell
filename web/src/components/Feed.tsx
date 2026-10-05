@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { EFFECTS, EFFECT_LABELS, type Effect } from '@zg/shared';
 import { isGmRoll, useFeed, type FeedRoll } from '../lib/feed.ts';
 import { emitGm } from '../lib/socket.ts';
+import { api } from '../lib/api.ts';
+import { dismissGreen, useGreenSuggestions } from '../lib/suggestions.ts';
 
 const time = (t: number) => new Date(t).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 
@@ -47,6 +49,29 @@ function Override({ r }: { r: FeedRoll }) {
   );
 }
 
+function GreenHint({ rollId }: { rollId: string }) {
+  const green = useGreenSuggestions().get(rollId);
+  if (!green) return null;
+  return (
+    <div className="jev-note row">
+      <span>Похоже на зелёную магию ({Math.round(green.probability * 100)}%).</span>
+      <button
+        type="button"
+        className="btn btn-secondary"
+        onClick={async () => {
+          const r = await api('POST', `/api/gm/overload/${encodeURIComponent(green.characterId)}`, { delta: 1 });
+          if (r.ok) dismissGreen(rollId);
+        }}
+      >
+        +1 перегрузки
+      </button>
+      <button type="button" className="btn btn-ghost" onClick={() => dismissGreen(rollId)}>
+        Нет
+      </button>
+    </div>
+  );
+}
+
 export function Feed({ limit = 50, gm = false }: { limit?: number; gm?: boolean }) {
   const feed = useFeed().slice(0, limit);
   if (!feed.length) return <p className="muted">Бросков пока нет.</p>;
@@ -82,6 +107,7 @@ export function Feed({ limit = 50, gm = false }: { limit?: number; gm?: boolean 
                 {g.outcome !== g.effect && ` Без поправки: ${EFFECT_LABELS[g.outcome]}.`}
                 {g.correctionNote && ` Исправление: ${g.correctionNote}`}
                 <Override r={r} />
+                <GreenHint rollId={r.id} />
               </div>
             )}
           </li>

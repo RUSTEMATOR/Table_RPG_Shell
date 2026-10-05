@@ -5,6 +5,8 @@ import { Feed } from '../components/Feed.tsx';
 import { OpponentBox } from '../components/OpponentBox.tsx';
 import { RollPanel } from '../components/RollPanel.tsx';
 import { RoleScreen } from '../components/Shell.tsx';
+import { GmNav } from '../components/GmNav.tsx';
+import { OverloadPanel } from '../components/OverloadPanel.tsx';
 import { api } from '../lib/api.ts';
 import { useSocketEvent } from '../lib/socket.ts';
 import { useWakeLock } from '../lib/wakeLock.ts';
@@ -55,6 +57,35 @@ function InviteBox({ invite, name }: { invite: InviteCreated; name: string }) {
 
 export function Gm() {
   useWakeLock();
+  return (
+    <RoleScreen role="gm">
+      <GmNav />
+      <section className="card">
+        <h2>Сессия</h2>
+        <OpponentBox />
+      </section>
+      <RollPanel role="gm" />
+      <section className="card">
+        <h2>Лента</h2>
+        <Feed gm limit={40} />
+      </section>
+    </RoleScreen>
+  );
+}
+
+export function GmParty() {
+  useWakeLock();
+  return (
+    <RoleScreen role="gm">
+      <GmNav />
+      <Characters />
+      <OverloadPanel />
+    </RoleScreen>
+  );
+}
+
+export function GmMembers() {
+  useWakeLock();
   const [members, setMembers] = useState<GmMember[]>([]);
   const [name, setName] = useState('');
   const [role, setRole] = useState<'player' | 'table'>('player');
@@ -91,17 +122,7 @@ export function Gm() {
 
   return (
     <RoleScreen role="gm">
-      <section className="card">
-        <h2>Сессия</h2>
-        <OpponentBox />
-      </section>
-      <RollPanel role="gm" />
-      <section className="card">
-        <h2>Лента</h2>
-        <Feed gm limit={40} />
-      </section>
-      <Characters />
-
+      <GmNav />
       <section className="card">
         <h2>Участники</h2>
         <ul className="list">

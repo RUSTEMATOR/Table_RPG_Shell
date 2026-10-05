@@ -8,6 +8,7 @@ import { powerBand, powerOf } from './cards.ts';
 import { loadOwnedCharacter } from './repo.ts';
 import { resolveRoll } from './rolls.ts';
 import { activeSession } from './session.ts';
+import { greenForRollInBackground } from '../ai/jev/integrations.ts';
 
 export type RollRow = typeof schema.roll.$inferSelect;
 
@@ -115,6 +116,7 @@ export function createRoll(
   };
   db.insert(schema.roll).values(row).run();
   appendEvents(roomId, deliveries(row));
+  if (!isGm) greenForRollInBackground(roomId, row);
   return row;
 }
 

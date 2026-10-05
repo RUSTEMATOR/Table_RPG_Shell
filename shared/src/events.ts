@@ -17,6 +17,7 @@ export interface SyncWelcome {
 
 import type { GmAck, PlayerCharacter } from './character.ts';
 import type { FeedEvent, RollGm, RollPublic } from './feed.ts';
+import type { DiaryEntryPlayer, GmDiaryEntry, GmOverload, GreenSuggestion, OverloadSign } from './gm.ts';
 
 export interface ServerToClientEvents {
   'error:forbidden': (payload: { event: string }) => void;
@@ -28,6 +29,17 @@ export interface ServerToClientEvents {
   'feed:event': (payload: FeedEvent) => void;
   /** Мастеру: сменился противник сессии. */
   'gm:session.changed': () => void;
+  /** Игроку: его дневник изменился (другое устройство, ответ мастера). */
+  'diary:changed': (payload: { entry: DiaryEntryPlayer }) => void;
+  'diary:removed': (payload: { id: string }) => void;
+  /** Мастеру: запись дневника (не личная) появилась или изменилась. */
+  'gm:diary.changed': (payload: { entry: GmDiaryEntry }) => void;
+  'gm:diary.removed': (payload: { id: string }) => void;
+  'gm:overload.changed': (payload: { overload: GmOverload }) => void;
+  'gm:notes.changed': (payload: { sessionId: string; updatedAt: number }) => void;
+  'gm:suggestion.green': (payload: GreenSuggestion) => void;
+  /** Столу: видимый признак перегрузки персонажа (по кнопке мастера). */
+  'table:sign': (payload: { character: string; sign: OverloadSign; at: number }) => void;
 }
 
 type Ack = (res: GmAck) => void;
