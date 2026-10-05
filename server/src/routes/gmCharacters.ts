@@ -224,6 +224,12 @@ export async function gmCharacterRoutes(app: FastifyInstance) {
     publicBio: z.string().max(4000).optional(),
     notes: z.string().max(20000).optional(),
     ownerMemberId: OwnerSchema,
+    /** «Оформление» карточки: '' — авто (вселенная, иначе жанр), иначе ключ жанра или вселенной. */
+    cardTheme: z
+      .string()
+      .max(40)
+      .refine((k) => k === '' || SOURCES.some(([s]) => s === k) || Object.prototype.hasOwnProperty.call(UNIVERSES, k))
+      .optional(),
   });
 
   app.post<{ Params: { id: string } }>('/api/gm/characters/:id/meta', async (request, reply) => {
@@ -245,6 +251,10 @@ export async function gmCharacterRoutes(app: FastifyInstance) {
     }
     if (b.data.publicBio !== undefined) rowPatch.publicBio = b.data.publicBio;
     if (b.data.notes !== undefined) lc.doc.notes = b.data.notes;
+    if (b.data.cardTheme !== undefined) {
+      if (b.data.cardTheme) lc.doc.cardTheme = b.data.cardTheme;
+      else delete lc.doc.cardTheme;
+    }
     if (b.data.pronoun !== undefined) {
       if (normPronoun(b.data.pronoun)) lc.doc.pronoun = normPronoun(b.data.pronoun);
       else delete lc.doc.pronoun;

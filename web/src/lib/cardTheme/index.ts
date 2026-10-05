@@ -53,3 +53,4 @@ function requestFonts(fams: string[]): void {
 }
 
 export const themeData = (id: string) => THEMES[id] ?? THEMES.other!;
+export const isThemeKey = (k: string) => isTheme(k);

@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router';
 import type { GmAck, GmCharacterView, GmSlotView, HintCheck } from '@zg/shared';
 import { GmSlot, SaveField } from '../components/GmSlot.tsx';
 import { PlayerCard } from '../components/PlayerCard.tsx';
+import { ThemePick } from '../components/ThemePick.tsx';
 import { RoleScreen } from '../components/Shell.tsx';
 import { SheetPanel } from '../components/SheetPanel.tsx';
 import { SummaryPanel } from '../components/SummaryPanel.tsx';
@@ -89,6 +90,7 @@ function CharacterPage() {
             </select>
           </label>
           <PowerBox c={c} onSave={power} />
+          <ThemePick look={c.player.look} onPick={(k) => meta({ cardTheme: k })} />
         </div>
         {c.kind === 'local' && <SaveField label="Описание для игрока" value={c.publicBio} onSave={(v) => meta({ publicBio: v })} rows={3} maxLength={4000} />}
         <SaveField label="Заметки мастера" value={c.notes} onSave={(v) => meta({ notes: v })} rows={3} maxLength={20000} />
