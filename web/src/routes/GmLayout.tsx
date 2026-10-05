@@ -6,6 +6,7 @@ import { GM_SECTIONS, GmNav, Icon } from '../components/GmNav.tsx';
 import { CommandPalette } from '../components/CommandPalette.tsx';
 import { MOD, useHotkeys } from '../lib/hotkeys.ts';
 import { Feed } from '../components/Feed.tsx';
+import { MiniTray } from '../components/MiniTray.tsx';
 import { OpenRequestsProvider, useOpenRequests } from '../lib/openRequests.tsx';
 import { api } from '../lib/api.ts';
 import { useSocketEvent } from '../lib/socket.ts';
@@ -104,6 +105,7 @@ function Rail({ onNavigate }: { onNavigate?: () => void }) {
     <>
       <Card className="gap-2">
         <CardTitle className="text-[1.25rem]">Лента</CardTitle>
+        <MiniTray />
         <Feed gm limit={25} />
       </Card>
       <RailRequests onNavigate={onNavigate} />
