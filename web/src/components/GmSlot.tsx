@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import type { GmSlotView } from '@zg/shared';
+import { Button, Field, Textarea } from '../ui/index.ts';
 
 const tierClass = (t: string) => `tier tier-${t}`;
 
@@ -118,28 +119,31 @@ export function SaveField({
   useEffect(() => setV(value), [value]);
   const dirty = v !== value;
   return (
-    <label className="field">
-      <span>{label}</span>
-      <textarea rows={rows} value={v} maxLength={maxLength} placeholder={placeholder} onChange={(e) => setV(e.target.value)} />
-      {dirty && (
-        <div className="row">
-          <button
-            type="button"
-            className="btn btn-secondary"
-            disabled={busy}
-            onClick={async () => {
-              setBusy(true);
-              await onSave(v);
-              setBusy(false);
-            }}
-          >
-            Сохранить
-          </button>
-          <button type="button" className="btn btn-ghost" onClick={() => setV(value)}>
-            Отменить
-          </button>
-        </div>
+    <Field label={label}>
+      {(id) => (
+        <>
+          <Textarea id={id} rows={rows} value={v} maxLength={maxLength} placeholder={placeholder} onChange={(e) => setV(e.target.value)} />
+          {dirty && (
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="primary"
+                disabled={busy}
+                onClick={async () => {
+                  setBusy(true);
+                  await onSave(v);
+                  setBusy(false);
+                }}
+              >
+                Сохранить
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setV(value)}>
+                Отменить
+              </Button>
+            </div>
+          )}
+        </>
       )}
-    </label>
+    </Field>
   );
 }

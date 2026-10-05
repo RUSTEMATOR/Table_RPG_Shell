@@ -6,7 +6,7 @@ import { isGmRoll, useFeed, type FeedRoll } from '../lib/feed.ts';
 import { emitGm } from '../lib/socket.ts';
 import { api } from '../lib/api.ts';
 import { dismissGreen, useGreenSuggestions } from '../lib/suggestions.ts';
-import { toast } from '../ui/index.ts';
+import { Button, Input, Select, toast } from '../ui/index.ts';
 
 const time = (t: number) => new Date(t).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 
@@ -22,35 +22,30 @@ function Override({ r }: { r: FeedRoll }) {
       </button>
     );
   return (
-    <div className="override">
-      <select value={effect} onChange={(e) => setEffect(e.target.value as Effect)}>
-        {EFFECTS.map((k) => (
-          <option key={k} value={k}>
-            {EFFECT_LABELS[k]}
-          </option>
-        ))}
-      </select>
-      <input placeholder="Почему (видит только мастер)" value={note} maxLength={300} onChange={(e) => setNote(e.target.value)} />
-      <div className="row">
-        <button
-          type="button"
-          className="btn btn-secondary"
+    <div className="mt-2 grid gap-2 rounded-control border border-solid border-border bg-surface p-3 text-text">
+      <div className="grid gap-2 sm:grid-cols-[200px_minmax(0,1fr)]">
+        <Select aria-label="Исход" value={effect} onValueChange={(v) => setEffect(v as Effect)} options={EFFECTS.map((k) => ({ value: k, label: EFFECT_LABELS[k] }))} />
+        <Input aria-label="Почему" placeholder="Почему (видит только мастер)" value={note} maxLength={300} onChange={(e) => setNote(e.target.value)} />
+      </div>
+      <div className="flex gap-2">
+        <Button
+          size="sm"
+          variant="primary"
           onClick={async () => {
             const res = await emitGm('gm:roll.override', { rollId: r.id, effect, note });
             if (res.ok) {
               setOpen(false);
               toast('Бросок исправлен');
-            }
-            else setErr(res.error ?? 'ошибка');
+            } else setErr(res.error ?? 'ошибка');
           }}
         >
           Сохранить
-        </button>
-        <button type="button" className="btn btn-ghost" onClick={() => setOpen(false)}>
+        </Button>
+        <Button size="sm" variant="ghost" onClick={() => setOpen(false)}>
           Отмена
-        </button>
+        </Button>
       </div>
-      {err && <p className="error">{err}</p>}
+      {err && <p className="error m-0">{err}</p>}
     </div>
   );
 }
@@ -61,19 +56,21 @@ function GreenHint({ rollId }: { rollId: string }) {
   return (
     <div className="jev-note row">
       <span>Похоже на зелёную магию ({Math.round(green.probability * 100)}%).</span>
-      <button
-        type="button"
-        className="btn btn-secondary"
+      <Button
+        size="sm"
         onClick={async () => {
           const r = await api('POST', `/api/gm/overload/${encodeURIComponent(green.characterId)}`, { delta: 1 });
-          if (r.ok) dismissGreen(rollId);
+          if (r.ok) {
+            dismissGreen(rollId);
+            toast('+1 перегрузки');
+          }
         }}
       >
         +1 перегрузки
-      </button>
-      <button type="button" className="btn btn-ghost" onClick={() => dismissGreen(rollId)}>
+      </Button>
+      <Button size="sm" variant="ghost" onClick={() => dismissGreen(rollId)}>
         Нет
-      </button>
+      </Button>
     </div>
   );
 }
