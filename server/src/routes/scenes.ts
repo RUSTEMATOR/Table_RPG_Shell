@@ -19,6 +19,7 @@ import {
 } from '../domain/scenes.ts';
 import { IMAGE_BODY_LIMIT, IMAGE_TYPES, mediaAllowed, mediaPath } from '../domain/media.ts';
 import { publish } from '../realtime/publish.ts';
+import { setTableMap } from '../domain/maps.ts';
 
 export function pushTable(roomId: string) {
   publish(roomId, { kind: 'table' }, 'table:state', projectForTable(roomId));
@@ -97,6 +98,8 @@ export async function gmSceneRoutes(app: FastifyInstance) {
     const roomId = request.auth!.room.id;
     if (b.data.sceneId && !getScene(roomId, b.data.sceneId)) return reply.code(404).send({ error: 'not_found' });
     setShown(roomId, b.data.sceneId);
+    // Новая сцена на столе убирает карту: иначе мастер показал бы сцену, а стол продолжал бы показывать карту.
+    if (b.data.sceneId) setTableMap(roomId, null, null);
     pushTable(roomId);
     return { ok: true };
   });

@@ -10,6 +10,8 @@ import { createNpc } from '../domain/npc.ts';
 import { insertCharacter } from '../domain/repo.ts';
 import { createSheetEntry, listSheet } from '../domain/sheet.ts';
 import { GM_MARKER } from '../visibility/guard.ts';
+import { createPlace, ensureMaps, placeRows, regionRows, setParty, updatePlace, updateRegion } from '../domain/maps.ts';
+import type { MapId } from '@zg/shared';
 import { MIGRATIONS_DIR } from '../paths.ts';
 
 // npm run seed — тестовые персонажи. Повторный запуск ничего не дублирует.
@@ -127,6 +129,31 @@ const N = 'Тест: Тролль';
 if (!db.select().from(schema.npc).where(and(eq(schema.npc.roomId, room.id), eq(schema.npc.name, N))).get()) {
   createNpc(room.id, { name: N, power: 400, notes: `${M}: боится огня, под мостом прячет клад.` });
   created.push(N);
+}
+
+// 6. Карты: открыты Раздолье на карте мира, Западное королевство, Сумеречный лес и несколько мест.
+// Скрытое место с маркером в имени и note_gm с маркером у открытого и скрытого — у игрока и стола их быть не должно.
+const SECRET_PLACE = `${M}: тайник контрабандистов`;
+if (!db.select().from(schema.mapPlace).where(and(eq(schema.mapPlace.roomId, room.id), eq(schema.mapPlace.name, SECRET_PLACE))).get()) {
+  ensureMaps(room.id);
+  const open = (mapId: MapId, keys: string[]) =>
+    regionRows(room.id, mapId)
+      .filter((r) => keys.includes(r.key))
+      .forEach((r) => updateRegion(r, { visible: true, noteGm: `${M}: заметка к региону` }));
+  open('world', ['razdolye']);
+  open('razdolye', ['west', 'twilight']);
+  const places = placeRows(room.id, 'razdolye');
+  const show = ['Marblewolf', 'Oroak', 'Eriflower', 'Magewald', 'Castlefair'];
+  for (const p of places) {
+    if (show.includes(p.name)) updatePlace(p, { visible: true, noteGm: `${M}: кто здесь на самом деле правит` });
+    else if (p.name === 'Havenwall') updatePlace(p, { noteGm: `${M}: тайный союз с Marblewolf` });
+  }
+  const villages = places.filter((p) => p.kind === 'village' && p.x < 700).slice(0, 3);
+  villages.forEach((p, i) => updatePlace(p, { visible: true, name: ['Овражки', 'Ключи', 'Подлесье'][i] ?? '' }));
+  createPlace(room.id, 'razdolye', { name: SECRET_PLACE, kind: 'mark', x: 520, y: 700, side: 'r', subtitle: `${M}: подзаголовок`, visible: false, noteGm: `${M}: охраняют двое` });
+  const mw = places.find((p) => p.name === 'Marblewolf');
+  if (mw) setParty(room.id, { mapId: 'razdolye', x: mw.x - 40, y: mw.y + 60, visible: true });
+  created.push('карты: Раздолье частично открыто, партия у Marblewolf');
 }
 
 console.log(created.length ? `Созданы: ${created.join('; ')}` : 'Тестовые персонажи уже есть, ничего не создано.');

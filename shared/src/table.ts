@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { MapFocusSchema, MapIdSchema } from './maps.ts';
 
 // ---- Общий экран: что видит стол (белый список, strictObject) ----
 
@@ -17,7 +18,9 @@ export const TableNpcSchema = z.strictObject({
 });
 export type TableNpc = z.infer<typeof TableNpcSchema>;
 
-export const TableStateSchema = z.strictObject({ scene: TableSceneSchema.nullable(), npc: TableNpcSchema.nullable() });
+/** Карта на столе: какая и куда навести камеру (null — вся карта). Содержимое стол берёт отдельно, только открытое. */
+export const TableMapSchema = z.strictObject({ id: MapIdSchema, focus: MapFocusSchema.nullable() });
+export const TableStateSchema = z.strictObject({ scene: TableSceneSchema.nullable(), npc: TableNpcSchema.nullable(), map: TableMapSchema.nullable() });
 export type TableState = z.infer<typeof TableStateSchema>;
 
 // ---- Сцены у мастера ----

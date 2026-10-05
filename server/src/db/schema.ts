@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 export const room = sqliteTable('room', {
   id: text('id').primaryKey(),
@@ -226,6 +226,9 @@ export const tableState = sqliteTable('table_state', {
   sceneId: text('scene_id').references(() => scene.id, { onDelete: 'set null' }),
   /** Противник, чей портрет сейчас на столе. */
   npcId: text('npc_id').references(() => npc.id, { onDelete: 'set null' }),
+  /** Карта на столе (вместо сцены) и куда навести камеру: JSON {x, y, zoom} или null — вся карта. */
+  mapId: text('map_id'),
+  mapFocus: text('map_focus'),
   updatedAt: integer('updated_at').notNull(),
 });
 
@@ -268,4 +271,83 @@ export const sheetEntry = sqliteTable(
     updatedAt: integer('updated_at').notNull(),
   },
   (t) => [index('sheet_entry_character_idx').on(t.characterId)],
+);
+
+// ---- Карты мира (этап 21) ----
+// Контуры, имена и подписи регионов — из server/src/maps/json (не меняются); здесь — что открыто и заметки мастера.
+// note_gm — только мастеру. Скрытые регионы и места игроку и столу не уходят вовсе.
+export const mapRegion = sqliteTable(
+  'map_region',
+  {
+    id: text('id').primaryKey(),
+    roomId: text('room_id')
+      .notNull()
+      .references(() => room.id, { onDelete: 'cascade' }),
+    mapId: text('map_id').notNull(),
+    key: text('key').notNull(),
+    visible: integer('visible', { mode: 'boolean' }).notNull().default(false),
+    noteGm: text('note_gm').notNull().default(''),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  (t) => [uniqueIndex('map_region_key_idx').on(t.roomId, t.mapId, t.key)],
+);
+
+// Места на карте. key — у загруженных из json (повторная загрузка их не дублирует), у добавленных мастером — null.
+export const mapPlace = sqliteTable(
+  'map_place',
+  {
+    id: text('id').primaryKey(),
+    roomId: text('room_id')
+      .notNull()
+      .references(() => room.id, { onDelete: 'cascade' }),
+    mapId: text('map_id').notNull(),
+    key: text('key'),
+    name: text('name').notNull().default(''),
+    kind: text('kind').notNull(),
+    x: real('x').notNull(),
+    y: real('y').notNull(),
+    side: text('side', { enum: ['l', 'r', 'b'] })
+      .notNull()
+      .default('r'),
+    subtitle: text('subtitle').notNull().default(''),
+    ink: text('ink'),
+    visible: integer('visible', { mode: 'boolean' }).notNull().default(false),
+    noteGm: text('note_gm').notNull().default(''),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  (t) => [index('map_place_map_idx').on(t.roomId, t.mapId), uniqueIndex('map_place_key_idx').on(t.roomId, t.mapId, t.key)],
+);
+
+// Маркер партии: один на комнату, на одной из карт.
+export const mapParty = sqliteTable('map_party', {
+  roomId: text('room_id')
+    .primaryKey()
+    .references(() => room.id, { onDelete: 'cascade' }),
+  mapId: text('map_id').notNull(),
+  x: real('x').notNull(),
+  y: real('y').notNull(),
+  visible: integer('visible', { mode: 'boolean' }).notNull().default(true),
+  updatedAt: integer('updated_at').notNull(),
+});
+
+// Личные заметки игрока на карте. Видит только автор; мастеру и столу не уходят.
+export const mapPlayerNote = sqliteTable(
+  'map_player_note',
+  {
+    id: text('id').primaryKey(),
+    roomId: text('room_id')
+      .notNull()
+      .references(() => room.id, { onDelete: 'cascade' }),
+    memberId: text('member_id')
+      .notNull()
+      .references(() => member.id, { onDelete: 'cascade' }),
+    mapId: text('map_id').notNull(),
+    x: real('x').notNull(),
+    y: real('y').notNull(),
+    text: text('text').notNull(),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  (t) => [index('map_player_note_member_idx').on(t.memberId, t.mapId)],
 );

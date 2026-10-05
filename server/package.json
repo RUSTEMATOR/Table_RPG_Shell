@@ -11,6 +11,7 @@
     "setup": "tsx src/cli/setup.ts",
     "invite": "tsx src/cli/invite.ts",
     "seed": "tsx src/cli/seed.ts",
+    "maps:load": "tsx src/cli/maps.ts",
     "backup": "tsx src/cli/backup.ts"
   },
   "dependencies": {

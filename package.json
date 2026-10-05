@@ -22,6 +22,8 @@
     "invite:dev": "ZG_ENV_FILE=$HOME/.config/zelenogorye/.env.development npm run invite -w server --",
     "seed": "npm run seed -w server",
     "seed:dev": "ZG_ENV_FILE=$HOME/.config/zelenogorye/.env.development npm run seed -w server",
+    "maps:load": "npm run maps:load -w server",
+    "maps:load:dev": "ZG_ENV_FILE=$HOME/.config/zelenogorye/.env.development npm run maps:load -w server",
     "backup:dev": "ZG_ENV_FILE=$HOME/.config/zelenogorye/.env.development npm run backup -w server"
   },
   "devDependencies": {

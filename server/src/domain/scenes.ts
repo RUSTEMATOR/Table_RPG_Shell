@@ -3,6 +3,7 @@ import { TableStateSchema, type GmScene, type TableState } from '@zg/shared';
 import { newId } from '../auth/tokens.ts';
 import { db, schema } from '../db/client.ts';
 import { imageUrl, removeImage, storeImage } from './media.ts';
+import { tableMap } from './maps.ts';
 
 export type SceneRow = typeof schema.scene.$inferSelect;
 
@@ -65,7 +66,9 @@ export function projectForTable(roomId: string): TableState {
         .where(and(eq(schema.npc.roomId, roomId), eq(schema.npc.id, shown.npcId)))
         .get()
     : undefined;
+  const map = tableMap(roomId);
   return TableStateSchema.parse({
+    map: map ? { id: map.mapId, focus: map.focus } : null,
     npc: n
       ? { name: n.name, ...(n.imageFile ? { image: { url: imageUrl(n.imageFile), w: n.imageW ?? 0, h: n.imageH ?? 0 } } : {}) }
       : null,

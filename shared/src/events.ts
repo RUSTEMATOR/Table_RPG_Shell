@@ -18,6 +18,7 @@ export interface SyncWelcome {
 import type { GmAck, PlayerCharacter } from './character.ts';
 import type { FeedEvent, RollGm, RollPublic } from './feed.ts';
 import type { TableState } from './table.ts';
+import type { MapId } from './maps.ts';
 import type { DiaryEntryPlayer, GmDiaryEntry, GmOverload, GreenSuggestion, OverloadSign } from './gm.ts';
 
 export interface ServerToClientEvents {
@@ -43,6 +44,12 @@ export interface ServerToClientEvents {
   'table:sign': (payload: { character: string; sign: OverloadSign; at: number }) => void;
   /** Столу: сцена сменилась. */
   'table:state': (payload: TableState) => void;
+  /** Игрокам и столу: открытая часть карты изменилась (уходит, только если она действительно изменилась). Перечитать. */
+  'map:changed': (payload: { mapId: MapId }) => void;
+  /** Игроку: его заметки на карте изменились (другое устройство). */
+  'map:notes.changed': (payload: { mapId: MapId }) => void;
+  /** Мастеру: карта изменилась, перечитать. */
+  'gm:map.changed': (payload: { mapId: MapId }) => void;
   /** Мастеру: список сцен или показанная сцена изменились. */
   'gm:scenes.changed': () => void;
   /** Мастеру: библиотека противников изменилась. */

@@ -38,7 +38,7 @@ export function Table() {
 function TableScreen({ room }: { room: string }) {
   useWakeLock();
   useEffect(() => ensureTheme('other'), []); // шрифты макета: Oranienbaum, IBM Plex
-  const [state, setState] = useState<TableState>({ scene: null, npc: null });
+  const [state, setState] = useState<TableState>({ scene: null, npc: null, map: null });
   const [loaded, setLoaded] = useState(false); // до первого ответа заставку не показываем: иначе она мигнёт перед сценой
   const [signs, setSigns] = useState<Sign[]>([]);
   const [still, setStill] = useState(() => load('zg:table:still') === '1');

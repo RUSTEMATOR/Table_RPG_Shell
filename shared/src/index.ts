@@ -5,3 +5,4 @@ export * from './character.ts';
 export * from './feed.ts';
 export * from './gm.ts';
 export * from './table.ts';
+export * from './maps.ts';
