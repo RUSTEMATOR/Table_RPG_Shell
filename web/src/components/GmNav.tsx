@@ -3,6 +3,7 @@ import { NavLink } from 'react-router';
 const ITEMS = [
   ['/gm', 'Игра'],
   ['/gm/party', 'Партия'],
+  ['/gm/table', 'Стол'],
   ['/gm/requests', 'Запросы'],
   ['/gm/notes', 'Заметки'],
   ['/gm/members', 'Участники'],

@@ -194,3 +194,33 @@ export const aiJudgment = sqliteTable(
   },
   (t) => [index('ai_judgment_subject_idx').on(t.kind, t.subjectRef)],
 );
+
+// Сцена для общего экрана. textGm — только мастеру.
+export const scene = sqliteTable(
+  'scene',
+  {
+    id: text('id').primaryKey(),
+    roomId: text('room_id')
+      .notNull()
+      .references(() => room.id, { onDelete: 'cascade' }),
+    title: text('title').notNull().default(''),
+    textPublic: text('text_public').notNull().default(''),
+    textGm: text('text_gm').notNull().default(''),
+    imageFile: text('image_file'),
+    imageW: integer('image_w'),
+    imageH: integer('image_h'),
+    imageBytes: integer('image_bytes'),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  (t) => [index('scene_room_idx').on(t.roomId)],
+);
+
+// Что сейчас на общем экране комнаты.
+export const tableState = sqliteTable('table_state', {
+  roomId: text('room_id')
+    .primaryKey()
+    .references(() => room.id, { onDelete: 'cascade' }),
+  sceneId: text('scene_id').references(() => scene.id, { onDelete: 'set null' }),
+  updatedAt: integer('updated_at').notNull(),
+});

@@ -10,6 +10,7 @@ import { playerRoutes } from './routes/player.ts';
 import { gmSessionRoutes } from './routes/gmSession.ts';
 import { gmScreenRoutes } from './routes/gmScreen.ts';
 import { playerDiaryRoutes } from './routes/playerDiary.ts';
+import { gmSceneRoutes, tableRoutes } from './routes/scenes.ts';
 import { findGmLeak } from './visibility/guard.ts';
 
 declare module 'fastify' {
@@ -30,7 +31,7 @@ export async function buildApp() {
 
   app.addHook('onRequest', async (request, reply) => {
     request.auth = resolveSession(request.cookies[SESSION_COOKIE]);
-    if (request.url.startsWith('/api/')) reply.header('cache-control', 'no-store');
+    if (request.url.startsWith('/api/') && !request.url.startsWith('/api/media/')) reply.header('cache-control', 'no-store');
   });
 
   // Предохранитель: ответы не-мастеру проверяются на маркер и мастерские ключи.
@@ -54,6 +55,8 @@ export async function buildApp() {
   await app.register(gmSessionRoutes);
   await app.register(gmScreenRoutes);
   await app.register(playerDiaryRoutes);
+  await app.register(gmSceneRoutes);
+  await app.register(tableRoutes);
 
   return app;
 }

@@ -17,6 +17,7 @@ export interface SyncWelcome {
 
 import type { GmAck, PlayerCharacter } from './character.ts';
 import type { FeedEvent, RollGm, RollPublic } from './feed.ts';
+import type { TableState } from './table.ts';
 import type { DiaryEntryPlayer, GmDiaryEntry, GmOverload, GreenSuggestion, OverloadSign } from './gm.ts';
 
 export interface ServerToClientEvents {
@@ -40,6 +41,10 @@ export interface ServerToClientEvents {
   'gm:suggestion.green': (payload: GreenSuggestion) => void;
   /** Столу: видимый признак перегрузки персонажа (по кнопке мастера). */
   'table:sign': (payload: { character: string; sign: OverloadSign; at: number }) => void;
+  /** Столу: сцена сменилась. */
+  'table:state': (payload: TableState) => void;
+  /** Мастеру: список сцен или показанная сцена изменились. */
+  'gm:scenes.changed': () => void;
 }
 
 type Ack = (res: GmAck) => void;

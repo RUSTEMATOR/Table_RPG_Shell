@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { z } from 'zod';
 
 const envFile = process.env.ZG_ENV_FILE ?? join(homedir(), '.config/zelenogorye/.env');
@@ -16,6 +16,7 @@ const ConfigSchema = z.object({
   NODE_ENV: z.enum(['development', 'production']).default('production'),
   PORT: z.coerce.number().int().default(3000),
   DB_PATH: z.string().min(1),
+  MEDIA_DIR: z.string().optional(),
   COOKIE_SECURE: bool(true),
   PUBLIC_ORIGIN: z.string().url().optional(),
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
@@ -37,6 +38,7 @@ if (!parsed.success) {
 
 export const config = {
   ...parsed.data,
+  MEDIA_DIR: parsed.data.MEDIA_DIR ?? join(dirname(parsed.data.DB_PATH), 'media'),
   HOST: '127.0.0.1',
   envFile,
   isDev: parsed.data.NODE_ENV === 'development',
