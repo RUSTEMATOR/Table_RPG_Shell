@@ -41,6 +41,8 @@ export default defineConfig({
     host: true,
     port: 5173,
     strictPort: true,
+    // Закрытый QA-хост снаружи (ops/scripts/qa-setup.sh): Vite иначе отвечает «Blocked request» на чужое имя.
+    allowedHosts: process.env.ZG_QA_HOST ? [process.env.ZG_QA_HOST] : undefined,
     proxy: {
       '/api': { target: devServer },
       '/socket.io': { target: devServer, ws: true },

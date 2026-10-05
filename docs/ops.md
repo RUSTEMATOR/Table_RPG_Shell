@@ -53,3 +53,17 @@ chmod 600 ~/.config/zelenogorye/.env
 - **Логи:** `~/srv/zelenogorye/logs`, ротация каждую ночь, архивы 14 дней.
 - **Состояние:** у мастера «Участники» → «Состояние»; или `bash ops/scripts/status.sh`.
 - **Node из nvm:** путь к node зашит в plist. После обновления node через nvm заново выполнить `install.sh` и скопировать plist.
+
+## 6. Закрытый QA-хост для ручной проверки снаружи
+
+Отдельное имя `qa-temple-of-serenity.<домен>` на том же Mac: nginx отдаёт dev-версию (Vite 5173 → dev-сервер 3001, dev-база). Нужен готовый этап 0 и `install.sh` (сертификаты, списки Cloudflare, роутер).
+
+Что делает хост закрытым: проксируемая запись Cloudflare (IP не виден), только Cloudflare через Authenticated Origin Pulls, пароль на входе (в dev-базе известные PIN-ы), `noindex`, отдельные логи `nginx-qa-*.log`. Имя нигде не публикуется и в журналы сертификатов не попадает, пока используется wildcard-сертификат Cloudflare.
+
+1. `QA_DOMAIN=qa-temple-of-serenity.<домен> bash ops/scripts/qa-setup.sh` — спросит пароль, соберёт конфиг, напечатает остальные команды.
+2. Cloudflare: A-запись на тот же IP, оранжевое облако; origin-сертификат должен покрывать `*.<домен>`.
+3. Ссылка на конфиг в `servers/`, `nginx -t && nginx -s reload`.
+4. `ZG_QA_HOST=qa-temple-of-serenity.<домен> npm run dev`.
+5. С телефона по мобильной сети открыть `https://qa-temple-of-serenity.<домен>`.
+
+Убрать: удалить ссылку на конфиг, `nginx -s reload`, удалить A-запись. Пока `npm run dev` не запущен, хост отвечает 502.
