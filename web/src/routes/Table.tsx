@@ -14,6 +14,7 @@ import { spring } from '../lib/motion.tsx';
 import { cn } from '../lib/cn.ts';
 import { capabilities } from '../lib/capabilities.ts';
 import { TvScene } from '../tv/TvScene.tsx';
+import { TvNpc } from '../tv/TvNpc.tsx';
 
 // Общий экран для ТВ и трансляции. Только публичное: сцена (без текста мастера), портрет противника (имя и картинка),
 // публичные броски, признаки перегрузки. Палитра своя и постоянная: экран смотрят издалека, в тёмной комнате.
@@ -122,22 +123,7 @@ function TableScreen({ room }: { room: string }) {
           </button>
         </header>
 
-        {state.npc && (
-          <figure className="absolute top-[14vh] left-[5vw] m-0 grid w-[min(28vw,520px)] gap-3">
-            {state.npc.image && (
-              <img
-                src={state.npc.image.url}
-                alt=""
-                width={state.npc.image.w}
-                height={state.npc.image.h}
-                className="aspect-[4/5] w-full rounded-[14px] object-cover shadow-[0_30px_60px_rgba(0,0,0,.5)]"
-              />
-            )}
-            <figcaption className="font-['Oranienbaum',Georgia,serif] text-[clamp(32px,3.4vw,72px)] leading-none [text-shadow:0_2px_24px_rgba(0,0,0,.6)]">
-              {state.npc.name}
-            </figcaption>
-          </figure>
-        )}
+        <TvNpc npc={state.npc} />
 
         <aside aria-label="Последние броски" aria-live="polite" className="absolute top-[11vh] right-[4vw] grid w-[min(22vw,400px)] min-w-[260px] gap-[1.4vh]">
           {rolls.length > 0 && <span className="text-[clamp(14px,1.15vw,24px)] tracking-[.08em] text-[var(--tv-muted)] uppercase">Броски</span>}
