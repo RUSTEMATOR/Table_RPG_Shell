@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { MODELS, qmul, topFace, type DieKind, type Quat } from './geometry.ts';
-import { buildAtlas, buildGeometry, themeDieColors } from './mesh.ts';
+import { buildAtlas, buildGeometry, themeDieColors, type DieColors } from './mesh.ts';
 import { landingRotation } from './symmetry.ts';
 import type { Trajectory } from './physics.ts';
 import { useSkinId } from '../lib/cardTheme/skin.ts';
@@ -20,7 +20,21 @@ export type StageRoll = {
 
 const ARENA = 4.6;
 
-function Die({ roll, budget, onImpact, onLanded }: { roll: StageRoll; budget: number; onImpact?: (s: number) => void; onLanded?: () => void }) {
+function Die({
+  roll,
+  budget,
+  minSpeed,
+  colors: fixed,
+  onImpact,
+  onLanded,
+}: {
+  roll: StageRoll;
+  budget: number;
+  minSpeed: number;
+  colors?: DieColors;
+  onImpact?: (s: number) => void;
+  onLanded?: () => void;
+}) {
   const skin = useSkinId();
   const scheme = useScheme();
   const model = MODELS[roll.kind];
@@ -28,14 +42,14 @@ function Die({ roll, budget, onImpact, onLanded }: { roll: StageRoll; budget: nu
   const [atlas, setAtlas] = useState<THREE.CanvasTexture | null>(null);
   useEffect(() => {
     let alive = true;
-    const colors = themeDieColors();
+    const colors = fixed ?? themeDieColors();
     const make = () => alive && setAtlas((old) => (old?.dispose(), buildAtlas(model, colors)));
     make();
     document.fonts?.load(`600 40px ${colors.font}`).then(make, () => {});
     return () => {
       alive = false;
     };
-  }, [model, skin, scheme]);
+  }, [model, skin, scheme, fixed]);
 
   const mesh = useRef<THREE.Mesh>(null);
   const invalidate = useThree((s) => s.invalidate);
@@ -84,7 +98,7 @@ function Die({ roll, budget, onImpact, onLanded }: { roll: StageRoll; budget: nu
     const p = play.current;
     const n = traj.frames.length / 7;
     const duration = (n - 1) / traj.fps;
-    const speed = Math.max(1, duration / budget);
+    const speed = Math.max(minSpeed, duration / budget);
     const f = Math.min(n - 1, (now - p.start) * speed * traj.fps);
     const i = Math.floor(f), j = Math.min(n - 1, i + 1), a = f - i;
     const F = traj.frames;
@@ -120,6 +134,16 @@ function Die({ roll, budget, onImpact, onLanded }: { roll: StageRoll; budget: nu
   );
 }
 
+/** Без лотка (стол): только тень кубика на прозрачном полу поверх сцены. */
+function Floor() {
+  return (
+    <mesh rotation-x={-Math.PI / 2} receiveShadow>
+      <planeGeometry args={[40, 40]} />
+      <shadowMaterial opacity={0.5} />
+    </mesh>
+  );
+}
+
 function Tray() {
   const skin = useSkinId();
   const scheme = useScheme();
@@ -142,10 +166,16 @@ function Tray() {
   );
 }
 
-/** budget — сколько секунд длится проигрывание (телефон 0,95, стол — дольше). */
+/**
+ * budget — сколько секунд длится проигрывание (телефон 0,95, стол — до 2,5); minSpeed — не медленнее этого
+ * (стол — 0,75 от настоящей скорости). floor — без лотка, кубик над сценой; colors — свои цвета граней вместо темы.
+ */
 export default function DiceStage({
   roll,
   budget = 0.95,
+  minSpeed = 1,
+  floor = false,
+  colors,
   onImpact,
   onLanded,
   onLost,
@@ -153,6 +183,9 @@ export default function DiceStage({
 }: {
   roll: StageRoll;
   budget?: number;
+  minSpeed?: number;
+  floor?: boolean;
+  colors?: DieColors;
   onImpact?: (strength: number) => void;
   onLanded?: () => void;
   onLost?: () => void;
@@ -176,8 +209,8 @@ export default function DiceStage({
     >
       <ambientLight intensity={0.7} />
       <directionalLight position={[-6, 12, 5]} intensity={1.6} castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-6} shadow-camera-right={6} shadow-camera-top={6} shadow-camera-bottom={-6} />
-      <Tray />
-      <Die roll={roll} budget={budget} onImpact={onImpact} onLanded={onLanded} />
+      {floor ? <Floor /> : <Tray />}
+      <Die roll={roll} budget={budget} minSpeed={minSpeed} colors={colors} onImpact={onImpact} onLanded={onLanded} />
     </Canvas>
   );
 }
