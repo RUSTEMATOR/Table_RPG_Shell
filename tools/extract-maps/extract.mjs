@@ -1,7 +1,7 @@
 // Генератор карт мира: та же геометрия, что в одобренных макетах этапа 15 (холст Claude Design, «Карта · …»).
 // Выдаёт два набора и больше ничего не делает:
 //   web/src/maps/art/<карта>.json   — рельеф без имён, мест, дорог и границ регионов (клиент, не секрет);
-//   server/src/maps/data/<карта>.json — регионы (контуры, имена, подписи), места, дороги (сервер, по видимости).
+//   server/src/maps/json/<карта>.json — регионы (контуры, имена, подписи), места, дороги (сервер, по видимости).
 // Запуск: node tools/extract-maps/extract.mjs. Результат руками не править — менять генератор и запускать снова.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
@@ -1505,7 +1505,7 @@ function buildFrozen() {
 
 const built = { world: buildWorld(), razdolye: buildRazdolye(), frozen: buildFrozen() };
 const artDir = join(root, 'web/src/maps/art');
-const dataDir = join(root, 'server/src/maps/data');
+const dataDir = join(root, 'server/src/maps/json');
 mkdirSync(artDir, { recursive: true });
 mkdirSync(dataDir, { recursive: true });
 for (const [id, { art, data }] of Object.entries(built)) {
