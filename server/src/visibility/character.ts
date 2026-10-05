@@ -5,6 +5,7 @@ import type { LoadedCharacter } from '../domain/repo.ts';
 import { craftOf } from '../domain/randomizer.ts';
 import { playerSheet } from '../domain/sheet.ts';
 import { TRAITS } from '../domain/traits.ts';
+import { portraitUrl } from '../domain/portrait.ts';
 
 // Единственное место, где персонаж превращается в то, что видит игрок (перенос toPublic §2.3).
 // Берём только раскрытое, по белому списку полей; скрытые черты не оставляют ни записи, ни счётчика.
@@ -23,8 +24,11 @@ export function projectForPlayer({ row, doc }: LoadedCharacter): PlayerCharacter
     }
     const card = cardOf(sl);
     const k = Math.min(rv.stages, int04(sl.stage));
+    const t = TRAITS[sl.traitId]!;
     traits.push({
       cat: catLabel(sl),
+      catKey: sl.cat,
+      ...(sl.cat === 'setting' ? { setting: { universe: t.universe ?? '', genre: t.genre ?? '' } } : {}),
       name: card.name,
       d: card.d,
       stagesShown: effSteps(card, sl).slice(0, k).map(stepText),
@@ -41,6 +45,8 @@ export function projectForPlayer({ row, doc }: LoadedCharacter): PlayerCharacter
     name: row.name,
     pronoun: pronounWord(doc.pronoun),
     origin: row.kind === 'popadanets' ? originOf(doc) : '',
+    look: { theme: doc.cardTheme ?? '', universe: doc.universe ?? '', genre: doc.source ?? '' },
+    ...(doc.image ? { portrait: portraitUrl(row.id, doc.image) } : {}),
     ...(row.publicBio.trim() ? { bio: row.publicBio.slice(0, 4000) } : {}),
     ...(doc.showPower === true ? { powerBand: powerBand(powerOf(doc)).name } : {}),
     ...(cr ? { profession: { label: cr.label, local: cr.local, demand: Math.max(0, Math.min(3, Math.trunc(cr.demand))), edge: cr.edge } } : {}),

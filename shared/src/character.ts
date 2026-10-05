@@ -2,8 +2,15 @@ import { z } from 'zod';
 
 // ---- Что видит игрок: единственный формат, белый список, strictObject на всех уровнях ----
 
+/** Вселенная и жанр источника: по ним клиент выбирает оформление (themeFor в артефакте). */
+export const PlayerLookSchema = z.strictObject({ theme: z.string(), universe: z.string(), genre: z.string() });
+
 export const PlayerTraitSchema = z.strictObject({
   cat: z.string(),
+  /** Ключ категории для значка (class, green, mark, …, setting). */
+  catKey: z.string(),
+  /** Только у сеттинговых черт: откуда черта, для цвета её значка. */
+  setting: z.strictObject({ universe: z.string(), genre: z.string() }).optional(),
   name: z.string(),
   d: z.string(),
   stagesShown: z.array(z.string()),
@@ -23,6 +30,9 @@ export const PlayerCharacterSchema = z.strictObject({
   name: z.string(),
   pronoun: z.string(),
   origin: z.string(),
+  look: PlayerLookSchema,
+  /** Адрес портрета с версией; портрет отдаётся владельцу и мастеру. */
+  portrait: z.string().optional(),
   bio: z.string().optional(),
   powerBand: z.string().optional(),
   profession: z
