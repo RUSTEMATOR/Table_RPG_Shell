@@ -12,6 +12,8 @@ import { useWakeLock } from '../lib/wakeLock.ts';
 import { ensureTheme } from '../lib/cardTheme/index.ts';
 import { spring } from '../lib/motion.tsx';
 import { cn } from '../lib/cn.ts';
+import { capabilities } from '../lib/capabilities.ts';
+import { TvScene } from '../tv/TvScene.tsx';
 
 // Общий экран для ТВ и трансляции. Только публичное: сцена (без текста мастера), портрет противника (имя и картинка),
 // публичные броски, признаки перегрузки. Палитра своя и постоянная: экран смотрят издалека, в тёмной комнате.
@@ -58,13 +60,19 @@ function TableScreen({ room }: { room: string }) {
   useWakeLock();
   useEffect(() => ensureTheme('other'), []); // шрифты макета: Oranienbaum, IBM Plex
   const [state, setState] = useState<TableState>({ scene: null, npc: null });
+  const [loaded, setLoaded] = useState(false); // до первого ответа заставку не показываем: иначе она мигнёт перед сценой
   const [signs, setSigns] = useState<Sign[]>([]);
   const [still, setStill] = useState(() => load('zg:table:still') === '1');
+  // Облегчённый режим: ?lite=1, слабое устройство или нет WebGL2 (этап 20, шаг 5 добавит замер кадров).
+  const [lite] = useState(() => capabilities.lite());
   const rolls = useFeed().filter(isTableRoll).slice(0, 5);
 
   const loadState = useCallback(async () => {
     const r = await api<TableState>('GET', '/api/table/state');
-    if (r.ok) setState(r.data);
+    if (r.ok) {
+      setState(r.data);
+      setLoaded(true);
+    }
   }, []);
   useEffect(() => {
     connectSocket();
@@ -96,19 +104,7 @@ function TableScreen({ room }: { room: string }) {
         data-still={still || undefined}
         className="tv fixed inset-0 overflow-hidden bg-[var(--tv-bg)] font-['IBM_Plex_Sans',system-ui,sans-serif] text-[var(--tv-ink)] [&_.conn]:text-[var(--tv-muted)]"
       >
-        {scene?.image ? (
-          <img className="absolute inset-0 size-full object-cover" src={scene.image.url} alt="" width={scene.image.w} height={scene.image.h} />
-        ) : (
-          <div
-            aria-hidden="true"
-            className="absolute inset-0 bg-[radial-gradient(ellipse_60%_55%_at_30%_70%,rgba(130,140,128,.3),transparent_70%),linear-gradient(170deg,#3a463c_0%,#1a201b_55%,#0d0f0d_100%)]"
-          />
-        )}
-        {/* затемнение снизу и сверху: текст читается на любой картинке */}
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-[linear-gradient(to_top,rgba(13,15,13,.9),rgba(13,15,13,0)_55%),linear-gradient(to_bottom,rgba(13,15,13,.6),rgba(13,15,13,0)_25%)]"
-        />
+        <TvScene scene={scene} motion={!still && !lite} idle={loaded && !state.npc} />
 
         <header className="absolute inset-x-[5vw] top-[3vh] flex items-center gap-4 text-[clamp(14px,1.1vw,22px)] opacity-70">
           <span className="grow tracking-[.08em] text-[var(--tv-muted)] uppercase">
@@ -142,24 +138,6 @@ function TableScreen({ room }: { room: string }) {
             </figcaption>
           </figure>
         )}
-
-        <section className="absolute bottom-[7vh] left-[5vw] grid max-w-[min(52vw,1000px)] gap-[1.2vh]">
-          {scene ? (
-            <>
-              <span className="text-[clamp(14px,1.15vw,24px)] tracking-[.08em] text-[var(--tv-muted)] uppercase">Сцена</span>
-              {scene.title && (
-                <h1 className="m-0 font-['Oranienbaum',Georgia,serif] text-[clamp(44px,4.6vw,96px)] leading-[1.05] font-normal [text-shadow:0_2px_24px_rgba(0,0,0,.6)]">
-                  {scene.title}
-                </h1>
-              )}
-              {scene.text && (
-                <p className="prewrap m-0 font-read text-[clamp(18px,1.5vw,30px)] leading-[1.4] text-[var(--tv-soft)] [text-shadow:0_1px_12px_rgba(0,0,0,.7)]">{scene.text}</p>
-              )}
-            </>
-          ) : (
-            !state.npc && <h1 className="m-0 font-['Oranienbaum',Georgia,serif] text-[clamp(44px,4.6vw,96px)] font-normal text-[var(--tv-muted)]">Зеленогорье</h1>
-          )}
-        </section>
 
         <aside aria-label="Последние броски" aria-live="polite" className="absolute top-[11vh] right-[4vw] grid w-[min(22vw,400px)] min-w-[260px] gap-[1.4vh]">
           {rolls.length > 0 && <span className="text-[clamp(14px,1.15vw,24px)] tracking-[.08em] text-[var(--tv-muted)] uppercase">Броски</span>}

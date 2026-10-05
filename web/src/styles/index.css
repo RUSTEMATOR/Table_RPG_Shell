@@ -90,3 +90,13 @@
     }
   }
 }
+
+/* Медленный наплыв картинки сцены на столе (Ken Burns). */
+@keyframes zg-kenburns {
+  from {
+    transform: scale(1.02) translate(0, 0);
+  }
+  to {
+    transform: scale(1.14) translate(-2%, -1.5%);
+  }
+}
