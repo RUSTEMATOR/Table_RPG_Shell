@@ -7,6 +7,7 @@ import { GREEN_MAGIC_DEFINITION, runGreenMagic } from './questions/greenMagic.ts
 import { runLeakGuard } from './questions/leakGuard.ts';
 import { runRollIntent } from './questions/rollIntent.ts';
 import type { JevTrait } from './questions/types.ts';
+import { isDemoRoom } from '../../domain/demo.ts';
 
 // Песочница Jev (этап J0): мастер руками проверяет вопросы на своих примерах.
 // Один запрос — одно нажатие, без пакетных прогонов.
@@ -45,6 +46,7 @@ export async function jevRoutes(app: FastifyInstance) {
   }));
 
   app.post('/api/gm/jev/ask', async (request, reply) => {
+    if (isDemoRoom(request.auth!.room.id)) return reply.code(403).send({ error: 'demo', message: 'В демо-комнате ИИ выключен' });
     const body = AskSchema.safeParse(request.body);
     if (!body.success) return reply.code(400).send({ error: 'bad_request', message: body.error.issues[0]?.message });
     const b = body.data;

@@ -1,6 +1,7 @@
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, ne } from 'drizzle-orm';
 import { newId } from '../auth/tokens.ts';
+import { DEMO_CODE } from '../domain/demo.ts';
 import { db, schema, sqlite } from '../db/client.ts';
 import { setReveal, setStage } from '../domain/cards.ts';
 import type { CharDoc } from '../domain/character.ts';
@@ -19,7 +20,7 @@ import { MIGRATIONS_DIR } from '../paths.ts';
 
 migrate(db, { migrationsFolder: MIGRATIONS_DIR });
 
-const room = db.select().from(schema.room).get();
+const room = db.select().from(schema.room).where(ne(schema.room.code, DEMO_CODE)).get(); // демо-комната гостей — не наша
 if (!room) throw new Error('Комнаты ещё нет: запустите npm run setup');
 const players = db
   .select()

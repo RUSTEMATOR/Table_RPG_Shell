@@ -5,6 +5,7 @@ import type { FastifyInstance } from 'fastify';
 import { requireGm } from '../auth/requireGm.ts';
 import { claudeConfigured } from '../ai/claude/client.ts';
 import { BUILD_ID, config } from '../config.ts';
+import { isDemoRoom } from '../domain/demo.ts';
 
 // Страница «Состояние» для мастера: аптайм, размер базы, последний бэкап, nginx -t, IP Cloudflare, DDNS.
 
@@ -45,7 +46,9 @@ function nginxCheck(): Promise<{ ok: boolean; output: string } | null> {
 
 export async function statusRoutes(app: FastifyInstance) {
   app.addHook('onRequest', requireGm);
-  app.get('/api/gm/status', async () => {
+  app.get('/api/gm/status', async (request, reply) => {
+    // Состояние сервера (память, nginx, адрес DDNS) гостям демо-комнаты не показываем.
+    if (isDemoRoom(request.auth!.room.id)) return reply.code(404).send({ error: 'not_found' });
     const cfFile = config.CF_IPS_FILE;
     return {
       build: BUILD_ID,

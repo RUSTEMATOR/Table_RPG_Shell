@@ -1,7 +1,9 @@
+import { ne } from 'drizzle-orm';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import { issueInvite } from '../auth/invites.ts';
 import { newId } from '../auth/tokens.ts';
 import { config } from '../config.ts';
+import { DEMO_CODE } from '../domain/demo.ts';
 import { db, schema, sqlite } from '../db/client.ts';
 import { MIGRATIONS_DIR } from '../paths.ts';
 import { arg } from './prompt.ts';
@@ -16,7 +18,7 @@ if (!name || (role !== 'player' && role !== 'table')) {
   console.log('Использование: npm run invite -- --name "Имя" [--role player|table]');
   process.exit(1);
 }
-const room = db.select().from(schema.room).get();
+const room = db.select().from(schema.room).where(ne(schema.room.code, DEMO_CODE)).get(); // демо-комната гостей — не наша
 if (!room) throw new Error('Комнаты ещё нет: запустите npm run setup');
 
 const id = newId();

@@ -18,6 +18,11 @@ export function Login() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [dir, setDir] = useState<1 | -1>(1);
+  // Гостевой вход в демо-комнату: сервер включает его только в разработке.
+  const [guest, setGuest] = useState(false);
+  useEffect(() => {
+    void api<{ enabled: boolean }>('GET', '/api/auth/guest').then((r) => r.ok && setGuest(r.data.enabled));
+  }, []);
 
   useEffect(() => {
     if (!loading && me) navigate(homeFor(me.member.role), { replace: true });
@@ -84,6 +89,7 @@ export function Login() {
           <Button type="submit" variant="primary" size="lg" disabled={busy || code.trim().length !== 6}>
             {busy ? 'Ищу…' : 'Дальше'}
           </Button>
+          {guest && <GuestEntry onError={setError} />}
         </form>
       )}
       {step === 'who' && room && (
@@ -151,5 +157,37 @@ export function Login() {
       )}
       {step === 'who' && error && <p className="error m-0">{error}</p>}
     </AuthFrame>
+  );
+}
+
+/** «Посмотреть без входа»: отдельная демо-комната с тестовыми данными, роль на выбор. Только в разработке. */
+function GuestEntry({ onError }: { onError: (e: string | null) => void }) {
+  const { refresh } = useMe();
+  const navigate = useNavigate();
+  const [busy, setBusy] = useState(false);
+  const enter = async (role: 'gm' | 'player' | 'table') => {
+    setBusy(true);
+    onError(null);
+    const r = await api<{ ok: true }>('POST', '/api/auth/guest', { role });
+    setBusy(false);
+    if (!r.ok) return onError(errorText(r.error, r.retryAfterSec));
+    const next = await refresh();
+    if (next) navigate(homeFor(next.member.role), { replace: true });
+  };
+  return (
+    <div className="mt-2 grid gap-2 border-t border-dashed border-border pt-3">
+      <p className="m-0 text-[13.6px] text-muted">Посмотреть без входа — демо-комната с тестовыми данными, ваша комната её не видит:</p>
+      <div className="grid grid-cols-3 gap-2">
+        <Button size="sm" disabled={busy} onClick={() => enter('gm')}>
+          Мастер
+        </Button>
+        <Button size="sm" disabled={busy} onClick={() => enter('player')}>
+          Игрок
+        </Button>
+        <Button size="sm" disabled={busy} onClick={() => enter('table')}>
+          Стол
+        </Button>
+      </div>
+    </div>
   );
 }

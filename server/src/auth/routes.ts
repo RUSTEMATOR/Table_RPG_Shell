@@ -1,18 +1,11 @@
+import { z } from 'zod';
 import { and, eq, inArray, isNotNull } from 'drizzle-orm';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import {
-  GmPasswordSchema,
-  InviteAcceptSchema,
-  InviteInfoSchema,
-  LoginMembersSchema,
-  LoginRequestSchema,
-  MeSchema,
-  PinSchema,
-  RoomCodeSchema,
-} from '@zg/shared';
+import { GmPasswordSchema, InviteAcceptSchema, InviteInfoSchema, LoginMembersSchema, LoginRequestSchema, MeSchema, PinSchema, RoomCodeSchema } from '@zg/shared';
 import { db, schema } from '../db/client.ts';
 import { ipAttempts, memberFailures } from './rateLimit.ts';
 import { burnTime, hashSecret, verifySecret } from './secrets.ts';
+import { demoEnabled, demoMember } from '../domain/demo.ts';
 import { createSession, destroySession } from './sessions.ts';
 import { sha256 } from './tokens.ts';
 
@@ -33,7 +26,11 @@ function checkIp(request: FastifyRequest, reply: FastifyReply): boolean {
 }
 
 function findInvite(token: string) {
-  return db.select().from(schema.member).where(eq(schema.member.inviteTokenHash, sha256(token))).get();
+  return db
+    .select()
+    .from(schema.member)
+    .where(eq(schema.member.inviteTokenHash, sha256(token)))
+    .get();
 }
 
 function inviteState(m: ReturnType<typeof findInvite>): 'ok' | 'used' | 'expired' | 'missing' {
@@ -86,6 +83,18 @@ export async function authRoutes(app: FastifyInstance) {
     memberFailures.reset(`m:${m.id}`);
     createSession(reply, m.id);
     return { ok: true, role: m.role };
+  });
+
+  // Гостевой вход в демо-комнату — только в разработке (domain/demo.ts). В проде маршрут отвечает 404.
+  app.get('/api/auth/guest', async () => ({ enabled: demoEnabled() }));
+  const GuestSchema = z.strictObject({ role: z.enum(['gm', 'player', 'table']) });
+  app.post('/api/auth/guest', async (request, reply) => {
+    if (!demoEnabled()) return reply.code(404).send({ error: 'not_found' });
+    if (!checkIp(request, reply)) return;
+    const b = GuestSchema.safeParse(request.body);
+    if (!b.success) return reply.code(400).send({ error: 'bad_request' });
+    createSession(reply, demoMember(b.data.role));
+    return { ok: true, role: b.data.role };
   });
 
   app.get<{ Params: { code: string } }>('/api/auth/room/:code', async (request, reply) => {

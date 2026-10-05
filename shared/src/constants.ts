@@ -67,3 +67,6 @@ export const PLACE_KIND_LABELS: Record<PlaceKind, string> = {
   storm: 'Буря',
   mark: 'Отметка',
 };
+
+// ---- Демо-комната для гостей (только в разработке, server/src/domain/demo.ts) ----
+export const DEMO_ROOM_CODE = 'DEMO26';

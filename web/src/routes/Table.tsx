@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { AnimatePresence, m, MotionConfig } from 'motion/react';
-import { EFFECT_LABELS, type TableState } from '@zg/shared';
+import { DEMO_ROOM_CODE, EFFECT_LABELS, type TableState } from '@zg/shared';
 import { ConnectionDot } from '../components/ConnectionDot.tsx';
 import { api } from '../lib/api.ts';
 import { useFeed } from '../lib/feed.ts';
@@ -33,10 +33,10 @@ export function Table() {
     else if (me.member.role !== 'table') navigate(homeFor(me.member.role), { replace: true });
   }, [loading, me, navigate]);
   if (!me || me.member.role !== 'table') return <div className="screen center muted">Загрузка…</div>;
-  return <TableScreen room={me.room.name} />;
+  return <TableScreen room={me.room.name} demo={me.room.code === DEMO_ROOM_CODE} />;
 }
 
-function TableScreen({ room }: { room: string }) {
+function TableScreen({ room, demo }: { room: string; demo: boolean }) {
   useWakeLock();
   useEffect(() => ensureTheme('other'), []); // шрифты макета: Oranienbaum, IBM Plex
   const [state, setState] = useState<TableState>({ scene: null, npc: null, map: null });
@@ -105,6 +105,19 @@ function TableScreen({ room }: { room: string }) {
           >
             {still ? 'Анимация выкл.' : 'Анимация вкл.'}
           </button>
+          {/* Стол не выходит никогда — кроме гостя демо-комнаты: ему надо сменить роль. */}
+          {demo && (
+            <button
+              type="button"
+              onClick={async () => {
+                await api('POST', '/api/auth/logout');
+                location.assign('/login');
+              }}
+              className="cursor-pointer rounded-full border border-solid border-[var(--tv-line)] bg-transparent px-4 py-1.5 font-[inherit] text-[0.8em] text-[var(--tv-ink)] hover:bg-white/10"
+            >
+              Выйти
+            </button>
+          )}
         </header>
 
         <TvNpc npc={state.npc} />

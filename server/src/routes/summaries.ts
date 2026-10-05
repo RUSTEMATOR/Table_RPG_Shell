@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyReply } from 'fastify';
 import { SUMMARY_KINDS, SummaryGenerateSchema, SummarySaveSchema, type SummaryCheck, type SummaryKindKey, type SummaryOptions } from '@zg/shared';
 import { checkFacts, checkPublicText } from '../ai/jev/integrations.ts';
 import { claudeConfigured, generateText, type ClaudeFailure } from '../ai/claude/client.ts';
+import { isDemoRoom } from '../domain/demo.ts';
 import { requireGm } from '../auth/requireGm.ts';
 import { pronounWord } from '../domain/character.ts';
 import { loadCharacter, saveDoc } from '../domain/repo.ts';
@@ -42,6 +43,7 @@ export async function summaryRoutes(app: FastifyInstance) {
     const b = SummaryGenerateSchema.safeParse(request.body);
     if (!b.success || !SUM_TONES.includes(b.data.tone)) return reply.code(400).send({ error: 'bad_request' });
     const roomId = request.auth!.room.id;
+    if (isDemoRoom(roomId)) return reply.code(403).send({ error: 'demo', message: 'В демо-комнате ИИ выключен' });
     const lc = loadCharacter(roomId, request.params.id);
     if (!lc || lc.row.kind !== 'popadanets') return reply.code(404).send({ error: 'not_found' });
     const person = hasPerson(kind) ? b.data.person : '';

@@ -1,8 +1,9 @@
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, ne } from 'drizzle-orm';
 import { GmPasswordSchema } from '@zg/shared';
 import { hashSecret } from '../auth/secrets.ts';
 import { newId, newRoomCode } from '../auth/tokens.ts';
+import { DEMO_CODE } from '../domain/demo.ts';
 import { db, schema, sqlite } from '../db/client.ts';
 import { MIGRATIONS_DIR } from '../paths.ts';
 import { arg, ask, askHidden, flag } from './prompt.ts';
@@ -32,7 +33,7 @@ async function readPassword(): Promise<string> {
   }
 }
 
-const existing = db.select().from(schema.room).get();
+const existing = db.select().from(schema.room).where(ne(schema.room.code, DEMO_CODE)).get(); // демо-комната гостей — не наша
 
 if (flag('reset-gm-password')) {
   if (!existing) throw new Error('Комнаты ещё нет: запустите npm run setup');

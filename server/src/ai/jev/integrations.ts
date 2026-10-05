@@ -8,6 +8,7 @@ import type { RollRow } from '../../domain/rollService.ts';
 import { publish } from '../../realtime/publish.ts';
 import { log } from '../../realtime/log.ts';
 import { jevFeatures } from './client.ts';
+import { isDemoRoom } from '../../domain/demo.ts';
 import { saveJudgment } from './judgments.ts';
 import { runDiaryMatch } from './questions/diaryMatch.ts';
 import { runGreenMagic } from './questions/greenMagic.ts';
@@ -25,7 +26,7 @@ const asTrait = (doc: CharDoc, i: number): JevTrait => {
 
 /** Подсказку к черте slot проверяем до сохранения: не выдаёт ли она свою черту слишком явно и не задевает ли чужие. */
 export async function checkHint(roomId: string, characterId: string, slot: number, hint: string): Promise<HintCheck> {
-  if (!jevFeatures.leakGuard()) return { status: 'off', selfScore: null, others: [] };
+  if (!jevFeatures.leakGuard() || isDemoRoom(roomId)) return { status: 'off', selfScore: null, others: [] };
   const lc = loadCharacter(roomId, characterId);
   if (!lc || !lc.doc.slots[slot] || !hint.trim()) return { status: 'ok', selfScore: null, others: [] };
   const others = lc.doc.slots.map((s, i) => ({ s, i })).filter(({ s, i }) => i !== slot && !normRevealed(s.revealed).trait);
@@ -48,7 +49,7 @@ export async function checkPublicText(
   text: string,
   docs: CharDoc[],
 ): Promise<{ status: HintCheck['status']; others: HintCheck['others'] }> {
-  if (!jevFeatures.leakGuard()) return { status: 'off', others: [] };
+  if (!jevFeatures.leakGuard() || isDemoRoom(roomId)) return { status: 'off', others: [] };
   const traits: { key: string; name: string; description: string }[] = [];
   docs.forEach((doc, d) =>
     doc.slots.forEach((s, i) => {
@@ -70,7 +71,7 @@ export async function checkPublicText(
 
 /** После сохранения не личной записи дневника — какую скрытую черту игрок, похоже, нащупал. */
 export function matchDiaryInBackground(roomId: string, entry: DiaryRow): void {
-  if (!jevFeatures.diaryMatch() || entry.private || !entry.characterId) return;
+  if (!jevFeatures.diaryMatch() || isDemoRoom(roomId) || entry.private || !entry.characterId) return;
   const lc = loadCharacter(roomId, entry.characterId);
   if (!lc) return;
   const hidden = lc.doc.slots.map((s, i) => ({ s, i })).filter(({ s }) => !normRevealed(s.revealed).trait);
@@ -94,7 +95,7 @@ export function matchDiaryInBackground(roomId: string, entry: DiaryRow): void {
 
 /** Заявка броска с текстом — не зелёная ли магия: мастеру «+1 к перегрузке?». */
 export function greenForRollInBackground(roomId: string, roll: RollRow): void {
-  if (!jevFeatures.greenMagic() || !roll.label.trim() || !roll.characterId || roll.visibility === 'gm_hidden') return;
+  if (!jevFeatures.greenMagic() || isDemoRoom(roomId) || !roll.label.trim() || !roll.characterId || roll.visibility === 'gm_hidden') return;
   const characterId = roll.characterId;
   const characterName = roll.characterName ?? '';
   void (async () => {
@@ -113,7 +114,7 @@ export async function checkFacts(
   data: unknown,
   text: string,
 ): Promise<{ status: HintCheck['status']; flagged: { sentence: string; probability: number }[] }> {
-  if (!jevFeatures.leakGuard()) return { status: 'off', flagged: [] };
+  if (!jevFeatures.leakGuard() || isDemoRoom(roomId)) return { status: 'off', flagged: [] };
   const sentences = splitSentences(text);
   if (!sentences.length) return { status: 'ok', flagged: [] };
   const res = await runFactCheck(data, sentences);
