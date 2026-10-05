@@ -52,15 +52,13 @@ function PlayerHome() {
       </section>
     );
   return (
-    <section className="card">
-      <PlayerCard
-        c={character}
-        onChange={(c) => {
-          setCharacter(c);
-          rememberCard(c);
-        }}
-      />
-    </section>
+    <PlayerCard
+      c={character}
+      onChange={(c) => {
+        setCharacter(c);
+        rememberCard(c);
+      }}
+    />
   );
 }
 

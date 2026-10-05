@@ -48,6 +48,7 @@ export const PlayerCharacterSchema = z.strictObject({
   relations: z.array(PlayerSheetNoteSchema),
 });
 export type PlayerCharacter = z.infer<typeof PlayerCharacterSchema>;
+export type PlayerTrait = z.infer<typeof PlayerTraitSchema>;
 
 export const PlayerCharacterResponseSchema = z.strictObject({ character: PlayerCharacterSchema.nullable() });
 

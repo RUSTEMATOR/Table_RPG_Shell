@@ -1,88 +1,178 @@
-import { useState } from 'react';
-import type { PlayerCharacter, PlayerItem, PlayerSheetNote } from '@zg/shared';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import type { PlayerCharacter, PlayerItem, PlayerSheetNote, PlayerTrait } from '@zg/shared';
 import { api } from '../lib/api.ts';
+import {
+  catChipHtml,
+  dot,
+  DEMAND_WORDS,
+  ensureTheme,
+  magicSpin,
+  mdLite,
+  mountMagic,
+  ornSvg,
+  pictoSvg,
+  resolveTheme,
+  settingThemeOf,
+  themeData,
+} from '../lib/cardTheme/index.ts';
 
-const DEMAND = ['', 'почти не нужна', 'пригодится', 'нарасхват'];
+// Карточка игрока в разметке артефакта «Переход в Зеленогорье» (renderPlayer, renderPubSlot): тема по вселенной или жанру,
+// портрет с поворотом, орнамент, значки категорий, ступени, частицы по нажатию. HTML-помощники артефакта сами экранируют текст.
 
-/** Карточка, как её видит игрок. Используется и в предпросмотре у мастера (там onChange не передаётся — правки нет). */
-export function PlayerCard({ c, onChange }: { c: PlayerCharacter; onChange?: (c: PlayerCharacter) => void }) {
-  const sub = [c.origin, c.pronoun !== 'не указано' ? c.pronoun : '', c.powerBand ? `Уровень силы: ${c.powerBand}` : '']
-    .filter(Boolean)
-    .join(' · ');
+const html = (h: string) => ({ __html: h });
+const Deco = () => <i className="ct-fr" aria-hidden="true" />;
+const Chip = ({ k, label, st }: { k: string; label: string; st?: string }) => (
+  <div className="top" dangerouslySetInnerHTML={html(catChipHtml(k, label, st))} />
+);
+
+/** Карточка, как её видит игрок. В предпросмотре у мастера onChange не передаётся (правки нет) и частиц нет (fx=false). */
+export function PlayerCard({ c, onChange, fx = true }: { c: PlayerCharacter; onChange?: (c: PlayerCharacter) => void; fx?: boolean }) {
+  const th = resolveTheme(c.look);
+  ensureTheme(th);
+  const T = themeData(th);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!fx || !ref.current) return;
+    return mountMagic(ref.current, th, c.look.genre);
+  }, [fx, th, c.look.genre]);
+
+  const sub = [c.origin, c.pronoun !== 'не указано' ? c.pronoun : ''].filter(Boolean).join(' · ');
+  const empty =
+    c.traits.length === 0 && c.hints.length === 0 && !c.bio && c.items.length + c.conditions.length + c.relations.length === 0 && !onChange;
   return (
-    <div className="pcard">
-      <div>
-        <h2 className="pcard-name">{c.name}</h2>
-        {sub && <p className="muted small">{sub}</p>}
-      </div>
-      {c.bio && <p className="pcard-bio">{c.bio}</p>}
-      {c.profession && (
-        <section className="trait">
-          <p className="trait-cat">Ремесло в Зеленогорье</p>
-          <h3 className="trait-name">{c.profession.label}</h3>
-          {c.profession.local && <p>Местный аналог: {c.profession.local}</p>}
-          {c.profession.demand > 0 && <p className="small muted">Спрос: {DEMAND[c.profession.demand]}</p>}
-          {c.profession.edge && <p>{c.profession.edge}</p>}
-        </section>
-      )}
-      {c.traits.map((t, i) => (
-        <section key={i} className="trait">
-          <p className="trait-cat">{t.cat}</p>
-          <h3 className="trait-name">{t.name}</h3>
-          <p>{t.d}</p>
-          {t.stagesShown.length > 0 && (
-            <ol className="steps">
-              {t.stagesShown.map((s, k) => (
-                <li key={k}>{s}</li>
-              ))}
-            </ol>
+    <div ref={ref} className="card-theme p-card" data-ct={th} data-frame={String(T.frame)} data-seg={String(T.segment)}>
+      <div className="p-head ct-head">
+        <button type="button" className="p-spin" aria-label={c.portrait ? 'Повернуть портрет' : 'Повернуть знак'} onClick={(e) => magicSpin(e.currentTarget)}>
+          {c.portrait ? (
+            <img className="p-portrait" src={c.portrait} alt="Портрет персонажа" />
+          ) : (
+            <span className="p-sigil" dangerouslySetInnerHTML={html(pictoSvg(T.glyph || 'green'))} />
           )}
-          {t.price && <p className="small">Цена: {t.price}</p>}
-          {t.hint && <p className="hint-note">{t.hint}</p>}
-        </section>
-      ))}
-      {c.hints.map((h, i) => (
-        <section key={`h${i}`} className="trait trait-hint">
-          <p className="trait-cat">Что-то происходит</p>
-          <p>{h}</p>
-        </section>
-      ))}
-      {(c.items.length > 0 || onChange) && <Items items={c.items} onChange={onChange} />}
-      <Notes title="Состояния" list={c.conditions} />
-      <Notes title="Связи" list={c.relations} />
-      {c.summary && (
-        <section className="trait">
-          <p className="trait-cat">Вступление</p>
-          <p className="prewrap">{c.summary}</p>
-        </section>
+        </button>
+        <div>
+          <h2 className="view-title ct-title">{c.name || 'Без имени'}</h2>
+          {sub && <p className="ct-sub">{sub}</p>}
+          {c.powerBand && <p className="ct-sub pw-pub">Уровень силы: {c.powerBand}</p>}
+        </div>
+      </div>
+      <div dangerouslySetInnerHTML={html(ornSvg(th))} style={{ display: 'contents' }} />
+      {c.bio && (
+        <Slot chip={<Chip k="doc" label="О персонаже" />}>
+          <p className="prewrap">{c.bio}</p>
+        </Slot>
       )}
-      {c.crossing && (
-        <section className="trait">
-          <p className="trait-cat">Сцена перехода</p>
-          <p className="prewrap">{c.crossing}</p>
-        </section>
+      {c.summary && <Summary label="Вступление" text={c.summary} />}
+      {c.crossing && <Summary label="Переход" text={c.crossing} />}
+      {c.profession && (
+        <div className="ctc craft">
+          <Deco />
+          <Chip k="craft" label="Ремесло в Зеленогорье" />
+          <h3 className="name">{c.profession.label}</h3>
+          {c.profession.local && (
+            <>
+              <p className="k">Местный аналог</p>
+              <p>{dot(c.profession.local)}</p>
+            </>
+          )}
+          {c.profession.demand > 0 && (
+            <>
+              <p className="k">Спрос</p>
+              <p className="pips" role="img" aria-label={`Спрос: ${c.profession.demand} из 3, ${DEMAND_WORDS[c.profession.demand]}`}>
+                {[1, 2, 3].map((k) => (
+                  <i key={k} className={k <= c.profession!.demand ? 'on' : ''} />
+                ))}
+                <span>{DEMAND_WORDS[c.profession.demand]}</span>
+              </p>
+            </>
+          )}
+          {c.profession.edge && (
+            <>
+              <p className="k">Преимущество</p>
+              <p>{dot(c.profession.edge)}</p>
+            </>
+          )}
+        </div>
       )}
-      {c.traits.length === 0 && c.hints.length === 0 && !c.bio && c.items.length + c.conditions.length + c.relations.length === 0 && !onChange && (
-        <p className="muted">Мир пока присматривается к тебе.</p>
-      )}
+      <div className="result">
+        {c.traits.map((t, i) => (
+          <PubSlot key={i} t={t} />
+        ))}
+        {c.hints.map((h, i) => (
+          <Slot key={`h${i}`} chip={<Chip k="" label="Что-то происходит" />}>
+            <div className="note">{h}</div>
+          </Slot>
+        ))}
+        {(c.items.length > 0 || onChange) && <Items items={c.items} onChange={onChange} />}
+        <Notes title="Состояния" picto="bolt" list={c.conditions} />
+        <Notes title="Связи" picto="relation" list={c.relations} />
+      </div>
+      {empty && <p className="hint">Мир пока присматривается к тебе.</p>}
     </div>
   );
 }
 
-function Notes({ title, list }: { title: string; list: PlayerSheetNote[] }) {
+function Slot({ chip, children }: { chip: ReactNode; children: ReactNode }) {
+  return (
+    <div className="ctc pub">
+      <Deco />
+      {chip}
+      {children}
+    </div>
+  );
+}
+
+function Summary({ label, text }: { label: string; text: string }) {
+  return (
+    <div className="ctc ctc-sum pub-sum">
+      <Deco />
+      <Chip k="summary" label={label} />
+      <div className="sum-body" dangerouslySetInnerHTML={html(mdLite(text))} />
+    </div>
+  );
+}
+
+/** Черта как renderPubSlot артефакта: значок категории, имя, суть, открытые ступени, цена, подсказка. */
+function PubSlot({ t }: { t: PlayerTrait }) {
+  const n = t.stagesShown.length;
+  return (
+    <Slot chip={<Chip k={t.catKey} label={t.cat} st={t.setting ? settingThemeOf(t.setting) : undefined} />}>
+      <h2 className="name">{t.name}</h2>
+      {t.d && <p>{dot(t.d)}</p>}
+      <div className="stages" role="img" aria-label={`Открыто ступеней ${n} из 4`}>
+        {[1, 2, 3, 4].map((k) => (
+          <i key={k} className={k <= n ? 'on' : ''} />
+        ))}
+      </div>
+      <p className="hint">Открыто ступеней: {n} из 4</p>
+      {n > 0 && (
+        <ol>
+          {t.stagesShown.map((x, k) => (
+            <li key={k}>{x}</li>
+          ))}
+        </ol>
+      )}
+      {t.price && (
+        <>
+          <p className="k">Цена</p>
+          <p>{dot(t.price)}</p>
+        </>
+      )}
+      {t.hint && <div className="note">{t.hint}</div>}
+    </Slot>
+  );
+}
+
+function Notes({ title, picto, list }: { title: string; picto: string; list: PlayerSheetNote[] }) {
   if (!list.length) return null;
   return (
-    <section className="trait">
-      <p className="trait-cat">{title}</p>
-      <ul className="sheet-list">
-        {list.map((n, i) => (
-          <li key={i}>
-            <b>{n.title}</b>
-            {n.text && <span className="prewrap"> — {n.text}</span>}
-          </li>
-        ))}
-      </ul>
-    </section>
+    <Slot chip={<Chip k={picto} label={title} />}>
+      {list.map((n, i) => (
+        <div key={i}>
+          <h3 className="name">{n.title}</h3>
+          {n.text && <p className="prewrap">{n.text}</p>}
+        </div>
+      ))}
+    </Slot>
   );
 }
 
@@ -139,9 +229,8 @@ function Items({ items, onChange }: { items: PlayerItem[]; onChange?: (c: Player
   );
 
   return (
-    <section className="trait">
-      <p className="trait-cat">Снаряжение</p>
-      {items.length === 0 && !editing && <p className="small muted">Пока пусто.</p>}
+    <Slot chip={<Chip k="block" label="Снаряжение" />}>
+      {items.length === 0 && !editing && <p className="hint">Пока пусто.</p>}
       <ul className="sheet-list">
         {items.map((it) => (
           <li key={it.id}>
@@ -173,6 +262,6 @@ function Items({ items, onChange }: { items: PlayerItem[]; onChange?: (c: Player
         </button>
       )}
       {error && <p className="error small">{error}</p>}
-    </section>
+    </Slot>
   );
 }

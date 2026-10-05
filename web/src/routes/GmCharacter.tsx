@@ -111,7 +111,7 @@ function CharacterPage() {
       {preview && (
         <section className="card preview">
           <p className="small muted">Ровно то, что получит игрок.</p>
-          <PlayerCard c={c.player} />
+          <PlayerCard c={c.player} fx={false} />
         </section>
       )}
 
