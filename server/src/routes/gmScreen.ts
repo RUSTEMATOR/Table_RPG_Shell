@@ -6,7 +6,7 @@ import { checkHint } from '../ai/jev/integrations.ts';
 import { requireGm } from '../auth/requireGm.ts';
 import { db, schema } from '../db/client.ts';
 import { diaryForGm, diaryForPlayer, getDiary, listDiaryForGm } from '../domain/diary.ts';
-import { getNote, saveNote } from '../domain/notes.ts';
+import { getNote, pastNotes, saveNote } from '../domain/notes.ts';
 import { changeOverload, overloadView } from '../domain/overload.ts';
 import { listCharacters } from '../domain/repo.ts';
 import { activeSession } from '../domain/session.ts';
@@ -77,11 +77,14 @@ export async function gmScreenRoutes(app: FastifyInstance) {
     if (!b.success) return reply.code(400).send({ error: 'bad_request' });
     const roomId = request.auth!.room.id;
     const s = activeSession(roomId);
+    if (b.data.sessionId && b.data.sessionId !== s.id) return reply.code(409).send({ error: 'session_changed', note: getNote(s.id) });
     const res = saveNote(s.id, b.data.text, b.data.baseUpdatedAt);
     if (!res.ok) return reply.code(409).send({ error: 'conflict', note: res.note });
     publish(roomId, { kind: 'gm' }, 'gm:notes.changed', { sessionId: s.id, updatedAt: res.note.updatedAt });
     return res.note;
   });
+
+  app.get('/api/gm/notes/history', async (request) => pastNotes(request.auth!.room.id));
 
   // ---- Jev: проверка подсказки до сохранения ----
 

@@ -75,12 +75,25 @@ export const SIGN_TEXT: Record<OverloadSign, string> = {
 
 // ---- Заметки сессии ----
 
-export const NoteSaveSchema = z.strictObject({ text: z.string().max(100000), baseUpdatedAt: z.number().int().min(0) });
+export const NoteSaveSchema = z.strictObject({
+  text: z.string().max(100000),
+  baseUpdatedAt: z.number().int().min(0),
+  /** Сессия, к которой шла правка: если мастер начал новую, сохранение не уйдёт в чужие заметки. */
+  sessionId: z.string().max(64).optional(),
+});
 
 export interface GmNote {
   sessionId: string;
   text: string;
   updatedAt: number;
+}
+
+/** Заметки прошлой сессии (только чтение). */
+export interface GmPastNote {
+  sessionId: string;
+  startedAt: number;
+  endedAt: number;
+  text: string;
 }
 
 // ---- Подсказки Jev мастеру ----
