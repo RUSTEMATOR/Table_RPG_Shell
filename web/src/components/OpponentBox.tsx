@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import type { GmNpc, GmSessionView } from '@zg/shared';
 import { api } from '../lib/api.ts';
 import { useSocketEvent } from '../lib/socket.ts';
-import { toast } from '../ui/index.ts';
+import { Button, Card, CardTitle, Field, Input, Select, toast } from '../ui/index.ts';
 
 const when = (t: number) => new Date(t).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 
@@ -73,53 +73,80 @@ export function OpponentBox() {
     }
   };
 
+  const npc = npcs.find((n) => n.id === s?.opponentNpcId);
   return (
-    <form onSubmit={save} className="stack">
-      {s && (
-        <div className="row spread">
-          <span className="small muted">Сессия с {when(s.startedAt)}</span>
-          <button type="button" className="btn btn-ghost" onClick={startNew} onBlur={() => setConfirmNew(false)}>
-            {confirmNew ? 'Точно начать новую?' : 'Начать новую сессию'}
-          </button>
-        </div>
-      )}
-      {npcs.length > 0 && (
-        <label className="field">
-          <span>Из библиотеки</span>
-          <select value={s?.opponentNpcId ?? ''} onChange={(e) => void pick(e.target.value)}>
-            <option value="">{s?.opponentNpcId ? 'не из библиотеки' : 'выбрать…'}</option>
-            {npcs.map((n) => (
-              <option key={n.id} value={n.id}>
-                {n.name}
-                {n.power ? ` · ${n.power} (${n.band})` : ''}
-              </option>
-            ))}
-          </select>
-        </label>
-      )}
-      <div className="grid2">
-        <label className="field">
-          <span>Противник</span>
-          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={120} placeholder="например, Тролль" />
-        </label>
-        <label className="field">
-          <span>Его уровень силы{s?.opponentBand ? ` · ${s.opponentBand}` : ''}</span>
-          <input value={power} inputMode="numeric" onChange={(e) => setPower(e.target.value.replace(/\D/g, ''))} placeholder="пусто — без противника" />
-        </label>
-      </div>
-      <div className="row">
-        <button className="btn btn-secondary">Задать</button>
+    <Card as="section">
+      <div className="flex flex-wrap items-center gap-3">
+        <CardTitle className="grow">Противник сессии</CardTitle>
         {s?.opponentPower && (
-          <button type="button" className="btn btn-ghost" onClick={clear}>
-            Убрать противника
-          </button>
+          <Button variant="ghost" onClick={clear}>
+            Убрать
+          </Button>
         )}
       </div>
-      <p className="small muted">
-        {s?.opponentPower
-          ? `Сейчас броски игроков идут против силы ${s.opponentPower}.`
-          : 'Противник не задан: d10 игроков без поправки на силу.'}
-      </p>
-    </form>
+      {s?.opponentPower ? (
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="grid size-16 shrink-0 place-items-center overflow-hidden rounded-card border border-solid border-border bg-surface-2 text-accent">
+            {npc?.image ? (
+              <img src={npc.image.url} alt="" className="size-full object-cover" />
+            ) : (
+              <svg viewBox="0 0 24 24" aria-hidden="true" className="size-8 fill-none stroke-current stroke-[1.6] [stroke-linecap:round] [stroke-linejoin:round]">
+                <path d="M4 18h16M4 18L3 8l5 4 4-7 4 7 5-4-1 10" />
+              </svg>
+            )}
+          </div>
+          <div className="min-w-[200px] grow">
+            <div className="font-name text-[1.5rem] leading-tight">{s.opponentName || 'Без имени'}</div>
+            <div className="text-[13.6px] text-muted">
+              Уровень силы {s.opponentPower}
+              {s.opponentBand ? ` · ${s.opponentBand}` : ''} · броски игроков идут против этой силы
+            </div>
+          </div>
+        </div>
+      ) : (
+        <p className="m-0 text-muted">Противник не задан: d10 игроков без поправки на силу.</p>
+      )}
+      <form onSubmit={save} className="grid gap-3">
+        {npcs.length > 0 && (
+          <Field label="Из библиотеки">
+            {(id) => (
+              <Select
+                id={id}
+                value={s?.opponentNpcId ?? 'none'}
+                onValueChange={(v) => v !== 'none' && void pick(v)}
+                options={[
+                  { value: 'none', label: s?.opponentNpcId ? 'не из библиотеки' : 'выбрать…' },
+                  ...npcs.map((n) => ({ value: n.id, label: `${n.name}${n.power ? ` · ${n.power} (${n.band})` : ''}` })),
+                ]}
+              />
+            )}
+          </Field>
+        )}
+        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,220px)_auto] sm:items-end">
+          <Field label="Противник">{(id) => <Input id={id} value={name} onChange={(e) => setName(e.target.value)} maxLength={120} placeholder="например, Тролль" />}</Field>
+          <Field label={`Его уровень силы${s?.opponentBand ? ` · ${s.opponentBand}` : ''}`}>
+            {(id) => (
+              <Input
+                id={id}
+                value={power}
+                inputMode="numeric"
+                onChange={(e) => setPower(e.target.value.replace(/\D/g, ''))}
+                placeholder="пусто — без противника"
+                className="font-mono tabular-nums"
+              />
+            )}
+          </Field>
+          <Button type="submit">Задать</Button>
+        </div>
+      </form>
+      {s && (
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-solid border-border pt-3">
+          <span className="text-[13.6px] text-muted">Сессия с {when(s.startedAt)}</span>
+          <Button variant={confirmNew ? 'danger' : 'ghost'} size="sm" onClick={startNew} onBlur={() => setConfirmNew(false)}>
+            {confirmNew ? 'Точно начать новую?' : 'Начать новую сессию'}
+          </Button>
+        </div>
+      )}
+    </Card>
   );
 }

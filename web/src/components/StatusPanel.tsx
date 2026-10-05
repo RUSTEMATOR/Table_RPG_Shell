@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../lib/api.ts';
+import { cn } from '../lib/cn.ts';
+import { Button, Card, CardTitle } from '../ui/index.ts';
 
 interface Status {
   build: string;
@@ -50,22 +52,22 @@ export function StatusPanel() {
     ['Claude API', s.claude ? 'ключ задан' : 'ключа нет'],
   ];
   return (
-    <section className="card">
-      <div className="row spread">
-        <h2>Состояние</h2>
-        <button type="button" className="btn btn-ghost" onClick={load}>
+    <Card>
+      <div className="flex items-center gap-3">
+        <CardTitle className="grow">Состояние</CardTitle>
+        <Button variant="ghost" size="sm" onClick={load}>
           Обновить
-        </button>
+        </Button>
       </div>
-      <dl className="status">
+      <dl className="m-0 grid gap-x-6 sm:grid-cols-[auto_1fr]">
         {rows.map(([k, v, bad]) => (
-          <div key={k} className="status-row">
-            <dt>{k}</dt>
-            <dd className={bad ? 'error' : ''}>{v}</dd>
+          <div key={k} className="contents">
+            <dt className="pt-2 font-ui text-[13.6px] text-muted">{k}</dt>
+            <dd className={cn('m-0 border-b border-solid border-border pb-2 sm:pt-2', bad && 'font-semibold text-danger')}>{v}</dd>
           </div>
         ))}
       </dl>
-      {s.nginx && !s.nginx.ok && <pre className="small prewrap">{s.nginx.output}</pre>}
-    </section>
+      {s.nginx && !s.nginx.ok && <pre className="small prewrap m-0">{s.nginx.output}</pre>}
+    </Card>
   );
 }

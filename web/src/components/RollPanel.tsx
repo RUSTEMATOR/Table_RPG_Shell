@@ -7,7 +7,7 @@ import { capabilities, fullEffects } from '../lib/capabilities.ts';
 import { haptics } from '../lib/haptics.ts';
 import { simulateThrow, warmPhysics } from '../dice/physics.ts';
 import type { StageRoll } from '../dice/DiceStage.tsx';
-import { Button, Card, Input, Segmented } from '../ui/index.ts';
+import { Button, Card, CardTitle, Input, Segmented } from '../ui/index.ts';
 import { cn } from '../lib/cn.ts';
 
 const DiceStage = lazy(() => import('../dice/DiceStage.tsx'));
@@ -139,7 +139,9 @@ export function RollPanel({ role }: { role: 'gm' | 'player' }) {
     const f = flick.current;
     flick.current = null;
     if (!f || busy) return;
-    const dx = e.clientX - f.x, dy = e.clientY - f.y, dist = Math.hypot(dx, dy);
+    const dx = e.clientX - f.x,
+      dy = e.clientY - f.y,
+      dist = Math.hypot(dx, dy);
     if (dist < 24) return;
     const speed = dist / Math.max(40, performance.now() - f.t);
     send(kind, newRequestId(), Math.atan2(-dy, -dx), Math.min(1, speed / 2.5));
@@ -149,67 +151,83 @@ export function RollPanel({ role }: { role: 'gm' | 'player' }) {
   const trayH = role === 'gm' ? 'h-[220px]' : 'h-[clamp(240px,46dvh,380px)]';
 
   return (
-    <Card className="roll-panel gap-3">
-      <div
-        className={cn('relative overflow-hidden rounded-sheet border border-solid border-border bg-surface-2 select-none', trayH, three && 'touch-none')}
-        onPointerDown={three ? onDown : undefined}
-        onPointerUp={three ? onUp : undefined}
-      >
-        {three && (
-          <Suspense fallback={null}>
-            <DiceStage
-              className="!absolute inset-0"
-              roll={stage}
-              onImpact={(s) => haptics.bump(s)}
-              onLanded={onLanded}
-              onLost={() => {
-                setThree(false);
-                const l = landed.current;
-                landed.current = null;
-                if (l) finish(l.roll);
-              }}
-            />
-          </Suspense>
-        )}
-        {three && !busy && !shown && <span className="pointer-events-none absolute top-3 left-4 font-ui text-xs tracking-[.06em] text-muted uppercase">Смахни по лотку, чтобы бросить</span>}
-        <div aria-live="polite" className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center">
-          {spin !== null && <span className="font-mono text-5xl font-medium tabular-nums text-muted">{spin}</span>}
-          {spin === null && shown && (
-            <span className="flex items-baseline gap-3 rounded-full border border-solid border-border bg-surface px-5 py-1.5 shadow-card">
-              <b className="font-mono text-3xl font-medium tabular-nums">{shown.value}</b>
-              <span className={cn('font-ui text-base font-semibold', effectTone(shown.effect))}>{EFFECT_LABELS[shown.effect]}</span>
-            </span>
+    <Card className="roll-panel @container/roll gap-3">
+      {role === 'gm' && <CardTitle>Бросок мастера</CardTitle>}
+      <div className={cn('grid gap-3', role === 'gm' && '@xl/roll:grid-cols-2 @xl/roll:items-start')}>
+        <div
+          className={cn('relative overflow-hidden rounded-sheet border border-solid border-border bg-surface-2 select-none', trayH, three && 'touch-none')}
+          onPointerDown={three ? onDown : undefined}
+          onPointerUp={three ? onUp : undefined}
+        >
+          {three && (
+            <Suspense fallback={null}>
+              <DiceStage
+                className="!absolute inset-0"
+                roll={stage}
+                onImpact={(s) => haptics.bump(s)}
+                onLanded={onLanded}
+                onLost={() => {
+                  setThree(false);
+                  const l = landed.current;
+                  landed.current = null;
+                  if (l) finish(l.roll);
+                }}
+              />
+            </Suspense>
           )}
-          {!three && spin === null && !shown && !busy && <span className="font-ui text-sm text-muted">Выбери кубик и бросай</span>}
+          {three && !busy && !shown && (
+            <span className="pointer-events-none absolute top-3 left-4 font-ui text-xs tracking-[.06em] text-muted uppercase">Смахни по лотку, чтобы бросить</span>
+          )}
+          <div aria-live="polite" className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center">
+            {spin !== null && <span className="font-mono text-5xl font-medium tabular-nums text-muted">{spin}</span>}
+            {spin === null && shown && (
+              <span className="flex items-baseline gap-3 rounded-full border border-solid border-border bg-surface px-5 py-1.5 shadow-card">
+                <b className="font-mono text-3xl font-medium tabular-nums">{shown.value}</b>
+                <span className={cn('font-ui text-base font-semibold', effectTone(shown.effect))}>{EFFECT_LABELS[shown.effect]}</span>
+              </span>
+            )}
+            {!three && spin === null && !shown && !busy && <span className="font-ui text-sm text-muted">Выбери кубик и бросай</span>}
+          </div>
         </div>
-      </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <Segmented label="Кубик" value={kind} onChange={setKind} options={[{ value: 'd10', label: 'd10' }, { value: 'd20', label: 'd20' }]} />
-        <Segmented label="Кто видит" value={visibility} onChange={setVisibility} options={options} />
-      </div>
-      <Input
-        className="roll-label"
-        aria-label="Подпись к броску"
-        placeholder={role === 'gm' ? 'Кто или что бросает (необязательно)' : 'Что делаю (необязательно)'}
-        value={label}
-        maxLength={300}
-        onChange={(e) => setLabel(e.target.value)}
-        disabled={busy}
-      />
-      <Button variant="primary" size="lg" className="w-full" disabled={busy} onClick={() => send(kind, newRequestId())}>
-        {busy ? 'Бросаю…' : `Бросить ${kind}`}
-      </Button>
-
-      {error && pending && (
-        <div className="flex flex-wrap items-center gap-2">
-          <p className="error m-0 grow">{error}</p>
-          <Button onClick={() => send(pending.kind, pending.id)}>Повторить</Button>
-          <Button variant="ghost" onClick={() => (setPending(null), setError(null))}>
-            Отмена
+        <div className="grid content-start gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Segmented
+              label="Кубик"
+              value={kind}
+              onChange={setKind}
+              options={[
+                { value: 'd10', label: 'd10' },
+                { value: 'd20', label: 'd20' },
+              ]}
+            />
+            <Segmented label="Кто видит" value={visibility} onChange={setVisibility} options={options} />
+          </div>
+          <Input
+            className="roll-label"
+            aria-label="Подпись к броску"
+            placeholder={role === 'gm' ? 'Кто или что бросает (необязательно)' : 'Что делаю (необязательно)'}
+            value={label}
+            maxLength={300}
+            onChange={(e) => setLabel(e.target.value)}
+            disabled={busy}
+          />
+          <Button variant="primary" size="lg" className="w-full" disabled={busy} onClick={() => send(kind, newRequestId())}>
+            {busy ? 'Бросаю…' : `Бросить ${kind}`}
           </Button>
+
+          {error && pending && (
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="error m-0 grow">{error}</p>
+              <Button onClick={() => send(pending.kind, pending.id)}>Повторить</Button>
+              <Button variant="ghost" onClick={() => (setPending(null), setError(null))}>
+                Отмена
+              </Button>
+            </div>
+          )}
+          {role === 'gm' && visibility === 'gm_hidden' && <p className="m-0 text-[13.6px] text-muted">Скрытый бросок видите только вы. На столе и у игроков его нет.</p>}
         </div>
-      )}
+      </div>
     </Card>
   );
 }

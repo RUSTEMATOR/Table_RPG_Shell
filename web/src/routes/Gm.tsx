@@ -8,8 +8,9 @@ import { OverloadPanel } from '../components/OverloadPanel.tsx';
 import { StatusPanel } from '../components/StatusPanel.tsx';
 import { api } from '../lib/api.ts';
 import { useSocketEvent } from '../lib/socket.ts';
+import { cn } from '../lib/cn.ts';
 import { errorText } from './errors.ts';
-import { toast } from '../ui/index.ts';
+import { Badge, Button, buttonVariants, Card, CardTitle, Field, Input, Segmented, Skeleton, toast } from '../ui/index.ts';
 
 function memberStatus(m: GmMember): string {
   if (m.role === 'gm') return 'мастер';
@@ -20,14 +21,12 @@ function memberStatus(m: GmMember): string {
 
 function InviteBox({ invite, name }: { invite: InviteCreated; name: string }) {
   const url = `${location.origin}${invite.path}`;
-  const [copied, setCopied] = useState(false);
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(url);
-      setCopied(true);
       toast('Ссылка скопирована');
     } catch {
-      setCopied(false);
+      toast.error('Не скопировалось — выделите ссылку вручную');
     }
   };
   const share = async () => {
@@ -36,38 +35,36 @@ function InviteBox({ invite, name }: { invite: InviteCreated; name: string }) {
     } catch {}
   };
   return (
-    <div className="invite">
-      <p className="small muted">
+    <div className="grid gap-2 rounded-control border border-solid border-accent bg-accent-soft p-3">
+      <p className="m-0 text-[13.6px] text-muted">
         Ссылка для {name}, одноразовая, до {new Date(invite.expiresAt).toLocaleDateString('ru-RU')}:
       </p>
-      <code className="invite-url">{url}</code>
-      <div className="row">
-        <button className="btn btn-secondary" onClick={copy}>
-          {copied ? 'Скопировано' : 'Копировать'}
-        </button>
+      <code className="font-mono text-[13px] break-all select-all">{url}</code>
+      <div className="flex flex-wrap gap-2">
+        <Button variant="primary" size="sm" onClick={copy}>
+          Копировать
+        </Button>
         {'share' in navigator && (
-          <button className="btn btn-secondary" onClick={share}>
+          <Button size="sm" onClick={share}>
             Отправить
-          </button>
+          </Button>
         )}
       </div>
     </div>
   );
 }
 
+/** «Игра»: противник сессии, бросок мастера, партия. Лента — в правой колонке; здесь — только пока колонка не помещается. */
 export function Gm() {
   return (
     <>
-      <section className="card">
-        <h2>Сессия</h2>
-        <OpponentBox />
-      </section>
+      <OpponentBox />
       <RollPanel role="gm" />
-      {/* Лента здесь — только пока правая колонка не помещается. */}
-      <section className="card @5xl/gm:hidden">
-        <h2>Лента</h2>
+      <PartyStrip />
+      <Card className="@5xl/gm:hidden">
+        <CardTitle>Лента</CardTitle>
         <Feed gm limit={40} />
-      </section>
+      </Card>
     </>
   );
 }
@@ -78,6 +75,86 @@ export function GmParty() {
       <Characters />
       <OverloadPanel />
     </>
+  );
+}
+
+function useCharacters(): GmCharacterListItem[] | null {
+  const [list, setList] = useState<GmCharacterListItem[] | null>(null);
+  const reload = useCallback(async () => {
+    const r = await api<GmCharacterListItem[]>('GET', '/api/gm/characters');
+    if (r.ok) setList(r.data);
+  }, []);
+  useEffect(() => {
+    void reload();
+  }, [reload]);
+  useSocketEvent('gm:character.changed', () => void reload());
+  return list;
+}
+
+const charMeta = (c: GmCharacterListItem) => (c.kind === 'local' ? 'местный' : `черт: ${c.slots}, раскрыто ${c.revealed}, намёков ${c.hinted}`);
+
+/** Партия на «Игре»: персонажи с игроками, плитками — переход на страницу персонажа. */
+function PartyStrip() {
+  const list = useCharacters()?.filter((c) => c.ownerName);
+  return (
+    <Card>
+      <div className="flex items-center gap-3">
+        <CardTitle className="grow">Партия</CardTitle>
+        <Link to="/gm/party" viewTransition className="font-ui text-sm font-semibold text-link">
+          Все персонажи →
+        </Link>
+      </div>
+      {list === undefined && <Skeleton className="h-16" />}
+      {list?.length === 0 && <p className="m-0 text-muted">У игроков пока нет персонажей.</p>}
+      <div className="grid gap-3 sm:grid-cols-[repeat(auto-fill,minmax(200px,1fr))]">
+        {list?.map((c) => (
+          <Link
+            key={c.id}
+            to={`/gm/char/${c.id}`}
+            viewTransition
+            className="grid gap-1 rounded-card border border-solid border-border px-3.5 py-3 text-text no-underline transition-colors hover:border-accent hover:bg-surface-2"
+          >
+            <strong className="font-name text-[1.3rem] leading-tight font-normal">{c.name}</strong>
+            <span className="text-[13px] text-muted">
+              {c.ownerName} · {charMeta(c)}
+            </span>
+          </Link>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+function Characters() {
+  const list = useCharacters();
+  return (
+    <Card>
+      <div className="flex items-center gap-3">
+        <CardTitle className="grow">Персонажи</CardTitle>
+        <Link viewTransition className={cn(buttonVariants({ variant: 'primary' }), 'no-underline')} to="/gm/new">
+          Новый
+        </Link>
+      </div>
+      {list === null && <Skeleton className="h-24" />}
+      {list?.length === 0 && <p className="m-0 text-muted">Пока никого. Бросьте попаданца или создайте местного.</p>}
+      <ul className="m-0 grid list-none p-0">
+        {list?.map((c) => (
+          <li key={c.id} className="border-b border-solid border-border last:border-0">
+            <Link viewTransition to={`/gm/char/${c.id}`} className="flex items-center gap-3 rounded-control px-2 py-3 text-text no-underline hover:bg-surface-2">
+              <div className="min-w-0 grow">
+                <strong className="font-name text-[1.2rem] font-normal">{c.name}</strong>
+                <div className="text-[13.6px] text-muted">
+                  {charMeta(c)} · {c.ownerName ?? 'без игрока'}
+                </div>
+              </div>
+              <span aria-hidden="true" className="text-muted">
+                ›
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </Card>
   );
 }
 
@@ -114,101 +191,63 @@ export function GmMembers() {
     const r = await api<InviteCreated>('POST', `/api/gm/members/${m.id}/invite`);
     if (!r.ok) return setError(errorText(r.error));
     setInvite({ data: r.data, name: m.name });
+    toast(`Новая ссылка для ${m.name}`);
     void reload();
   };
 
   return (
     <>
-      <section className="card">
-        <h2>Участники</h2>
-        <ul className="list">
+      <Card>
+        <CardTitle>Участники</CardTitle>
+        <ul className="m-0 grid list-none p-0">
           {members.map((m) => (
-            <li key={m.id} className="list-row">
-              <div>
+            <li key={m.id} className="flex items-center gap-3 border-b border-solid border-border py-3 last:border-0">
+              <div className="min-w-0 grow">
                 <strong>{m.name}</strong>
-                <div className="small muted">
-                  {ru.roles[m.role]} · {memberStatus(m)}
+                <div className="flex flex-wrap items-center gap-2 text-[13.6px] text-muted">
+                  <Badge>{ru.roles[m.role]}</Badge>
+                  {memberStatus(m)}
                 </div>
               </div>
               {m.role !== 'gm' && (
-                <button className="btn btn-ghost" onClick={() => reissue(m)}>
+                <Button variant="ghost" size="sm" onClick={() => reissue(m)}>
                   Новая ссылка
-                </button>
+                </Button>
               )}
             </li>
           ))}
         </ul>
         {invite && <InviteBox invite={invite.data} name={invite.name} />}
-      </section>
+      </Card>
 
-      <section className="card">
-        <h2>Пригласить</h2>
-        <form onSubmit={create} className="stack">
-          <label className="field">
-            <span>Имя</span>
-            <input value={name} onChange={(e) => setName(e.target.value)} maxLength={60} required />
-          </label>
-          <label className="field">
-            <span>Роль</span>
-            <select value={role} onChange={(e) => setRole(e.target.value as 'player' | 'table')}>
-              <option value="player">Игрок</option>
-              <option value="table">Общий экран</option>
-            </select>
-          </label>
-          <button className="btn" disabled={!name.trim()}>
+      <Card>
+        <CardTitle>Пригласить</CardTitle>
+        <form onSubmit={create} className="grid gap-3">
+          <Field label="Имя" error={error}>
+            {(id, d) => <Input id={id} aria-describedby={d} value={name} onChange={(e) => setName(e.target.value)} maxLength={60} required />}
+          </Field>
+          <Segmented
+            label="Роль"
+            value={role}
+            onChange={setRole}
+            options={[
+              { value: 'player', label: 'Игрок' },
+              { value: 'table', label: 'Общий экран' },
+            ]}
+          />
+          <Button type="submit" variant="primary" disabled={!name.trim()} className="justify-self-start">
             Создать ссылку
-          </button>
+          </Button>
         </form>
-        {error && <p className="error">{error}</p>}
-      </section>
+      </Card>
 
-      <section className="card">
-        <h2>Инструменты</h2>
-        <Link viewTransition className="btn btn-secondary" to="/gm/jev">
+      <Card>
+        <CardTitle>Инструменты</CardTitle>
+        <Link viewTransition className={cn(buttonVariants(), 'justify-self-start no-underline')} to="/gm/jev">
           Песочница Jev
         </Link>
-      </section>
+      </Card>
       <StatusPanel />
     </>
-  );
-}
-
-function Characters() {
-  const [list, setList] = useState<GmCharacterListItem[] | null>(null);
-  const reload = useCallback(async () => {
-    const r = await api<GmCharacterListItem[]>('GET', '/api/gm/characters');
-    if (r.ok) setList(r.data);
-  }, []);
-  useEffect(() => {
-    void reload();
-  }, [reload]);
-  useSocketEvent('gm:character.changed', () => void reload());
-  return (
-    <section className="card">
-      <div className="row spread">
-        <h2>Персонажи</h2>
-        <Link viewTransition className="btn" to="/gm/new">
-          Новый
-        </Link>
-      </div>
-      {list === null && <p className="muted">Загрузка…</p>}
-      {list?.length === 0 && <p className="muted">Пока никого. Бросьте попаданца или создайте местного.</p>}
-      <ul className="list">
-        {list?.map((c) => (
-          <li key={c.id}>
-            <Link viewTransition to={`/gm/char/${c.id}`} className="list-row list-link">
-              <div>
-                <strong>{c.name}</strong>
-                <div className="small muted">
-                  {c.kind === 'local' ? 'местный' : `черт: ${c.slots}, раскрыто ${c.revealed}, намёков ${c.hinted}`} ·{' '}
-                  {c.ownerName ?? 'без игрока'}
-                </div>
-              </div>
-              <span aria-hidden="true">›</span>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </section>
   );
 }
