@@ -184,4 +184,5 @@ export interface GmCharacterView {
   combos: { names: [string, string]; text: string }[];
   greenSigns: string;
   player: PlayerCharacter;
+  summaries: import('./gm.ts').GmSummary[];
 }

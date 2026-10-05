@@ -12,8 +12,9 @@ import { saveJudgment } from './judgments.ts';
 import { runDiaryMatch } from './questions/diaryMatch.ts';
 import { runGreenMagic } from './questions/greenMagic.ts';
 import { runLeakGuard } from './questions/leakGuard.ts';
+import { runFactCheck, splitSentences } from './questions/factCheck.ts';
 import type { JevTrait } from './questions/types.ts';
-import { DIARY_MATCH_MIN, GREEN_MIN, HINT_SELF_WARN, LEAK_WARN } from './thresholds.ts';
+import { DIARY_MATCH_MIN, FACT_WARN, GREEN_MIN, HINT_SELF_WARN, LEAK_WARN } from './thresholds.ts';
 
 // Jev в игре. Всё только советует мастеру; ответы — мастерские данные.
 
@@ -100,4 +101,24 @@ export function greenForRollInBackground(roomId: string, roll: RollRow): void {
     const p = res.result.answers.uses_green_magic.noul;
     if (p >= GREEN_MIN) publish(roomId, { kind: 'gm' }, 'gm:suggestion.green', { rollId: roll.id, characterId, characterName, probability: p });
   })().catch((err: unknown) => log().error({ err }, 'jev: greenMagic'));
+}
+
+/** Сводка: выдуманные факты по сравнению с данными, на которых она написана. */
+export async function checkFacts(
+  roomId: string,
+  subject: string,
+  data: unknown,
+  text: string,
+): Promise<{ status: HintCheck['status']; flagged: { sentence: string; probability: number }[] }> {
+  if (!jevFeatures.leakGuard()) return { status: 'off', flagged: [] };
+  const sentences = splitSentences(text);
+  if (!sentences.length) return { status: 'ok', flagged: [] };
+  const res = await runFactCheck(data, sentences);
+  if (!res.ok) return { status: 'unavailable', flagged: [] };
+  saveJudgment(roomId, 'factCheck', subject, res.result.model, res.result.answers);
+  const answers = res.result.answers as Record<string, { noul?: number }>;
+  const flagged = sentences
+    .map((sentence, i) => ({ sentence, probability: answers[`invented_s${i}`]?.noul ?? 0 }))
+    .filter((f) => f.probability >= FACT_WARN);
+  return { status: flagged.length ? 'warn' : 'ok', flagged };
 }

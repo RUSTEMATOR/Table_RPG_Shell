@@ -1,4 +1,4 @@
-import type { GmCharacterView, GmDraftView, GmSlotView } from '@zg/shared';
+import { SUMMARY_KINDS, type GmCharacterView, type GmDraftView, type GmSlotView, type GmSummary } from '@zg/shared';
 import { ARCHS, GREEN_SIGNS, TIERS } from './data.ts';
 import {
   cardOf,
@@ -113,5 +113,20 @@ export function characterView(lc: LoadedCharacter): GmCharacterView {
     combos: combosView(doc),
     greenSigns: GREEN_SIGNS,
     player: projectForPlayer(lc),
+    summaries: row.kind === 'popadanets' ? SUMMARY_KINDS.map((k) => summaryView(doc, k)) : [],
+  };
+}
+
+function summaryView(doc: CharDoc, kind: GmSummary['kind']): GmSummary {
+  const e = doc.summary?.[kind] as (NonNullable<CharDoc['summary']>['gm'] & { model?: string }) | undefined;
+  return {
+    kind,
+    text: e?.text ?? '',
+    at: e?.at ?? 0,
+    edited: !!e?.edited,
+    show: kind !== 'gm' && e?.show === true,
+    tone: e?.tone ?? '',
+    person: e?.person ?? '2',
+    model: e?.model ?? '',
   };
 }

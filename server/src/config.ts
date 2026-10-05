@@ -27,6 +27,8 @@ const ConfigSchema = z.object({
   JEV_ROLL_INTENT: bool(false),
   JEV_GREEN_MAGIC: bool(false),
   ANTHROPIC_API_KEY: z.string().optional(),
+  ANTHROPIC_MODEL_SUMMARY: z.string().default('claude-sonnet-5-5'),
+  ANTHROPIC_MODEL_DRAFT: z.string().default('claude-haiku-4-5'),
 });
 
 const parsed = ConfigSchema.safeParse(process.env);

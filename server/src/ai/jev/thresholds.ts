@@ -8,3 +8,5 @@ export const HINT_SELF_WARN = 3;
 export const DIARY_MATCH_MIN = 2;
 /** Зелёная магия в заявке броска: вероятность, с которой мастер видит «+1?». */
 export const GREEN_MIN = 0.5;
+/** Сводка: вероятность «предложение приписывает персонажу то, чего нет в данных». */
+export const FACT_WARN = 0.6;

@@ -99,3 +99,47 @@ export interface GreenSuggestion {
   characterName: string;
   probability: number;
 }
+
+// ---- ИИ-сводки ----
+
+export const SUMMARY_KINDS = ['gm', 'player', 'crossing'] as const;
+export type SummaryKindKey = (typeof SUMMARY_KINDS)[number];
+export const SUMMARY_TITLES: Record<SummaryKindKey, string> = {
+  gm: 'Сводка для мастера',
+  player: 'Вступление для игрока',
+  crossing: 'Сцена перехода',
+};
+
+export interface GmSummary {
+  kind: SummaryKindKey;
+  text: string;
+  at: number;
+  edited: boolean;
+  /** Опубликовано игроку (только player и crossing). */
+  show: boolean;
+  tone: string;
+  person: string;
+  model: string;
+}
+
+export const SummaryGenerateSchema = z.strictObject({
+  tone: z.string().max(40),
+  person: z.string().max(4).default('2'),
+  quick: z.boolean().default(false),
+});
+
+export const SummarySaveSchema = z.strictObject({
+  text: z.string().max(20000).optional(),
+  show: z.boolean().optional(),
+});
+
+export interface SummaryCheck {
+  leak: { status: 'ok' | 'warn' | 'unavailable' | 'off'; others: { traitName: string; probability: number }[] };
+  facts: { status: 'ok' | 'warn' | 'unavailable' | 'off'; flagged: { sentence: string; probability: number }[] };
+}
+
+export interface SummaryOptions {
+  configured: boolean;
+  tones: string[];
+  persons: { key: string; label: string }[];
+}

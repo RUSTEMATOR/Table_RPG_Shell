@@ -74,6 +74,7 @@ export interface SummaryEntry {
   show?: boolean;
   tone?: string;
   person?: string;
+  model?: string;
 }
 
 export interface CharDoc {
