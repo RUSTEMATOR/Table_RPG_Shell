@@ -4,6 +4,7 @@ import type { GmAck, GmCharacterView, GmSlotView, HintCheck } from '@zg/shared';
 import { GmSlot, SaveField } from '../components/GmSlot.tsx';
 import { PlayerCard } from '../components/PlayerCard.tsx';
 import { RoleScreen } from '../components/Shell.tsx';
+import { SheetPanel } from '../components/SheetPanel.tsx';
 import { SummaryPanel } from '../components/SummaryPanel.tsx';
 import { api } from '../lib/api.ts';
 import { OWNER_ERRORS, usePlayers } from '../lib/gm.ts';
@@ -114,6 +115,7 @@ function CharacterPage() {
         </section>
       )}
 
+      <SheetPanel c={c} onChange={setC} />
       <SummaryPanel c={c} onChange={setC} />
 
       {c.slots.map((s) => (

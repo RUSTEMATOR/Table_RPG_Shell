@@ -44,7 +44,7 @@ function PlayerHome() {
     );
   return (
     <section className="card">
-      <PlayerCard c={character} />
+      <PlayerCard c={character} onChange={setCharacter} />
     </section>
   );
 }

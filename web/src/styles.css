@@ -1324,3 +1324,31 @@ input[type='range'] {
 .collapsible[open] > summary::after {
   transform: rotate(-135deg);
 }
+
+.sheet-list {
+  list-style: none;
+  padding: 0;
+  margin: 6px 0;
+  display: grid;
+  gap: 8px;
+}
+.sheet-actions {
+  display: inline-flex;
+  gap: 12px;
+  margin-left: 10px;
+}
+.sheet-group {
+  margin: 10px 0 14px;
+}
+.sheet-group h3 {
+  margin: 0 0 6px;
+}
+.sheet-entry {
+  display: grid;
+  gap: 6px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+.sheet-hidden {
+  opacity: 0.7;
+}
