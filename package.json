@@ -1,0 +1,24 @@
+{
+  "name": "zelenogorye",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "shared",
+    "server",
+    "web"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "node scripts/build.mjs",
+    "typecheck": "npm run typecheck -w shared && npm run typecheck -w server && npm run typecheck -w web",
+    "db:generate": "npm run db:generate -w server",
+    "db:migrate": "npm run db:migrate -w server",
+    "setup": "npm run setup -w server",
+    "invite": "npm run invite -w server",
+    "setup:dev": "ZG_ENV_FILE=$HOME/.config/zelenogorye/.env.development npm run setup -w server",
+    "invite:dev": "ZG_ENV_FILE=$HOME/.config/zelenogorye/.env.development npm run invite -w server"
+  }
+}

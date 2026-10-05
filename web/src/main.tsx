@@ -1,0 +1,31 @@
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import { BrowserRouter, Route, Routes } from 'react-router';
+import { MeProvider } from './lib/me.tsx';
+import { Gm } from './routes/Gm.tsx';
+import { GmJev } from './routes/GmJev.tsx';
+import { Home } from './routes/Home.tsx';
+import { Join } from './routes/Join.tsx';
+import { Login } from './routes/Login.tsx';
+import { Player } from './routes/Player.tsx';
+import { Table } from './routes/Table.tsx';
+import './styles.css';
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <MeProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/join/:token" element={<Join />} />
+          <Route path="/player" element={<Player />} />
+          <Route path="/gm" element={<Gm />} />
+          <Route path="/gm/jev" element={<GmJev />} />
+          <Route path="/table" element={<Table />} />
+          <Route path="*" element={<Home />} />
+        </Routes>
+      </BrowserRouter>
+    </MeProvider>
+  </StrictMode>,
+);
