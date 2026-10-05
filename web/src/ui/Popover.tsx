@@ -18,17 +18,25 @@ export function PopoverContent({ children, className, align = 'center' }: { chil
 }
 
 export const TooltipProvider = T.Provider;
-/** Подсказка к значку или сокращению. Не прячьте в неё важное: на телефоне её нет. */
+/**
+ * Подсказка к значку или сокращению. Не прячьте в неё важное: на телефоне её нет.
+ * Свой провайдер внутри: общий провайдер в корне тянул бы Radix Tooltip и floating-ui в первую загрузку каждого экрана.
+ */
 export function Tooltip({ content, children }: { content: ReactNode; children: ReactNode }) {
   return (
-    <T.Root delayDuration={300}>
-      <T.Trigger asChild>{children}</T.Trigger>
-      <T.Portal>
-        <T.Content sideOffset={6} className="z-50 rounded-control bg-text px-2.5 py-1.5 font-ui text-[13px] text-surface shadow-md transition-opacity duration-150 starting:opacity-0">
-          {content}
-        </T.Content>
-      </T.Portal>
-    </T.Root>
+    <T.Provider delayDuration={300}>
+      <T.Root>
+        <T.Trigger asChild>{children}</T.Trigger>
+        <T.Portal>
+          <T.Content
+            sideOffset={6}
+            className="z-50 rounded-control bg-text px-2.5 py-1.5 font-ui text-[13px] text-surface shadow-md transition-opacity duration-150 starting:opacity-0"
+          >
+            {content}
+          </T.Content>
+        </T.Portal>
+      </T.Root>
+    </T.Provider>
   );
 }
 

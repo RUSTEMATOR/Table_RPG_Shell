@@ -1,10 +1,10 @@
 import { z } from 'zod';
+import { PIN_LENGTH } from './constants.ts';
 
 export const ROLES = ['gm', 'player', 'table'] as const;
 export const RoleSchema = z.enum(ROLES);
 export type Role = z.infer<typeof RoleSchema>;
 
-export const PIN_LENGTH = 6;
 export const PinSchema = z.string().regex(/^\d{6}$/, 'PIN — ровно 6 цифр');
 export const GmPasswordSchema = z.string().min(8).max(200);
 export const RoomCodeSchema = z

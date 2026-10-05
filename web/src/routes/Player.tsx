@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { PlayerCharacter } from '@zg/shared';
 import { Feed } from '../components/Feed.tsx';
 import { isOwnRoll, type FeedRoll } from '../lib/feed.ts';
@@ -16,7 +16,6 @@ import { resolveTheme, themeVariant } from '../lib/cardTheme/index.ts';
 import { useScheme } from '../lib/colorScheme.ts';
 import { ThemeChoice } from '../components/ThemeChoice.tsx';
 import { TAB_ICONS, TabBar } from '../components/TabBar.tsx';
-import { PlayerMap } from '../components/PlayerMap.tsx';
 import { Card, CardTitle, Segmented, Skeleton } from '../ui/index.ts';
 import { useSkin } from '../lib/cardTheme/skin.ts';
 import { noteCardChange, noteDiaryChange, rememberCard, setActiveTab, useUnread } from '../lib/unread.ts';
@@ -64,6 +63,9 @@ function PlayerHome({ active, theme, base, choice, onChoice }: { active: boolean
     </>
   );
 }
+
+// Карта — отдельный чанк (рендерер и рельеф): в первую загрузку экрана игрока не входит.
+const PlayerMap = lazy(() => import('../components/PlayerMap.tsx').then((m) => ({ default: m.PlayerMap })));
 
 type Tab = 'card' | 'rolls' | 'diary' | 'map';
 const TABS: Tab[] = ['rolls', 'card', 'diary', 'map'];
@@ -185,7 +187,12 @@ function PlayerTabs() {
         )}
         {pane('card', <PlayerHome active={tab === 'card'} theme={theme} base={base} choice={choice} onChoice={pickTheme} />)}
         {pane('diary', <Diary active={tab === 'diary'} />)}
-        {pane('map', <PlayerMap active={tab === 'map'} />)}
+        {pane(
+          'map',
+          <Suspense fallback={<p className="muted">Загрузка карты…</p>}>
+            <PlayerMap active={tab === 'map'} />
+          </Suspense>,
+        )}
       </div>
       <TabBar
         value={tab}

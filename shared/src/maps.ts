@@ -1,34 +1,12 @@
 import { z } from 'zod';
+import { MAP_H, MAP_IDS, MAP_W, PLACE_KINDS, type MapId } from './constants.ts';
 
 // ---- Карты мира (этап 21) ----
 // Координаты — в единицах карты 1600×1100 (как в макетах). Рельеф — в клиенте (web/src/maps/art), всё остальное — отсюда.
 
-export const MAP_IDS = ['world', 'razdolye', 'frozen'] as const;
 export const MapIdSchema = z.enum(MAP_IDS);
-export type MapId = z.infer<typeof MapIdSchema>;
-export const MAP_W = 1600;
-export const MAP_H = 1100;
 
-export const PLACE_KINDS = ['capital', 'city', 'town', 'bigtown', 'elven', 'college', 'village', 'camp', 'church', 'crypt', 'cult', 'vampire', 'lake', 'storm', 'mark'] as const;
 export const PlaceKindSchema = z.enum(PLACE_KINDS);
-export type PlaceKind = z.infer<typeof PlaceKindSchema>;
-export const PLACE_KIND_LABELS: Record<PlaceKind, string> = {
-  capital: 'Столица',
-  city: 'Город',
-  town: 'Поселение',
-  bigtown: 'Крупный город',
-  elven: 'Эльфийский город',
-  college: 'Коллегия магов',
-  village: 'Деревня',
-  camp: 'Лагерь',
-  church: 'Храм',
-  crypt: 'Крипта',
-  cult: 'Культ',
-  vampire: 'Лагерь вампиров',
-  lake: 'Озеро',
-  storm: 'Буря',
-  mark: 'Отметка',
-};
 
 const Num = z.number().finite();
 const Pt = z.tuple([Num, Num]);

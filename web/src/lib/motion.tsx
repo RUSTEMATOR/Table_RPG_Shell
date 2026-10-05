@@ -11,7 +11,7 @@ export const spring = {
   soft: { type: 'spring', stiffness: 220, damping: 26 },
 } as const;
 
-const features = () => import('motion/react').then((m) => m.domMax);
+const features = () => import('./motionFeatures.ts').then((m) => m.default);
 
 /** Корень: ленивые функции Motion и «уменьшить движение» из настройки системы. */
 export function MotionProvider({ children }: { children: ReactNode }) {

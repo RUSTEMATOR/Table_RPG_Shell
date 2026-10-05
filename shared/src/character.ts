@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { SHEET_KINDS, type SheetKind } from './constants.ts';
 
 // ---- Что видит игрок: единственный формат, белый список, strictObject на всех уровнях ----
 
@@ -35,9 +36,7 @@ export const PlayerCharacterSchema = z.strictObject({
   portrait: z.string().optional(),
   bio: z.string().optional(),
   powerBand: z.string().optional(),
-  profession: z
-    .strictObject({ label: z.string(), local: z.string(), demand: z.number().int().min(0).max(3), edge: z.string() })
-    .optional(),
+  profession: z.strictObject({ label: z.string(), local: z.string(), demand: z.number().int().min(0).max(3), edge: z.string() }).optional(),
   summary: z.string().optional(),
   crossing: z.string().optional(),
   traits: z.array(PlayerTraitSchema),
@@ -209,10 +208,6 @@ export interface GmCharacterView {
 }
 
 // ---- Лист персонажа ----
-
-export const SHEET_KINDS = ['item', 'condition', 'relation'] as const;
-export type SheetKind = (typeof SHEET_KINDS)[number];
-export const SHEET_TITLES: Record<SheetKind, string> = { item: 'Снаряжение', condition: 'Состояния', relation: 'Связи' };
 
 export interface GmSheetEntry {
   id: string;

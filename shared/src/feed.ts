@@ -1,36 +1,12 @@
 import { z } from 'zod';
+import { EFFECTS, type Effect } from './constants.ts';
 
 // ---- Броски и лента ----
 
 export const DICE = ['d10', 'd20'] as const;
 export const DiceSchema = z.enum(DICE);
 
-/** Исход d10 по таблице и эффект после поправки на разницу сил. */
-export const EFFECTS = [
-  'complication',
-  'fail',
-  'success',
-  'strong',
-  'crit',
-  'scratch',
-  'crit_damage',
-  'notable_damage',
-  'luck',
-] as const;
 export const EffectSchema = z.enum(EFFECTS);
-export type Effect = z.infer<typeof EffectSchema>;
-
-export const EFFECT_LABELS: Record<Effect, string> = {
-  complication: 'Провал с осложнением',
-  fail: 'Провал',
-  success: 'Успех',
-  strong: 'Сильный успех',
-  crit: 'Критический успех',
-  scratch: 'Лишь царапина',
-  crit_damage: 'Критический урон',
-  notable_damage: 'Заметный урон',
-  luck: 'Бросок удачи',
-};
 
 /** Кто видит бросок: всем, игроку и мастеру, только мастеру (скрытый бросок мастера). */
 export const RollVisibilitySchema = z.enum(['public', 'gm_and_me', 'gm_hidden']);

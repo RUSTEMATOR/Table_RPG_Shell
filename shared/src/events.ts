@@ -18,8 +18,8 @@ export interface SyncWelcome {
 import type { GmAck, PlayerCharacter } from './character.ts';
 import type { FeedEvent, RollGm, RollPublic } from './feed.ts';
 import type { TableState } from './table.ts';
-import type { MapId } from './maps.ts';
-import type { DiaryEntryPlayer, GmDiaryEntry, GmOverload, GreenSuggestion, OverloadSign } from './gm.ts';
+import type { MapId, OverloadSign } from './constants.ts';
+import type { DiaryEntryPlayer, GmDiaryEntry, GmOverload, GreenSuggestion } from './gm.ts';
 
 export interface ServerToClientEvents {
   'error:forbidden': (payload: { event: string }) => void;

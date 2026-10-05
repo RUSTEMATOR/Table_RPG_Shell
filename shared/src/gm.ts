@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { SUMMARY_KINDS, type OverloadSign, type SummaryKindKey } from './constants.ts';
 
 // ---- Дневник игрока ----
 
@@ -49,8 +50,6 @@ export const DiaryReplySchema = z.strictObject({
 
 // ---- Перегрузка зелёной магией (только мастер; столу — по кнопке, только видимый признак) ----
 
-export type OverloadSign = 'none' | 'eyes' | 'skin';
-
 export interface GmOverload {
   characterId: string;
   name: string;
@@ -66,12 +65,6 @@ export const OverloadChangeSchema = z.strictObject({
   eyesAt: z.number().int().min(1).max(99).optional(),
   skinAt: z.number().int().min(1).max(99).optional(),
 });
-
-export const SIGN_TEXT: Record<OverloadSign, string> = {
-  none: 'Зелени не видно',
-  eyes: 'Глаза зеленеют',
-  skin: 'Кожу покрывает изумруд',
-};
 
 // ---- Заметки сессии ----
 
@@ -114,14 +107,6 @@ export interface GreenSuggestion {
 }
 
 // ---- ИИ-сводки ----
-
-export const SUMMARY_KINDS = ['gm', 'player', 'crossing'] as const;
-export type SummaryKindKey = (typeof SUMMARY_KINDS)[number];
-export const SUMMARY_TITLES: Record<SummaryKindKey, string> = {
-  gm: 'Сводка для мастера',
-  player: 'Вступление для игрока',
-  crossing: 'Сцена перехода',
-};
 
 export interface GmSummary {
   kind: SummaryKindKey;
