@@ -1,12 +1,13 @@
-/* Точка входа стилей (этап 16).
-   Слои: theme (Tailwind) → base → legacy (старые стили приложения) → components → utilities (Tailwind).
+/* Точка входа стилей (этапы 16, 22).
+   Слои: theme (Tailwind) → base (preflight + основа приложения) → components (общие классы) → utilities (Tailwind).
    Без слоя — токены и движок тем из артефакта: они должны оставаться сильнее утилит,
-   иначе тема персонажа перестанет перекрашивать интерфейс. Preflight Tailwind выключен до этапа 22. */
+   иначе тема персонажа перестанет перекрашивать интерфейс. */
 
-@layer theme, base, legacy, components, utilities;
+@layer theme, base, components, utilities;
 
 @import "tailwindcss/theme.css" layer(theme);
-@import "./legacy.css" layer(legacy);
+@import "tailwindcss/preflight.css" layer(base);
+@import "./app.css";
 @import "tailwindcss/utilities.css" layer(utilities);
 
 @import "./tokens.css";
