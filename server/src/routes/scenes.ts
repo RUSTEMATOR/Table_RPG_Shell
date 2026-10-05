@@ -11,27 +11,25 @@ import {
   getScene,
   gmScene,
   listScenes,
-  mediaAllowed,
-  mediaPath,
   projectForTable,
   setSceneImage,
   setShown,
   shownSceneId,
   updateScene,
 } from '../domain/scenes.ts';
+import { IMAGE_BODY_LIMIT, IMAGE_TYPES, mediaAllowed, mediaPath } from '../domain/media.ts';
 import { publish } from '../realtime/publish.ts';
 
-const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif', 'image/gif'];
-
-function pushTable(roomId: string) {
+export function pushTable(roomId: string) {
   publish(roomId, { kind: 'table' }, 'table:state', projectForTable(roomId));
   publish(roomId, { kind: 'gm' }, 'gm:scenes.changed');
+  publish(roomId, { kind: 'gm' }, 'gm:npcs.changed');
 }
 
 export async function gmSceneRoutes(app: FastifyInstance) {
   app.addHook('onRequest', requireGm);
   // Картинка приходит сырым телом запроса (Content-Type: image/*), до 15 МБ.
-  app.addContentTypeParser(IMAGE_TYPES, { parseAs: 'buffer', bodyLimit: 15 * 1024 * 1024 }, (_req, body, done) => done(null, body));
+  app.addContentTypeParser(IMAGE_TYPES, { parseAs: 'buffer', bodyLimit: IMAGE_BODY_LIMIT }, (_req, body, done) => done(null, body));
 
   app.get('/api/gm/scenes', async (request) => {
     const roomId = request.auth!.room.id;

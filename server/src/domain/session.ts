@@ -14,7 +14,7 @@ export function activeSession(roomId: string): SessionRow {
     .where(and(eq(schema.gameSession.roomId, roomId), isNull(schema.gameSession.endedAt)))
     .get();
   if (s) return s;
-  const row: SessionRow = { id: newId(), roomId, startedAt: Date.now(), endedAt: null, opponentName: '', opponentPower: null };
+  const row: SessionRow = { id: newId(), roomId, startedAt: Date.now(), endedAt: null, opponentName: '', opponentPower: null, opponentNpcId: null };
   db.insert(schema.gameSession).values(row).run();
   return row;
 }
@@ -26,13 +26,16 @@ export function sessionView(s: SessionRow): GmSessionView {
     opponentName: s.opponentName,
     opponentPower: s.opponentPower,
     opponentBand: s.opponentPower ? powerBand(s.opponentPower).label : '',
+    opponentNpcId: s.opponentNpcId,
   };
 }
 
-export function setOpponent(roomId: string, name: string, power: number | null): SessionRow {
+/** npcId — противник из библиотеки; его имя и сила копируются в сессию. Ручной ввод — npcId = null. */
+export function setOpponent(roomId: string, name: string, power: number | null, npcId: string | null = null): SessionRow {
   const s = activeSession(roomId);
-  db.update(schema.gameSession).set({ opponentName: name, opponentPower: power }).where(eq(schema.gameSession.id, s.id)).run();
-  return { ...s, opponentName: name, opponentPower: power };
+  const patch = { opponentName: name, opponentPower: power, opponentNpcId: npcId };
+  db.update(schema.gameSession).set(patch).where(eq(schema.gameSession.id, s.id)).run();
+  return { ...s, ...patch };
 }
 
 export function startNewSession(roomId: string): SessionRow {

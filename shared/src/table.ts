@@ -10,7 +10,14 @@ export const TableSceneSchema = z.strictObject({
 });
 export type TableScene = z.infer<typeof TableSceneSchema>;
 
-export const TableStateSchema = z.strictObject({ scene: TableSceneSchema.nullable() });
+/** Противник на столе: только имя и портрет. Сила и заметки мастера сюда не попадают. */
+export const TableNpcSchema = z.strictObject({
+  name: z.string(),
+  image: z.strictObject({ url: z.string(), w: z.number(), h: z.number() }).optional(),
+});
+export type TableNpc = z.infer<typeof TableNpcSchema>;
+
+export const TableStateSchema = z.strictObject({ scene: TableSceneSchema.nullable(), npc: TableNpcSchema.nullable() });
 export type TableState = z.infer<typeof TableStateSchema>;
 
 // ---- Сцены у мастера ----
@@ -29,5 +36,28 @@ export interface GmScene {
   textGm: string;
   image: { url: string; w: number; h: number; bytes: number } | null;
   shown: boolean;
+  updatedAt: number;
+}
+
+// ---- Библиотека противников (только мастеру) ----
+
+export const NpcWriteSchema = z.strictObject({
+  name: z.string().trim().max(120).default(''),
+  power: z.number().int().min(1).max(99999).nullable().default(null),
+  notes: z.string().max(20000).default(''),
+});
+
+export interface GmNpc {
+  id: string;
+  name: string;
+  power: number | null;
+  /** Ступень силы словом, пусто — сила не задана. */
+  band: string;
+  notes: string;
+  image: { url: string; w: number; h: number; bytes: number } | null;
+  /** Портрет сейчас на столе. */
+  shown: boolean;
+  /** Противник текущей сессии. */
+  opponent: boolean;
   updatedAt: number;
 }

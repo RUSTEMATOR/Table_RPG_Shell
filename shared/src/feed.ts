@@ -103,6 +103,8 @@ export const RollOverrideSchema = z.strictObject({
 export const OpponentSchema = z.strictObject({
   name: z.string().trim().max(120).default(''),
   power: z.number().int().min(1).max(99999).nullable(),
+  /** Противник из библиотеки: имя и сила берутся из неё, name и power игнорируются. */
+  npcId: z.string().min(1).max(64).optional(),
 });
 
 export interface GmSessionView {
@@ -111,4 +113,5 @@ export interface GmSessionView {
   opponentName: string;
   opponentPower: number | null;
   opponentBand: string;
+  opponentNpcId: string | null;
 }

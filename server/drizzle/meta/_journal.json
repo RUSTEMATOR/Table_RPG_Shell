@@ -36,6 +36,13 @@
       "when": 1791160124943,
       "tag": "0004_table",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1791210698928,
+      "tag": "0005_npc",
+      "breakpoints": true
     }
   ]
 }

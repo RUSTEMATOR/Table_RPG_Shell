@@ -82,6 +82,8 @@ export const gameSession = sqliteTable(
     endedAt: integer('ended_at'),
     opponentName: text('opponent_name').notNull().default(''),
     opponentPower: integer('opponent_power'),
+    /** Противник выбран из библиотеки (имя и сила скопированы в строку сессии). */
+    opponentNpcId: text('opponent_npc_id').references(() => npc.id, { onDelete: 'set null' }),
   },
   (t) => [index('game_session_room_idx').on(t.roomId)],
 );
@@ -222,5 +224,28 @@ export const tableState = sqliteTable('table_state', {
     .primaryKey()
     .references(() => room.id, { onDelete: 'cascade' }),
   sceneId: text('scene_id').references(() => scene.id, { onDelete: 'set null' }),
+  /** Противник, чей портрет сейчас на столе. */
+  npcId: text('npc_id').references(() => npc.id, { onDelete: 'set null' }),
   updatedAt: integer('updated_at').notNull(),
 });
+
+// Библиотека противников и NPC. Целиком мастерские данные; столу — только имя и портрет по кнопке.
+export const npc = sqliteTable(
+  'npc',
+  {
+    id: text('id').primaryKey(),
+    roomId: text('room_id')
+      .notNull()
+      .references(() => room.id, { onDelete: 'cascade' }),
+    name: text('name').notNull().default(''),
+    power: integer('power'),
+    notesGm: text('notes_gm').notNull().default(''),
+    imageFile: text('image_file'),
+    imageW: integer('image_w'),
+    imageH: integer('image_h'),
+    imageBytes: integer('image_bytes'),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  (t) => [index('npc_room_idx').on(t.roomId)],
+);

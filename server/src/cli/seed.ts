@@ -6,6 +6,7 @@ import { setReveal, setStage } from '../domain/cards.ts';
 import type { CharDoc } from '../domain/character.ts';
 import { draftToChar } from '../domain/charDoc.ts';
 import { roll, rollExtra } from '../domain/randomizer.ts';
+import { createNpc } from '../domain/npc.ts';
 import { insertCharacter } from '../domain/repo.ts';
 import { GM_MARKER } from '../visibility/guard.ts';
 import { MIGRATIONS_DIR } from '../paths.ts';
@@ -108,6 +109,13 @@ if (!exists(C)) {
     doc,
   );
   created.push(C);
+}
+
+// 4. Противник в библиотеке: заметки мастера с маркером, на стол уходят только имя и портрет.
+const N = 'Тест: Тролль';
+if (!db.select().from(schema.npc).where(and(eq(schema.npc.roomId, room.id), eq(schema.npc.name, N))).get()) {
+  createNpc(room.id, { name: N, power: 400, notes: `${M}: боится огня, под мостом прячет клад.` });
+  created.push(N);
 }
 
 console.log(created.length ? `Созданы: ${created.join('; ')}` : 'Тестовые персонажи уже есть, ничего не создано.');

@@ -45,6 +45,8 @@ export interface ServerToClientEvents {
   'table:state': (payload: TableState) => void;
   /** Мастеру: список сцен или показанная сцена изменились. */
   'gm:scenes.changed': () => void;
+  /** Мастеру: библиотека противников изменилась. */
+  'gm:npcs.changed': () => void;
 }
 
 type Ack = (res: GmAck) => void;
