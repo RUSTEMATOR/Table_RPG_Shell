@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
-import { ru, type GmMember, type InviteCreated } from '@zg/shared';
+import { ru, type GmCharacterListItem, type GmMember, type InviteCreated } from '@zg/shared';
 import { RoleScreen } from '../components/Shell.tsx';
 import { api } from '../lib/api.ts';
+import { useSocketEvent } from '../lib/socket.ts';
 import { useWakeLock } from '../lib/wakeLock.ts';
 import { errorText } from './errors.ts';
 
@@ -87,6 +88,8 @@ export function Gm() {
 
   return (
     <RoleScreen role="gm">
+      <Characters />
+
       <section className="card">
         <h2>Участники</h2>
         <ul className="list">
@@ -137,5 +140,45 @@ export function Gm() {
         </Link>
       </section>
     </RoleScreen>
+  );
+}
+
+function Characters() {
+  const [list, setList] = useState<GmCharacterListItem[] | null>(null);
+  const reload = useCallback(async () => {
+    const r = await api<GmCharacterListItem[]>('GET', '/api/gm/characters');
+    if (r.ok) setList(r.data);
+  }, []);
+  useEffect(() => {
+    void reload();
+  }, [reload]);
+  useSocketEvent('gm:character.changed', () => void reload());
+  return (
+    <section className="card">
+      <div className="row spread">
+        <h2>Персонажи</h2>
+        <Link className="btn" to="/gm/new">
+          Новый
+        </Link>
+      </div>
+      {list === null && <p className="muted">Загрузка…</p>}
+      {list?.length === 0 && <p className="muted">Пока никого. Бросьте попаданца или создайте местного.</p>}
+      <ul className="list">
+        {list?.map((c) => (
+          <li key={c.id}>
+            <Link to={`/gm/char/${c.id}`} className="list-row list-link">
+              <div>
+                <strong>{c.name}</strong>
+                <div className="small muted">
+                  {c.kind === 'local' ? 'местный' : `черт: ${c.slots}, раскрыто ${c.revealed}, намёков ${c.hinted}`} ·{' '}
+                  {c.ownerName ?? 'без игрока'}
+                </div>
+              </div>
+              <span aria-hidden="true">›</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

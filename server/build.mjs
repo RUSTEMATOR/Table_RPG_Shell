@@ -13,6 +13,7 @@ await build({
     migrate: 'src/db/migrate.ts',
     setup: 'src/cli/setup.ts',
     invite: 'src/cli/invite.ts',
+    seed: 'src/cli/seed.ts',
   },
   outdir: 'dist',
   outExtension: { '.js': '.mjs' },

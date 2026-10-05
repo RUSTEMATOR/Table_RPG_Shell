@@ -40,3 +40,32 @@ export const authSession = sqliteTable(
   },
   (t) => [index('auth_session_member_idx').on(t.memberId)],
 );
+
+// Персонаж: здесь только то, что нужно для списков и привязки к игроку.
+export const character = sqliteTable(
+  'character',
+  {
+    id: text('id').primaryKey(),
+    roomId: text('room_id')
+      .notNull()
+      .references(() => room.id, { onDelete: 'cascade' }),
+    ownerMemberId: text('owner_member_id').references(() => member.id, { onDelete: 'set null' }),
+    kind: text('kind', { enum: ['popadanets', 'local'] }).notNull(),
+    name: text('name').notNull(),
+    // Текст для игрока у местного персонажа (у попаданца карточку собирает projectForPlayer).
+    publicBio: text('public_bio').notNull().default(''),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  (t) => [index('character_room_idx').on(t.roomId), index('character_owner_idx').on(t.ownerMemberId)],
+);
+
+// Мастерские данные персонажа: документ Char рандомизатора целиком (черты, ступени, раскрытие,
+// заметки, «под персонажа», сводки). Игроку — только через visibility/character.ts.
+export const characterSecret = sqliteTable('character_secret', {
+  characterId: text('character_id')
+    .primaryKey()
+    .references(() => character.id, { onDelete: 'cascade' }),
+  doc: text('doc').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+});

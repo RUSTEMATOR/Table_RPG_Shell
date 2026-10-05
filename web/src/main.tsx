@@ -3,7 +3,9 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Route, Routes } from 'react-router';
 import { MeProvider } from './lib/me.tsx';
 import { Gm } from './routes/Gm.tsx';
+import { GmCharacter } from './routes/GmCharacter.tsx';
 import { GmJev } from './routes/GmJev.tsx';
+import { GmNew } from './routes/GmNew.tsx';
 import { Home } from './routes/Home.tsx';
 import { Join } from './routes/Join.tsx';
 import { Login } from './routes/Login.tsx';
@@ -22,6 +24,8 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/player" element={<Player />} />
           <Route path="/gm" element={<Gm />} />
           <Route path="/gm/jev" element={<GmJev />} />
+          <Route path="/gm/new" element={<GmNew />} />
+          <Route path="/gm/char/:id" element={<GmCharacter />} />
           <Route path="/table" element={<Table />} />
           <Route path="*" element={<Home />} />
         </Routes>

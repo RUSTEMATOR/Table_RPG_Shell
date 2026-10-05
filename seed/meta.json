@@ -1,0 +1,32 @@
+{
+ "source": "reference/randomizer-v5.17.html",
+ "sha256": "56537a1c4e4cd07bdabab8b7b54405a2fcbad9ba4a474e7163c52215c63bb853",
+ "extractedAt": "2026-10-05T00:08:50.785Z",
+ "counts": {
+  "sources": 13,
+  "archs": 39,
+  "arch-match": 39,
+  "professions": 42,
+  "classes": 14,
+  "green": 5,
+  "green-signs": 205,
+  "tiers": 4,
+  "tier-keys": 4,
+  "cats": 6,
+  "marks": 4,
+  "relation": 4,
+  "lang": 4,
+  "ability": 4,
+  "flaw": 4,
+  "old": 4,
+  "setting": 13,
+  "universes": 33,
+  "cards": 254,
+  "combos": 537,
+  "summary-lore": 1002,
+  "summary-prompts": 3,
+  "summary-examples": 2,
+  "summary-tones": 3,
+  "summary-persons": 2
+ }
+}

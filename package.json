@@ -19,6 +19,8 @@
     "setup": "npm run setup -w server",
     "invite": "npm run invite -w server",
     "setup:dev": "ZG_ENV_FILE=$HOME/.config/zelenogorye/.env.development npm run setup -w server",
-    "invite:dev": "ZG_ENV_FILE=$HOME/.config/zelenogorye/.env.development npm run invite -w server"
+    "invite:dev": "ZG_ENV_FILE=$HOME/.config/zelenogorye/.env.development npm run invite -w server",
+    "seed": "npm run seed -w server",
+    "seed:dev": "ZG_ENV_FILE=$HOME/.config/zelenogorye/.env.development npm run seed -w server"
   }
 }
