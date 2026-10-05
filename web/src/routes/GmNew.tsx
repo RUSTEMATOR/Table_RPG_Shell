@@ -37,7 +37,7 @@ export function GmNew() {
       <section className="card">
         <div className="row spread">
           <h2>Новый персонаж</h2>
-          <Link to="/gm" className="btn btn-ghost">
+          <Link to="/gm/party" className="btn btn-ghost">
             Назад
           </Link>
         </div>

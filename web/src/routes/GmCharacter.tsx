@@ -66,7 +66,7 @@ function CharacterPage() {
       <section className="card">
         <div className="row spread">
           <h2>{c.name}</h2>
-          <Link to="/gm" className="btn btn-ghost">
+          <Link to="/gm/party" className="btn btn-ghost">
             Назад
           </Link>
         </div>
