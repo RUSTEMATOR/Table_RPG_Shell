@@ -11,6 +11,12 @@ export const PlayerTraitSchema = z.strictObject({
   hint: z.string().optional(),
 });
 
+/** Запись листа у игрока: только видимые. id — у снаряжения (игрок его правит). */
+export const PlayerItemSchema = z.strictObject({ id: z.string(), title: z.string(), text: z.string() });
+export const PlayerSheetNoteSchema = z.strictObject({ title: z.string(), text: z.string() });
+export type PlayerItem = z.infer<typeof PlayerItemSchema>;
+export type PlayerSheetNote = z.infer<typeof PlayerSheetNoteSchema>;
+
 export const PlayerCharacterSchema = z.strictObject({
   id: z.string(),
   kind: z.enum(['popadanets', 'local']),
@@ -27,6 +33,9 @@ export const PlayerCharacterSchema = z.strictObject({
   traits: z.array(PlayerTraitSchema),
   /** Подсказки к нераскрытым чертам: только текст, без названия и категории. */
   hints: z.array(z.string()),
+  items: z.array(PlayerItemSchema),
+  conditions: z.array(PlayerSheetNoteSchema),
+  relations: z.array(PlayerSheetNoteSchema),
 });
 export type PlayerCharacter = z.infer<typeof PlayerCharacterSchema>;
 
@@ -185,4 +194,37 @@ export interface GmCharacterView {
   greenSigns: string;
   player: PlayerCharacter;
   summaries: import('./gm.ts').GmSummary[];
+  sheet: GmSheetEntry[];
 }
+
+// ---- Лист персонажа ----
+
+export const SHEET_KINDS = ['item', 'condition', 'relation'] as const;
+export type SheetKind = (typeof SHEET_KINDS)[number];
+export const SHEET_TITLES: Record<SheetKind, string> = { item: 'Снаряжение', condition: 'Состояния', relation: 'Связи' };
+
+export interface GmSheetEntry {
+  id: string;
+  kind: SheetKind;
+  title: string;
+  text: string;
+  textGm: string;
+  visible: boolean;
+  byPlayer: boolean;
+  updatedAt: number;
+}
+
+/** Мастер: любая запись листа. */
+export const SheetWriteSchema = z.strictObject({
+  kind: z.enum(SHEET_KINDS),
+  title: z.string().trim().min(1).max(120),
+  text: z.string().max(2000).default(''),
+  textGm: z.string().max(4000).default(''),
+  visible: z.boolean().default(true),
+});
+
+/** Игрок: только своё снаряжение, без видимости и заметок мастера. */
+export const ItemWriteSchema = z.strictObject({
+  title: z.string().trim().min(1).max(120),
+  text: z.string().max(2000).default(''),
+});

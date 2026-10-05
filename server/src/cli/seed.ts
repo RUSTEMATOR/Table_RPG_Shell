@@ -8,6 +8,7 @@ import { draftToChar } from '../domain/charDoc.ts';
 import { roll, rollExtra } from '../domain/randomizer.ts';
 import { createNpc } from '../domain/npc.ts';
 import { insertCharacter } from '../domain/repo.ts';
+import { createSheetEntry, listSheet } from '../domain/sheet.ts';
 import { GM_MARKER } from '../visibility/guard.ts';
 import { MIGRATIONS_DIR } from '../paths.ts';
 
@@ -111,7 +112,17 @@ if (!exists(C)) {
   created.push(C);
 }
 
-// 4. Противник в библиотеке: заметки мастера с маркером, на стол уходят только имя и портрет.
+// 4. Лист «Примера»: видимые и скрытые записи. В скрытых маркер и в тексте, и в заметке мастера.
+const aRow = db.select().from(schema.character).where(and(eq(schema.character.roomId, room.id), eq(schema.character.name, A))).get();
+if (aRow && listSheet(aRow.id).length === 0) {
+  createSheetEntry(aRow.id, { kind: 'item', title: 'Походный нож', text: 'Тупится о зелень.', textGm: `${M}: нож заговорён`, visible: true }, 'gm');
+  createSheetEntry(aRow.id, { kind: 'item', title: `${M}: подброшенный амулет`, text: `${M}: игрок о нём не знает`, textGm: '', visible: false }, 'gm');
+  createSheetEntry(aRow.id, { kind: 'condition', title: `${M}: проклятие`, text: `${M}: действует с полуночи`, textGm: '', visible: false }, 'gm');
+  createSheetEntry(aRow.id, { kind: 'relation', title: 'Травница', text: 'Приютила на первую ночь.', textGm: `${M}: следит по просьбе старосты`, visible: true }, 'gm');
+  created.push(`лист «${A}»`);
+}
+
+// 5. Противник в библиотеке: заметки мастера с маркером, на стол уходят только имя и портрет.
 const N = 'Тест: Тролль';
 if (!db.select().from(schema.npc).where(and(eq(schema.npc.roomId, room.id), eq(schema.npc.name, N))).get()) {
   createNpc(room.id, { name: N, power: 400, notes: `${M}: боится огня, под мостом прячет клад.` });

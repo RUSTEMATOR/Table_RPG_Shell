@@ -249,3 +249,23 @@ export const npc = sqliteTable(
   },
   (t) => [index('npc_room_idx').on(t.roomId)],
 );
+
+// Лист персонажа: снаряжение, состояния, связи. text_gm — только мастеру; невидимые записи игроку не уходят вовсе.
+export const sheetEntry = sqliteTable(
+  'sheet_entry',
+  {
+    id: text('id').primaryKey(),
+    characterId: text('character_id')
+      .notNull()
+      .references(() => character.id, { onDelete: 'cascade' }),
+    kind: text('kind', { enum: ['item', 'condition', 'relation'] }).notNull(),
+    title: text('title').notNull().default(''),
+    text: text('text').notNull().default(''),
+    textGm: text('text_gm').notNull().default(''),
+    visible: integer('visible', { mode: 'boolean' }).notNull().default(true),
+    updatedBy: text('updated_by', { enum: ['gm', 'player'] }).notNull(),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  (t) => [index('sheet_entry_character_idx').on(t.characterId)],
+);

@@ -15,6 +15,7 @@ import { STAGE_NAMES, int04, normRevealed, pronounWord, type CharDoc, type Draft
 import { affinityNote, craftOf } from './randomizer.ts';
 import type { LoadedCharacter } from './repo.ts';
 import { CAT_LABELS, TRAITS } from './traits.ts';
+import { gmSheet, listSheet } from './sheet.ts';
 import { projectForPlayer } from '../visibility/character.ts';
 
 // Представления для экрана мастера. Это мастерские данные: уходят только роли gm.
@@ -114,6 +115,7 @@ export function characterView(lc: LoadedCharacter): GmCharacterView {
     greenSigns: GREEN_SIGNS,
     player: projectForPlayer(lc),
     summaries: row.kind === 'popadanets' ? SUMMARY_KINDS.map((k) => summaryView(doc, k)) : [],
+    sheet: gmSheet(listSheet(row.id)),
   };
 }
 

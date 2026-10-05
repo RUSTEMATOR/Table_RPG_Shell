@@ -11,6 +11,7 @@ import { gmSessionRoutes } from './routes/gmSession.ts';
 import { gmScreenRoutes } from './routes/gmScreen.ts';
 import { playerDiaryRoutes } from './routes/playerDiary.ts';
 import { gmNpcRoutes } from './routes/npcs.ts';
+import { gmSheetRoutes, playerSheetRoutes } from './routes/sheet.ts';
 import { gmSceneRoutes, tableRoutes } from './routes/scenes.ts';
 import { summaryRoutes } from './routes/summaries.ts';
 import { statusRoutes } from './routes/status.ts';
@@ -60,6 +61,8 @@ export async function buildApp() {
   await app.register(playerDiaryRoutes);
   await app.register(gmSceneRoutes);
   await app.register(gmNpcRoutes);
+  await app.register(gmSheetRoutes);
+  await app.register(playerSheetRoutes);
   await app.register(tableRoutes);
   await app.register(summaryRoutes);
   await app.register(statusRoutes);

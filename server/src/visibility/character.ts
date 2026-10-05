@@ -3,6 +3,7 @@ import { cardOf, catLabel, effSteps, originOf, powerBand, powerOf, stepText } fr
 import { int04, normRevealed, pronounWord } from '../domain/character.ts';
 import type { LoadedCharacter } from '../domain/repo.ts';
 import { craftOf } from '../domain/randomizer.ts';
+import { playerSheet } from '../domain/sheet.ts';
 import { TRAITS } from '../domain/traits.ts';
 
 // Единственное место, где персонаж превращается в то, что видит игрок (перенос toPublic §2.3).
@@ -47,5 +48,6 @@ export function projectForPlayer({ row, doc }: LoadedCharacter): PlayerCharacter
     ...(pc?.show === true && pc.text?.trim() ? { crossing: pc.text.slice(0, 4000) } : {}),
     traits,
     hints,
+    ...playerSheet(row.id),
   });
 }
