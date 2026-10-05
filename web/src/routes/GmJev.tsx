@@ -2,6 +2,8 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
 import { api } from '../lib/api.ts';
 import { load, save } from '../lib/storage.ts';
+import { cn } from '../lib/cn.ts';
+import { Button, buttonVariants, Card, CardTitle, Field, Input, Segmented, Switch, Textarea } from '../ui/index.ts';
 
 // Песочница Jev (этап J0): ручная проверка вопросов на своих примерах.
 
@@ -110,9 +112,7 @@ export function GmJev() {
   const [info, setInfo] = useState<Info | null>(null);
   const [fn, setFn] = useState<Fn>(() => (load('zg:jev:fn') as Fn | null) ?? 'leakGuard');
   const [text, setText] = useState(() => load('zg:jev:text') ?? '');
-  const [traits, setTraits] = useState<TraitDraft[]>(() =>
-    loadJson('zg:jev:traits', [{ name: '', description: '', hinted: false }]),
-  );
+  const [traits, setTraits] = useState<TraitDraft[]>(() => loadJson('zg:jev:traits', [{ name: '', description: '', hinted: false }]));
   const [definition, setDefinition] = useState(() => load('zg:jev:greenDef') ?? '');
   const [result, setResult] = useState<AskResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -139,119 +139,84 @@ export function GmJev() {
     setBusy(true);
     setError(null);
     setResult(null);
-    const body =
-      fn === 'greenMagic'
-        ? { fn, text, definition }
-        : { fn, text, traits: filled.map((t) => ({ ...t, hinted: fn === 'leakGuard' && t.hinted })) };
+    const body = fn === 'greenMagic' ? { fn, text, definition } : { fn, text, traits: filled.map((t) => ({ ...t, hinted: fn === 'leakGuard' && t.hinted })) };
     const r = await api<AskResult>('POST', '/api/gm/jev/ask', body);
     setBusy(false);
     if (r.ok) setResult(r.data);
     else setError(r.error === 'jev_unavailable' ? 'Jev недоступен: проверьте ключ и сеть' : `Ошибка: ${r.error}`);
   };
 
-  const updateTrait = (i: number, patch: Partial<TraitDraft>) =>
-    setTraits((ts) => ts.map((t, j) => (j === i ? { ...t, ...patch } : t)));
+  const updateTrait = (i: number, patch: Partial<TraitDraft>) => setTraits((ts) => ts.map((t, j) => (j === i ? { ...t, ...patch } : t)));
 
   return (
     <>
-      <section className="card">
-        <div className="row spread">
-          <h2>Песочница Jev</h2>
-          <Link viewTransition to="/gm/members" className="btn btn-ghost">
+      <Card>
+        <div className="flex flex-wrap items-center gap-3">
+          <CardTitle className="grow">Песочница Jev</CardTitle>
+          <Link viewTransition to="/gm/members" className={cn(buttonVariants({ variant: 'ghost' }), 'no-underline')}>
             Назад
           </Link>
         </div>
-        <p className="small muted">
-          {info ? (info.configured ? `Модель ${info.model}.` : 'Ключ JEV_API_KEY не задан.') : ''} Каждое нажатие — один
-          запрос. Ответы видит только мастер.
+        <p className="m-0 text-[13.6px] text-muted">
+          {info ? (info.configured ? `Модель ${info.model}.` : 'Ключ JEV_API_KEY не задан.') : ''} Каждое нажатие — один запрос. Ответы видит только мастер.
         </p>
-        <div className="tabs">
-          {FNS.map((f) => (
-            <button key={f.id} className={`tab ${fn === f.id ? 'tab-on' : ''}`} onClick={() => setFn(f.id)} type="button">
-              {f.title}
-            </button>
-          ))}
-        </div>
+        <Segmented label="Функция Jev" value={fn} onChange={setFn} options={FNS.map((f) => ({ value: f.id, label: f.title }))} className="justify-self-start" />
 
-        <form onSubmit={ask} className="stack">
-          <label className="field">
-            <span>{spec.textLabel}</span>
-            <textarea value={text} onChange={(e) => setText(e.target.value)} rows={5} required />
-          </label>
+        <form onSubmit={ask} className="grid gap-3">
+          <Field label={spec.textLabel}>{(id) => <Textarea id={id} value={text} onChange={(e) => setText(e.target.value)} rows={5} required />}</Field>
 
           {spec.traitsLabel && (
-            <fieldset className="stack">
-              <legend>{spec.traitsLabel}</legend>
+            <fieldset className="m-0 grid gap-3 border-0 p-0">
+              <legend className="mb-2 font-ui text-[12.8px] font-medium uppercase tracking-[.06em] text-muted">{spec.traitsLabel}</legend>
               {traits.map((t, i) => (
-                <div key={i} className="trait-draft">
-                  <input placeholder="Название" value={t.name} onChange={(e) => updateTrait(i, { name: e.target.value })} />
-                  <textarea
-                    placeholder="Описание"
-                    rows={3}
-                    value={t.description}
-                    onChange={(e) => updateTrait(i, { description: e.target.value })}
-                  />
-                  <div className="row spread">
-                    {fn === 'leakGuard' ? (
-                      <label className="check">
-                        <input type="checkbox" checked={t.hinted} onChange={(e) => updateTrait(i, { hinted: e.target.checked })} />
-                        намекнута (hinted)
-                      </label>
-                    ) : (
-                      <span />
-                    )}
-                    <button
-                      type="button"
-                      className="btn btn-ghost"
-                      onClick={() => setTraits((ts) => (ts.length > 1 ? ts.filter((_, j) => j !== i) : ts))}
-                    >
+                <div key={i} className="grid gap-2 rounded-control border border-solid border-border p-3">
+                  <Input aria-label="Название черты" placeholder="Название" value={t.name} onChange={(e) => updateTrait(i, { name: e.target.value })} />
+                  <Textarea aria-label="Описание черты" placeholder="Описание" rows={3} value={t.description} onChange={(e) => updateTrait(i, { description: e.target.value })} />
+                  <div className="flex items-center justify-between gap-2">
+                    {fn === 'leakGuard' ? <Switch checked={t.hinted} onCheckedChange={(v) => updateTrait(i, { hinted: v })} label="намекнута (hinted)" /> : <span />}
+                    <Button variant="ghost" size="sm" onClick={() => setTraits((ts) => (ts.length > 1 ? ts.filter((_, j) => j !== i) : ts))}>
                       Убрать
-                    </button>
+                    </Button>
                   </div>
                 </div>
               ))}
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => setTraits((ts) => [...ts, { name: '', description: '', hinted: false }])}
-              >
+              <Button size="sm" className="justify-self-start" onClick={() => setTraits((ts) => [...ts, { name: '', description: '', hinted: false }])}>
                 Добавить черту
-              </button>
+              </Button>
             </fieldset>
           )}
 
           {fn === 'greenMagic' && (
-            <label className="field">
-              <span>Что считается зелёной магией</span>
-              <textarea value={definition} onChange={(e) => setDefinition(e.target.value)} rows={3} />
-            </label>
+            <Field label="Что считается зелёной магией">{(id) => <Textarea id={id} value={definition} onChange={(e) => setDefinition(e.target.value)} rows={3} />}</Field>
           )}
 
-          <button
-            className="btn"
+          <Button
+            type="submit"
+            variant="primary"
+            className="justify-self-start"
             disabled={busy || !text.trim() || (spec.id !== 'greenMagic' && spec.id !== 'rollIntent' && filled.length === 0)}
           >
             {busy ? 'Спрашиваю…' : 'Спросить'}
-          </button>
+          </Button>
         </form>
-        {error && <p className="error">{error}</p>}
-      </section>
+        {error && <p className="error m-0">{error}</p>}
+      </Card>
 
       {result && (
-        <section className="card">
-          <h2>Ответ</h2>
-          <p className="small muted">
+        <Card>
+          <CardTitle>Ответ</CardTitle>
+          <p className="m-0 text-[13.6px] text-muted">
             {result.model} · {result.ms} мс · {result.usage.input_tokens} токенов на входе
           </p>
-          <ul className="list">
+          <ul className="m-0 grid list-none p-0">
             {Object.entries(result.answers).map(([id, a]) => (
-              <li key={id} className="list-row answer-row">
+              <li key={id} className="flex flex-wrap items-baseline justify-between gap-3 border-b border-solid border-border py-2.5 last:border-0">
                 <span>{questionLabel(id, result.traits)}</span>
                 <AnswerView a={a} traits={result.traits} />
               </li>
             ))}
           </ul>
-        </section>
+        </Card>
       )}
     </>
   );
