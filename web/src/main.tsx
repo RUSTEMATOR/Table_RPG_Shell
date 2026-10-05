@@ -2,6 +2,7 @@ import { StrictMode, type ComponentType } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createBrowserRouter, RouterProvider, type RouteObject } from 'react-router';
 import { MeProvider } from './lib/me.tsx';
+import { RouteError } from './components/RouteError.tsx';
 import { MotionProvider } from './lib/motion.tsx';
 import { Toaster } from './ui/Toaster.tsx';
 import './lib/colorScheme.ts'; // день/ночь до первой отрисовки, без мигания
@@ -13,33 +14,38 @@ function lazy(load: () => Promise<Record<string, unknown>>, name: string): Route
 }
 const gm = () => import('./routes/Gm.tsx');
 
-const router = createBrowserRouter([
-  { path: '/', lazy: lazy(() => import('./routes/Home.tsx'), 'Home') },
-  { path: '/login', lazy: lazy(() => import('./routes/Login.tsx'), 'Login') },
-  { path: '/join/:token', lazy: lazy(() => import('./routes/Join.tsx'), 'Join') },
-  { path: '/player', lazy: lazy(() => import('./routes/Player.tsx'), 'Player') },
-  {
-    // Общий макет мастера (навигация, правая колонка) живёт между переходами; страницы — свои чанки.
-    path: '/gm',
-    lazy: lazy(() => import('./routes/GmLayout.tsx'), 'GmLayout'),
-    children: [
-      { index: true, lazy: lazy(gm, 'Gm') },
-      { path: 'party', lazy: lazy(gm, 'GmParty') },
-      { path: 'members', lazy: lazy(gm, 'GmMembers') },
-      { path: 'requests', lazy: lazy(() => import('./routes/GmRequests.tsx'), 'GmRequests') },
-      { path: 'notes', lazy: lazy(() => import('./routes/GmNotes.tsx'), 'GmNotes') },
-      { path: 'table', lazy: lazy(() => import('./routes/GmTable.tsx'), 'GmTable') },
-      { path: 'npcs', lazy: lazy(() => import('./routes/GmNpcs.tsx'), 'GmNpcs') },
-      { path: 'maps', lazy: lazy(() => import('./routes/GmMaps.tsx'), 'GmMaps'), handle: { ownRail: true } },
-      { path: 'jev', lazy: lazy(() => import('./routes/GmJev.tsx'), 'GmJev') },
-      { path: 'new', lazy: lazy(() => import('./routes/GmNew.tsx'), 'GmNew') },
-      { path: 'char/:id', lazy: lazy(() => import('./routes/GmCharacter.tsx'), 'GmCharacter'), handle: { ownRail: true } },
-    ],
-  },
-  { path: '/table', lazy: lazy(() => import('./routes/Table.tsx'), 'Table') },
-  ...(import.meta.env.DEV ? [{ path: '/dev/ui', lazy: lazy(() => import('./routes/DevUi.tsx'), 'DevUi') }] : []),
-  { path: '*', lazy: lazy(() => import('./routes/Home.tsx'), 'Home') },
-]);
+// Сбой любого экрана — свой экран ошибки (RouteError), а не стандартный экран роутера.
+const withError = (routes: RouteObject[]): RouteObject[] => routes.map((r) => ({ ...r, errorElement: <RouteError /> }));
+
+const router = createBrowserRouter(
+  withError([
+    { path: '/', lazy: lazy(() => import('./routes/Home.tsx'), 'Home') },
+    { path: '/login', lazy: lazy(() => import('./routes/Login.tsx'), 'Login') },
+    { path: '/join/:token', lazy: lazy(() => import('./routes/Join.tsx'), 'Join') },
+    { path: '/player', lazy: lazy(() => import('./routes/Player.tsx'), 'Player') },
+    {
+      // Общий макет мастера (навигация, правая колонка) живёт между переходами; страницы — свои чанки.
+      path: '/gm',
+      lazy: lazy(() => import('./routes/GmLayout.tsx'), 'GmLayout'),
+      children: [
+        { index: true, lazy: lazy(gm, 'Gm') },
+        { path: 'party', lazy: lazy(gm, 'GmParty') },
+        { path: 'members', lazy: lazy(gm, 'GmMembers') },
+        { path: 'requests', lazy: lazy(() => import('./routes/GmRequests.tsx'), 'GmRequests') },
+        { path: 'notes', lazy: lazy(() => import('./routes/GmNotes.tsx'), 'GmNotes') },
+        { path: 'table', lazy: lazy(() => import('./routes/GmTable.tsx'), 'GmTable') },
+        { path: 'npcs', lazy: lazy(() => import('./routes/GmNpcs.tsx'), 'GmNpcs') },
+        { path: 'maps', lazy: lazy(() => import('./routes/GmMaps.tsx'), 'GmMaps'), handle: { ownRail: true } },
+        { path: 'jev', lazy: lazy(() => import('./routes/GmJev.tsx'), 'GmJev') },
+        { path: 'new', lazy: lazy(() => import('./routes/GmNew.tsx'), 'GmNew') },
+        { path: 'char/:id', lazy: lazy(() => import('./routes/GmCharacter.tsx'), 'GmCharacter'), handle: { ownRail: true } },
+      ],
+    },
+    { path: '/table', lazy: lazy(() => import('./routes/Table.tsx'), 'Table') },
+    ...(import.meta.env.DEV ? [{ path: '/dev/ui', lazy: lazy(() => import('./routes/DevUi.tsx'), 'DevUi') }] : []),
+    { path: '*', lazy: lazy(() => import('./routes/Home.tsx'), 'Home') },
+  ]),
+);
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
