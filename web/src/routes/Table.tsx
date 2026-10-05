@@ -9,7 +9,8 @@ import { load, save } from '../lib/storage.ts';
 import { useWakeLock } from '../lib/wakeLock.ts';
 import { useNavigate } from 'react-router';
 
-// Общий экран для ТВ и трансляции. Только публичное: сцена (без текста мастера), публичные броски, признаки перегрузки.
+// Общий экран для ТВ и трансляции. Только публичное: сцена (без текста мастера), портрет противника (имя и картинка),
+// публичные броски, признаки перегрузки.
 
 export function Table() {
   const { me, loading } = useMe();
@@ -31,7 +32,7 @@ interface Sign {
 
 function TableScreen({ room }: { room: string }) {
   useWakeLock();
-  const [state, setState] = useState<TableState>({ scene: null });
+  const [state, setState] = useState<TableState>({ scene: null, npc: null });
   const [signs, setSigns] = useState<Sign[]>([]);
   const [still, setStill] = useState(() => load('zg:table:still') === '1');
   const rolls = useFeed()
@@ -77,13 +78,19 @@ function TableScreen({ room }: { room: string }) {
         </header>
         <main className="table-main">
           <section className="table-scene">
+            {state.npc && (
+              <figure className="table-npc">
+                {state.npc.image && <img src={state.npc.image.url} alt="" width={state.npc.image.w} height={state.npc.image.h} />}
+                <figcaption>{state.npc.name}</figcaption>
+              </figure>
+            )}
             {scene ? (
               <>
                 {scene.title && <h1 className="table-title">{scene.title}</h1>}
                 {scene.text && <p className="table-text">{scene.text}</p>}
               </>
             ) : (
-              <p className="table-title muted">Зеленогорье</p>
+              !state.npc && <p className="table-title muted">Зеленогорье</p>
             )}
           </section>
           <aside className="table-rolls" aria-live="polite">

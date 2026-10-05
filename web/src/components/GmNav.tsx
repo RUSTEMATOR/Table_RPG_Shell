@@ -4,6 +4,7 @@ import { useOpenRequests } from '../lib/openRequests.ts';
 const ITEMS = [
   ['/gm', 'Игра'],
   ['/gm/party', 'Партия'],
+  ['/gm/npcs', 'Противники'],
   ['/gm/table', 'Стол'],
   ['/gm/requests', 'Запросы'],
   ['/gm/notes', 'Заметки'],

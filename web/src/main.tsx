@@ -5,6 +5,7 @@ import { MeProvider } from './lib/me.tsx';
 import { Gm, GmMembers, GmParty } from './routes/Gm.tsx';
 import { GmNotes } from './routes/GmNotes.tsx';
 import { GmRequests } from './routes/GmRequests.tsx';
+import { GmNpcs } from './routes/GmNpcs.tsx';
 import { GmTable } from './routes/GmTable.tsx';
 import { GmCharacter } from './routes/GmCharacter.tsx';
 import { GmJev } from './routes/GmJev.tsx';
@@ -30,6 +31,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/gm/requests" element={<GmRequests />} />
           <Route path="/gm/notes" element={<GmNotes />} />
           <Route path="/gm/table" element={<GmTable />} />
+          <Route path="/gm/npcs" element={<GmNpcs />} />
           <Route path="/gm/members" element={<GmMembers />} />
           <Route path="/gm/jev" element={<GmJev />} />
           <Route path="/gm/new" element={<GmNew />} />

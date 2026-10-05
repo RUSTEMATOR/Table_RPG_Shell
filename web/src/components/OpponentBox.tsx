@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import type { GmSessionView } from '@zg/shared';
+import type { GmNpc, GmSessionView } from '@zg/shared';
 import { api } from '../lib/api.ts';
 import { useSocketEvent } from '../lib/socket.ts';
 
@@ -22,6 +22,24 @@ export function OpponentBox() {
     void load();
   }, [load]);
   useSocketEvent('gm:session.changed', () => void load());
+  const [npcs, setNpcs] = useState<GmNpc[]>([]);
+  const loadNpcs = useCallback(async () => {
+    const r = await api<GmNpc[]>('GET', '/api/gm/npcs');
+    if (r.ok) setNpcs(r.data);
+  }, []);
+  useEffect(() => {
+    void loadNpcs();
+  }, [loadNpcs]);
+  useSocketEvent('gm:npcs.changed', () => void loadNpcs());
+  const pick = async (npcId: string) => {
+    if (!npcId) return;
+    const r = await api<GmSessionView>('POST', '/api/gm/session/opponent', { name: '', power: null, npcId });
+    if (r.ok) {
+      setS(r.data);
+      setName(r.data.opponentName);
+      setPower(r.data.opponentPower ? String(r.data.opponentPower) : '');
+    }
+  };
 
   const save = async (e: FormEvent) => {
     e.preventDefault();
@@ -58,6 +76,20 @@ export function OpponentBox() {
             {confirmNew ? 'Точно начать новую?' : 'Начать новую сессию'}
           </button>
         </div>
+      )}
+      {npcs.length > 0 && (
+        <label className="field">
+          <span>Из библиотеки</span>
+          <select value={s?.opponentNpcId ?? ''} onChange={(e) => void pick(e.target.value)}>
+            <option value="">{s?.opponentNpcId ? 'не из библиотеки' : 'выбрать…'}</option>
+            {npcs.map((n) => (
+              <option key={n.id} value={n.id}>
+                {n.name}
+                {n.power ? ` · ${n.power} (${n.band})` : ''}
+              </option>
+            ))}
+          </select>
+        </label>
       )}
       <div className="grid2">
         <label className="field">
