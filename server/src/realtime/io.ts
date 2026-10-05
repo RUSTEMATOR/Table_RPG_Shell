@@ -16,7 +16,10 @@ export interface SocketData {
 export type ZgServer = Server<ClientToServerEvents, ServerToClientEvents, Record<string, never>, SocketData>;
 
 function originAllowed(origin: string | undefined, host: string | undefined): boolean {
-  if (!origin) return false;
+  // Браузер не шлёт Origin в GET на свой же сайт (первый запрос polling Socket.IO).
+  // Межсайтовые запросы и WebSocket Origin несут всегда, так что его отсутствие — свой сайт
+  // или не браузер; вход всё равно требует cookie сессии.
+  if (!origin) return true;
   if (config.PUBLIC_ORIGIN && origin === config.PUBLIC_ORIGIN) return true;
   try {
     // За nginx и за прокси Vite Host совпадает с хостом страницы.
@@ -47,7 +50,7 @@ export function attachSocketIo(app: FastifyInstance): ZgServer {
     pingTimeout: 20_000,
     allowRequest: (req, callback) => {
       const ok = originAllowed(req.headers.origin, req.headers.host);
-      if (!ok) app.log.warn({ origin: req.headers.origin }, 'socket: чужой Origin');
+      if (!ok) app.log.warn({ origin: req.headers.origin, host: req.headers.host }, 'socket: чужой Origin');
       callback(null, ok);
     },
   });

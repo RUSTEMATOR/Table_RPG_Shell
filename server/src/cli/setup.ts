@@ -9,10 +9,17 @@ import { arg, ask, askHidden, flag } from './prompt.ts';
 
 // npm run setup                         — создать комнату и мастера
 // npm run setup -- --reset-gm-password  — сменить пароль мастера
+// Без терминала: ZG_GM_PASSWORD=… npm run setup -- --room "…" --name "…"
 
 migrate(db, { migrationsFolder: MIGRATIONS_DIR });
 
 async function readPassword(): Promise<string> {
+  // Без терминала (скрипты): пароль из ZG_GM_PASSWORD.
+  const fromEnv = process.env.ZG_GM_PASSWORD;
+  if (fromEnv !== undefined) {
+    if (!GmPasswordSchema.safeParse(fromEnv).success) throw new Error('ZG_GM_PASSWORD: от 8 символов');
+    return fromEnv;
+  }
   for (;;) {
     const p1 = await askHidden('Пароль мастера (от 8 символов): ');
     if (!GmPasswordSchema.safeParse(p1).success) {

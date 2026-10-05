@@ -102,8 +102,10 @@ export function Feed({ limit = 50, gm = false }: { limit?: number; gm?: boolean 
             </div>
             {gm && g && (
               <div className="feed-gm small muted">
-                {g.ruleText} Сила {g.myPower} ({g.myBand})
-                {g.enemyPower ? ` против ${g.enemyName ? `«${g.enemyName}» ` : ''}${g.enemyPower} (${g.enemyBand})` : ''}.
+                {g.ruleText}
+                {g.ruleText.startsWith('Бросок мастера') ? '' : ` Сила ${g.myPower} (${g.myBand})`}
+                {g.enemyPower ? ` против ${g.enemyName ? `«${g.enemyName}» ` : ''}${g.enemyPower} (${g.enemyBand})` : ''}
+                {g.ruleText.startsWith('Бросок мастера') ? '' : '.'}
                 {g.outcome !== g.effect && ` Без поправки: ${EFFECT_LABELS[g.outcome]}.`}
                 {g.correctionNote && ` Исправление: ${g.correctionNote}`}
                 <Override r={r} />

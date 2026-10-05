@@ -1,4 +1,4 @@
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, isNotNull } from 'drizzle-orm';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import {
   GmPasswordSchema,
@@ -97,7 +97,8 @@ export async function authRoutes(app: FastifyInstance) {
     const members = db
       .select({ id: schema.member.id, name: schema.member.name, role: schema.member.role })
       .from(schema.member)
-      .where(and(eq(schema.member.roomId, room.id), inArray(schema.member.role, ['gm', 'player'])))
+      // Только те, кто уже задал PIN или пароль: остальным входить нечем.
+      .where(and(eq(schema.member.roomId, room.id), inArray(schema.member.role, ['gm', 'player']), isNotNull(schema.member.secretHash)))
       .all();
     return LoginMembersSchema.parse({ roomName: room.name, members });
   });

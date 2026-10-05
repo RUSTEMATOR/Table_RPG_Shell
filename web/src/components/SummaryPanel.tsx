@@ -18,13 +18,18 @@ export function SummaryPanel({ c, onChange }: { c: GmCharacterView; onChange: (c
   }, []);
   if (!opts || c.kind !== 'popadanets') return null;
   return (
-    <section className="card">
-      <h2>Сводки</h2>
+    <details className="card collapsible">
+      <summary>
+        <h2>Сводки</h2>
+        <span className="small muted">
+          {c.summaries.filter((s) => s.text).length} из 3 · {c.summaries.some((s) => s.show) ? 'игрок видит' : 'игроку не опубликовано'}
+        </span>
+      </summary>
       {!opts.configured && <p className="small error">Ключ Claude API не задан: написать сводку не получится, править и публиковать — можно.</p>}
       {c.summaries.map((s) => (
         <SummaryItem key={s.kind} c={c} s={s} opts={opts} onChange={onChange} />
       ))}
-    </section>
+    </details>
   );
 }
 
