@@ -62,7 +62,7 @@ export function TvScene({ scene, motion, idle }: { scene: TableScene | null; mot
       <AnimatePresence mode="wait">
         <m.section
           key={shown ? `${shown.id}:${shown.title}:${shown.text}` : idle ? 'idle' : 'empty'}
-          className="absolute bottom-[7vh] left-[5vw] grid max-w-[min(52vw,1000px)] gap-[1.2vh]"
+          className="absolute bottom-[7vh] left-[5vw] grid max-w-[min(52vw,1000px)] gap-[1.2vh] portrait:right-[5vw] portrait:max-w-none"
           initial="hide"
           animate="show"
           exit="hide"

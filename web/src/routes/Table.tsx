@@ -108,7 +108,7 @@ function TableScreen({ room }: { room: string }) {
         <TvNpc npc={state.npc} />
         <TvBigRoll filter={isTableRoll} three={!still && !lite} onFlying={setFlying} />
 
-        <aside aria-label="Последние броски" aria-live="polite" className="absolute top-[11vh] right-[4vw] grid w-[min(22vw,400px)] min-w-[260px] gap-[1.4vh]">
+        <aside aria-label="Последние броски" aria-live="polite" className="absolute top-[11vh] right-[4vw] grid w-[min(22vw,400px)] min-w-[260px] gap-[1.4vh] portrait:top-[8vh] portrait:right-[5vw] portrait:left-[5vw] portrait:w-auto portrait:[&>div:nth-child(n+5)]:hidden">
           {rolls.length > 0 && <span className="text-[clamp(14px,1.15vw,24px)] tracking-[.08em] text-[var(--tv-muted)] uppercase">Броски</span>}
           <AnimatePresence initial={false}>
             {rolls.map((r, i) => (

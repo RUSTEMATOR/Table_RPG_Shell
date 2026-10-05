@@ -8,7 +8,7 @@ export function TvNpc({ npc }: { npc: TableNpc | null }) {
       {npc && (
         <m.figure
           key={`${npc.name}:${npc.image?.url ?? ''}`}
-          className="absolute top-[13vh] left-[5vw] m-0 grid justify-items-start gap-[1.5vh]"
+          className="absolute top-[13vh] left-[5vw] m-0 grid justify-items-start gap-[1.5vh] portrait:top-[40vh] portrait:[&_img]:h-[min(28vh,420px)]"
           initial="hide"
           animate="show"
           exit="hide"
