@@ -60,6 +60,7 @@ function PlayerHome({ active, theme, base, choice, onChoice }: { active: boolean
     <>
       <ThemeChoice base={base} value={choice} onChange={onChoice} />
       <PlayerCard
+        className="reveal"
         c={character}
         theme={theme}
         onChange={setCharacter}

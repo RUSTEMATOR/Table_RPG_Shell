@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { cn } from '../lib/cn.ts';
 import type { PlayerCharacter, PlayerItem, PlayerSheetNote, PlayerTrait } from '@zg/shared';
 import { api } from '../lib/api.ts';
 import {
@@ -32,12 +33,14 @@ export function PlayerCard({
   onChange,
   fx = true,
   theme,
+  className,
 }: {
   c: PlayerCharacter;
   onChange?: (c: PlayerCharacter) => void;
   fx?: boolean;
   /** Тема с учётом выбора игрока и дня/ночи; без неё — тема персонажа. */
   theme?: string;
+  className?: string;
 }) {
   const th = theme ?? resolveTheme(c.look);
   ensureTheme(th);
@@ -52,7 +55,7 @@ export function PlayerCard({
   const empty =
     c.traits.length === 0 && c.hints.length === 0 && !c.bio && c.items.length + c.conditions.length + c.relations.length === 0 && !onChange;
   return (
-    <div ref={ref} className="card-theme p-card" data-ct={th} data-frame={String(T.frame)} data-seg={String(T.segment)}>
+    <div ref={ref} className={cn('card-theme p-card', className)} data-ct={th} data-frame={String(T.frame)} data-seg={String(T.segment)}>
       <div className="p-head ct-head">
         <button type="button" className="p-spin" aria-label={c.portrait ? 'Повернуть портрет' : 'Повернуть знак'} onClick={(e) => magicSpin(e.currentTarget)}>
           {c.portrait ? (
