@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { AnimatePresence, m, MotionConfig } from 'motion/react';
-import { EFFECT_LABELS, SIGN_TEXT, type OverloadSign, type TableState } from '@zg/shared';
+import { EFFECT_LABELS, type TableState } from '@zg/shared';
 import { ConnectionDot } from '../components/ConnectionDot.tsx';
 import { api } from '../lib/api.ts';
 import { useFeed } from '../lib/feed.ts';
@@ -16,6 +16,8 @@ import { capabilities } from '../lib/capabilities.ts';
 import { TvScene } from '../tv/TvScene.tsx';
 import { TvNpc } from '../tv/TvNpc.tsx';
 import { TvBigRoll } from '../tv/TvBigRoll.tsx';
+import { TvParticles } from '../tv/TvParticles.tsx';
+import { TvSigns, type Sign } from '../tv/TvSigns.tsx';
 import { TV_VARS, effectColor, isTableRoll } from '../tv/palette.ts';
 
 // Общий экран для ТВ и трансляции. Только публичное: сцена (без текста мастера), портрет противника (имя и картинка),
@@ -33,12 +35,6 @@ export function Table() {
   return <TableScreen room={me.room.name} />;
 }
 
-interface Sign {
-  character: string;
-  sign: OverloadSign;
-  at: number;
-}
-
 function TableScreen({ room }: { room: string }) {
   useWakeLock();
   useEffect(() => ensureTheme('other'), []); // шрифты макета: Oranienbaum, IBM Plex
@@ -46,8 +42,9 @@ function TableScreen({ room }: { room: string }) {
   const [loaded, setLoaded] = useState(false); // до первого ответа заставку не показываем: иначе она мигнёт перед сценой
   const [signs, setSigns] = useState<Sign[]>([]);
   const [still, setStill] = useState(() => load('zg:table:still') === '1');
-  // Облегчённый режим: ?lite=1, слабое устройство или нет WebGL2 (этап 20, шаг 5 добавит замер кадров).
-  const [lite] = useState(() => capabilities.lite());
+  // Облегчённый режим: ?lite=1, слабое устройство, нет WebGL2 или фон тормозит (кадр дольше 33 мс) — без 3D, частиц и наплыва.
+  const [lite, setLite] = useState(() => capabilities.lite());
+  const slow = useCallback(() => setLite(true), []);
   const rolls = useFeed().filter(isTableRoll).slice(0, 5);
   const [flying, setFlying] = useState<string | null>(null);
 
@@ -89,12 +86,14 @@ function TableScreen({ room }: { room: string }) {
         className="tv fixed inset-0 overflow-hidden bg-[var(--tv-bg)] font-['IBM_Plex_Sans',system-ui,sans-serif] text-[var(--tv-ink)] [&_.conn]:text-[var(--tv-muted)]"
       >
         <TvScene scene={scene} motion={!still && !lite} idle={loaded && !state.npc} />
+        {!still && !lite && !capabilities.reducedMotion() && <TvParticles onSlow={slow} />}
 
         <header className="absolute inset-x-[5vw] top-[3vh] flex items-center gap-4 text-[clamp(14px,1.1vw,22px)] opacity-70">
           <span className="grow tracking-[.08em] text-[var(--tv-muted)] uppercase">
             <span className="mr-3 text-[var(--tv-accent)]">◆</span>
             {room}
           </span>
+          {lite && !still && <span className="text-[0.8em] text-[var(--tv-muted)]">облегчённый режим</span>}
           <ConnectionDot />
           <button
             type="button"
@@ -148,15 +147,7 @@ function TableScreen({ room }: { room: string }) {
           </AnimatePresence>
         </aside>
 
-        {signs.length > 0 && (
-          <div className="absolute right-[4vw] bottom-[7vh] grid justify-items-end gap-2">
-            {signs.map((s) => (
-              <div key={s.at} className={`tv-sign sign-${s.sign}`}>
-                {s.character}: {SIGN_TEXT[s.sign]}
-              </div>
-            ))}
-          </div>
-        )}
+        <TvSigns signs={signs} />
       </div>
     </MotionConfig>
   );
