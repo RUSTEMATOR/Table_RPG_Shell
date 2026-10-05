@@ -58,11 +58,11 @@ chmod 600 ~/.config/zelenogorye/.env
 
 `https://qc-zelenogorye.qa-temple-of-serenity.cc` на этом Mac: Cloudflare Tunnel (`cloudflared`, тот же туннель, что у qc-intercom) → nginx Homebrew :8080 → Vite 5173 → dev-сервер 3001, dev-база. Роутер, сертификаты и этап 0 не нужны.
 
-Что делает хост закрытым: снаружи только через туннель (нет открытых портов и IP в DNS); nginx пускает к этому имени только соединения с самого Mac, из локальной сети напрямую — 403; пароль на входе (в dev-базе известные PIN-ы); `noindex`; отдельные логи `zelenogorye-qa-*.log` в `/opt/homebrew/var/log/nginx`.
+Пароля на входе нет (решение Рустема): dev-базу с известными PIN-ами откроет любой, кто знает имя, поэтому имя никому лишнему не давать, а настоящие данные в dev не держать. Что ещё прикрывает хост: снаружи только через туннель (нет открытых портов и IP в DNS); nginx пускает к этому имени только соединения с самого Mac, из локальной сети напрямую — 403; `noindex`; отдельные логи `zelenogorye-qa-*.log` в `/opt/homebrew/var/log/nginx`.
 
-1. `bash ops/scripts/qa-setup.sh` — задаёт пароль (логин `qa`, хэш в `/opt/homebrew/etc/nginx/.htpasswd-zelenogorye-qa`), кладёт `servers/zelenogorye-qa.conf`, `nginx -t`, reload. Другое имя: `QA_DOMAIN=… bash ops/scripts/qa-setup.sh`.
+1. `bash ops/scripts/qa-setup.sh` — кладёт `servers/zelenogorye-qa.conf`, `nginx -t`, reload. Другое имя: `QA_DOMAIN=… bash ops/scripts/qa-setup.sh`.
 2. Cloudflare → Zero Trust → Networks → Tunnels → туннель этого Mac → Public Hostname → Add: имя `qc-zelenogorye`, домен `qa-temple-of-serenity.cc`, Service `HTTP` `localhost:8080`. DNS-запись появится сама.
 3. `ZG_QA_HOST=qc-zelenogorye.qa-temple-of-serenity.cc npm run dev`.
-4. С телефона по мобильной сети открыть адрес, ввести `qa` и пароль, дальше обычный вход (docs/dev-data.md).
+4. С телефона по мобильной сети открыть адрес, обычный вход (docs/dev-data.md).
 
 Убрать: `bash ops/scripts/qa-setup.sh --remove` и удалить Public Hostname в Cloudflare. Пока `npm run dev` не запущен, хост отвечает 502.
