@@ -79,21 +79,108 @@ export function Diary() {
       </form>
       <ul className="list diary-list">
         {entries?.map((e) => (
-          <li key={e.id} className="diary-item">
-            <div className="small muted">
-              {when(e.createdAt)}
-              {e.private && ' · только для меня'}
-              {e.request && (e.requestState === 'answered' ? ' · вопрос, есть ответ' : ' · вопрос мастеру')}
-            </div>
-            <p className="prewrap">{e.text}</p>
-            {e.reply && (
-              <p className="reply">
-                <b>Мастер:</b> {e.reply}
-              </p>
-            )}
-          </li>
+          <DiaryItem key={e.id} e={e} onSaved={upsert} onRemoved={(id) => setEntries((l) => (l ?? []).filter((x) => x.id !== id))} />
         ))}
       </ul>
     </section>
+  );
+}
+
+type Mode = 'note' | 'private' | 'request';
+const MODES = [
+  ['note', 'Запись'],
+  ['private', 'Только для меня'],
+  ['request', 'Вопрос мастеру'],
+] as const;
+const modeOf = (e: DiaryEntryPlayer): Mode => (e.request ? 'request' : e.private ? 'private' : 'note');
+
+/** Запись дневника: просмотр, правка, удаление. Вопрос с ответом мастера остаётся вопросом. */
+function DiaryItem({ e, onSaved, onRemoved }: { e: DiaryEntryPlayer; onSaved: (e: DiaryEntryPlayer) => void; onRemoved: (id: string) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState(e.text);
+  const [mode, setMode] = useState<Mode>(modeOf(e));
+  const [confirmDel, setConfirmDel] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const answered = e.request && e.requestState === 'answered';
+
+  const open = () => {
+    setText(e.text);
+    setMode(modeOf(e));
+    setError(null);
+    setEditing(true);
+  };
+  const save = async () => {
+    setBusy(true);
+    setError(null);
+    const r = await api<DiaryEntryPlayer>('POST', `/api/player/diary/${encodeURIComponent(e.id)}`, {
+      text,
+      private: mode === 'private',
+      request: mode === 'request',
+    });
+    setBusy(false);
+    if (!r.ok) return setError('Не сохранилось');
+    onSaved(r.data);
+    setEditing(false);
+  };
+  const remove = async () => {
+    if (!confirmDel) return setConfirmDel(true);
+    setBusy(true);
+    const r = await api('POST', `/api/player/diary/${encodeURIComponent(e.id)}/delete`);
+    setBusy(false);
+    if (!r.ok) return setError('Не удалилось');
+    onRemoved(e.id);
+  };
+
+  return (
+    <li className="diary-item">
+      <div className="small muted">
+        {when(e.createdAt)}
+        {e.private && ' · только для меня'}
+        {e.request && (answered ? ' · вопрос, есть ответ' : ' · вопрос мастеру')}
+      </div>
+      {editing ? (
+        <div className="stack">
+          <textarea rows={4} value={text} onChange={(x) => setText(x.target.value)} maxLength={8000} />
+          {!answered && (
+            <div className="row">
+              {MODES.map(([k, l]) => (
+                <button key={k} type="button" className={`tab ${mode === k ? 'tab-on' : ''}`} onClick={() => setMode(k)}>
+                  {l}
+                </button>
+              ))}
+            </div>
+          )}
+          {mode === 'private' && !e.private && <p className="small muted">Мастер перестанет видеть эту запись.</p>}
+          {mode !== 'private' && e.private && <p className="small muted">Мастер сможет прочитать эту запись.</p>}
+          <div className="row">
+            <button type="button" className="btn btn-secondary" disabled={busy || !text.trim()} onClick={save}>
+              Сохранить
+            </button>
+            <button type="button" className="btn btn-ghost" disabled={busy} onClick={() => setEditing(false)}>
+              Отмена
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <p className="prewrap">{e.text}</p>
+          {e.reply && (
+            <p className="reply">
+              <b>Мастер:</b> {e.reply}
+            </p>
+          )}
+          <div className="row">
+            <button type="button" className="linkish" onClick={open}>
+              Изменить
+            </button>
+            <button type="button" className="linkish" disabled={busy} onClick={remove} onBlur={() => setConfirmDel(false)}>
+              {confirmDel ? 'Точно удалить?' : 'Удалить'}
+            </button>
+          </div>
+        </>
+      )}
+      {error && <p className="error small">{error}</p>}
+    </li>
   );
 }

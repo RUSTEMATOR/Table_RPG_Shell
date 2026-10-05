@@ -2,7 +2,7 @@ import type { DiarySuggestion, HintCheck } from '@zg/shared';
 import { cardOf } from '../../domain/cards.ts';
 import { normRevealed, type CharDoc } from '../../domain/character.ts';
 import type { DiaryRow } from '../../domain/diary.ts';
-import { diaryForGm } from '../../domain/diary.ts';
+import { diaryForGm, getDiary } from '../../domain/diary.ts';
 import { loadCharacter } from '../../domain/repo.ts';
 import type { RollRow } from '../../domain/rollService.ts';
 import { publish } from '../../realtime/publish.ts';
@@ -78,6 +78,9 @@ export function matchDiaryInBackground(roomId: string, entry: DiaryRow): void {
   void (async () => {
     const res = await runDiaryMatch({ entry: entry.text, hidden: hidden.map(({ i }) => asTrait(lc.doc, i)) });
     if (!res.ok) return;
+    // Пока Jev думал, игрок мог сделать запись личной, удалить или переписать её: тогда ответ выбрасываем.
+    const now = getDiary(roomId, entry.id);
+    if (!now || now.private || now.text !== entry.text) return;
     saveJudgment(roomId, 'diaryMatch.raw', entry.id, res.result.model, res.result.answers);
     const answers = res.result.answers as Record<string, { score?: number }>;
     const suggestions: DiarySuggestion[] = hidden
@@ -85,7 +88,7 @@ export function matchDiaryInBackground(roomId: string, entry: DiaryRow): void {
       .filter((s) => s.score >= DIARY_MATCH_MIN)
       .sort((a, b) => b.score - a.score);
     saveJudgment(roomId, 'diaryMatch.suggestions', entry.id, res.result.model, suggestions);
-    publish(roomId, { kind: 'gm' }, 'gm:diary.changed', { entry: diaryForGm(entry) });
+    publish(roomId, { kind: 'gm' }, 'gm:diary.changed', { entry: diaryForGm(now) });
   })().catch((err: unknown) => log().error({ err }, 'jev: diaryMatch'));
 }
 

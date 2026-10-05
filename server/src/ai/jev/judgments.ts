@@ -17,3 +17,10 @@ export function lastJudgment<T>(kind: string, subjectRef: string): T | null {
     .get();
   return r ? (JSON.parse(r.answers) as T) : null;
 }
+
+/** Стереть все суждения об объекте (например, запись дневника стала личной или удалена). */
+export function forgetJudgments(roomId: string, subjectRef: string): void {
+  db.delete(schema.aiJudgment)
+    .where(and(eq(schema.aiJudgment.roomId, roomId), eq(schema.aiJudgment.subjectRef, subjectRef)))
+    .run();
+}

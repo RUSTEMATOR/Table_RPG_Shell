@@ -2,6 +2,7 @@ import { and, eq } from 'drizzle-orm';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { DiaryListPlayerSchema, DiaryWriteSchema } from '@zg/shared';
 import { matchDiaryInBackground } from '../ai/jev/integrations.ts';
+import { forgetJudgments } from '../ai/jev/judgments.ts';
 import { newId } from '../auth/tokens.ts';
 import { db, schema } from '../db/client.ts';
 import { diaryForGm, diaryForPlayer, getDiary, listOwnDiary, type DiaryRow } from '../domain/diary.ts';
@@ -75,6 +76,7 @@ export async function playerDiaryRoutes(app: FastifyInstance) {
       .set({ text: next.text, private: next.private, request: next.request, requestState: next.requestState, updatedAt: next.updatedAt })
       .where(and(eq(schema.diaryEntry.id, e.id), eq(schema.diaryEntry.memberId, member.id)))
       .run();
+    if (next.private && !e.private) forgetJudgments(room.id, e.id);
     broadcast(room.id, next, !e.private);
     if (next.text !== e.text || (e.private && !next.private)) matchDiaryInBackground(room.id, next);
     return diaryForPlayer(next);
@@ -85,6 +87,7 @@ export async function playerDiaryRoutes(app: FastifyInstance) {
     const e = getDiary(room.id, request.params.id);
     if (!e || e.memberId !== member.id) return reply.code(404).send({ error: 'not_found' });
     db.delete(schema.diaryEntry).where(eq(schema.diaryEntry.id, e.id)).run();
+    forgetJudgments(room.id, e.id);
     publish(room.id, { kind: 'member', memberId: member.id }, 'diary:removed', { id: e.id });
     if (!e.private) publish(room.id, { kind: 'gm' }, 'gm:diary.removed', { id: e.id });
     return { ok: true };
