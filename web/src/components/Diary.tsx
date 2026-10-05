@@ -21,7 +21,7 @@ function readDraft(key: string): Draft {
   }
 }
 
-export function Diary() {
+export function Diary({ active = true }: { active?: boolean }) {
   const { me } = useMe();
   const draftKey = `zg:diary:draft:${me?.member.id ?? ''}`;
   const [entries, setEntries] = useState<DiaryEntryPlayer[] | null>(null);
@@ -36,10 +36,7 @@ export function Diary() {
 
   const load = useCallback(async () => {
     const r = await api<{ entries: DiaryEntryPlayer[] }>('GET', '/api/player/diary');
-    if (r.ok) {
-      setEntries(r.data.entries);
-      rememberReplies(r.data.entries);
-    }
+    if (r.ok) setEntries(r.data.entries);
   }, []);
   useEffect(() => {
     void load();
@@ -53,10 +50,11 @@ export function Diary() {
       const cur = l ?? [];
       return cur.some((x) => x.id === e.id) ? cur.map((x) => (x.id === e.id ? e : x)) : [e, ...cur];
     });
-  useSocketEvent('diary:changed', ({ entry }) => {
-    upsert(entry);
-    rememberReplies([entry]);
-  });
+  useSocketEvent('diary:changed', ({ entry }) => upsert(entry));
+  // Ответы считаются прочитанными, только когда вкладка на экране: иначе значок «есть новое» не появится.
+  useEffect(() => {
+    if (active && entries) rememberReplies(entries);
+  }, [active, entries]);
   useSocketEvent('diary:removed', ({ id }) => setEntries((l) => (l ?? []).filter((x) => x.id !== id)));
 
   const submit = async (e: FormEvent) => {

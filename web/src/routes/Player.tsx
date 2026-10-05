@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { PlayerCharacter } from '@zg/shared';
 import { Feed } from '../components/Feed.tsx';
 import { isOwnRoll, type FeedRoll } from '../lib/feed.ts';
@@ -11,6 +11,7 @@ import { RoleScreen } from '../components/Shell.tsx';
 import { api } from '../lib/api.ts';
 import { useConnection, useSocketEvent } from '../lib/socket.ts';
 import { useWakeLock } from '../lib/wakeLock.ts';
+import { capabilities } from '../lib/capabilities.ts';
 import { resolveTheme, themeVariant } from '../lib/cardTheme/index.ts';
 import { useScheme } from '../lib/colorScheme.ts';
 import { ThemeChoice } from '../components/ThemeChoice.tsx';
@@ -27,22 +28,20 @@ export function Player() {
   );
 }
 
-function PlayerHome({ theme, base, choice, onChoice }: { theme: string; base: string; choice: string; onChoice: (k: string) => void }) {
+function PlayerHome({ active, theme, base, choice, onChoice }: { active: boolean; theme: string; base: string; choice: string; onChoice: (k: string) => void }) {
   const [character, setCharacter] = useState<PlayerCharacter | null | undefined>(undefined);
   const load = useCallback(async () => {
     const r = await api<{ character: PlayerCharacter | null }>('GET', '/api/player/character');
-    if (r.ok) {
-      setCharacter(r.data.character);
-      rememberCard(r.data.character);
-    }
+    if (r.ok) setCharacter(r.data.character);
   }, []);
   useEffect(() => {
     void load();
   }, [load]);
-  useSocketEvent('character:updated', ({ character: c }) => {
-    setCharacter(c);
-    rememberCard(c);
-  });
+  useSocketEvent('character:updated', ({ character: c }) => setCharacter(c));
+  // Карточка считается увиденной, только когда вкладка на экране: иначе значок «есть новое» не появится.
+  useEffect(() => {
+    if (active && character !== undefined) rememberCard(character);
+  }, [active, character]);
   // После переподключения перечитываем: пока связи не было, события могли пройти мимо.
   const conn = useConnection();
   useEffect(() => {
@@ -62,25 +61,87 @@ function PlayerHome({ theme, base, choice, onChoice }: { theme: string; base: st
       <PlayerCard
         c={character}
         theme={theme}
-        onChange={(c) => {
-          setCharacter(c);
-          rememberCard(c);
-        }}
+        onChange={setCharacter}
       />
     </>
   );
 }
 
 type Tab = 'card' | 'rolls' | 'diary';
+const TABS: Tab[] = ['rolls', 'card', 'diary'];
+const isTab = (v: string | null | undefined): v is Tab => TABS.includes(v as Tab);
 
+/**
+ * Вкладки игрока: пейджер на scroll-snap, свайп или панель внизу. У каждой вкладки своя прокрутка.
+ * Открытая сначала вкладка монтируется сразу, остальные — чуть позже и дальше живут (свайп не упирается в пустоту).
+ */
 function PlayerTabs() {
-  const [tab, setTab] = useState<Tab>(() => (loadPref('zg:player:tab') as Tab | null) ?? 'rolls');
-  const pick = (t: Tab) => {
-    setTab(t);
-    savePref('zg:player:tab', t);
-  };
-  useEffect(() => setActiveTab(tab), [tab]);
+  const [tab, setTab] = useState<Tab>(() => {
+    const saved = loadPref('zg:player:tab');
+    return isTab(saved) ? saved : 'rolls';
+  });
+  const [mounted, setMounted] = useState<ReadonlySet<Tab>>(() => new Set([tab]));
+  useEffect(() => {
+    const t = window.setTimeout(() => setMounted(new Set(TABS)), 900);
+    return () => window.clearTimeout(t);
+  }, []);
+  useEffect(() => {
+    setActiveTab(tab);
+    savePref('zg:player:tab', tab);
+  }, [tab]);
   useEffect(() => () => setActiveTab(null), []);
+
+  const pager = useRef<HTMLDivElement>(null);
+  const tabRef = useRef(tab);
+  tabRef.current = tab;
+  // Куда листаем по нажатию на панель: промежуточные вкладки по пути не считаются открытыми (значки на них остаются).
+  const target = useRef<Tab | null>(null);
+  useLayoutEffect(() => {
+    const el = pager.current;
+    if (el) el.scrollLeft = TABS.indexOf(tab) * el.clientWidth;
+  }, []); // только при открытии экрана
+  useEffect(() => {
+    const el = pager.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (!e.isIntersecting) continue;
+          const t = (e.target as HTMLElement).dataset.tab;
+          if (!isTab(t)) continue;
+          if (target.current && target.current !== t) continue;
+          target.current = null;
+          setTab(t);
+          setMounted((m) => (m.has(t) ? m : new Set([...m, t])));
+        }
+      },
+      { root: el, threshold: 0.6 },
+    );
+    el.querySelectorAll('[data-tab]').forEach((p) => io.observe(p));
+    return () => io.disconnect();
+  }, []);
+  const pick = (t: Tab) => {
+    const el = pager.current;
+    if (!el) return;
+    if (t === tab) {
+      // повторное нажатие — к началу вкладки
+      el.querySelector<HTMLElement>(`[data-tab="${t}"]`)?.scrollTo({ top: 0, behavior: capabilities.reducedMotion() ? 'auto' : 'smooth' });
+      return;
+    }
+    target.current = t;
+    setMounted((m) => (m.has(t) ? m : new Set([...m, t])));
+    el.scrollTo({ left: TABS.indexOf(t) * el.clientWidth, behavior: capabilities.reducedMotion() ? 'auto' : 'smooth' });
+  };
+  // Поворот телефона: остаться на своей вкладке.
+  useEffect(() => {
+    const el = pager.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      if (!target.current) el.scrollLeft = TABS.indexOf(tabRef.current) * el.clientWidth;
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   const unread = useUnread();
   // Тема экрана: выбор игрока на этом устройстве, иначе тема персонажа; «День» / «Ночь» — её вариант.
   const { me } = useMe();
@@ -94,34 +155,50 @@ function PlayerTabs() {
   const scheme = useScheme();
   const theme = themeVariant(choice || base, scheme);
   useSkin(theme);
-  // Значки ставятся здесь, а не во вкладках: вкладка, которая не открыта, событий не слушает.
+  // Значки ставятся здесь, а не во вкладках: вкладки слушают события, только чтобы обновить себя.
   useSocketEvent('diary:changed', ({ entry }) => noteDiaryChange(entry));
   useSocketEvent('character:updated', ({ character }) => noteCardChange(character));
+
+  const pane = (t: Tab, children: ReactNode) => (
+    <section
+      key={t}
+      id={`pane-${t}`}
+      data-tab={t}
+      aria-label={LABELS[t]}
+      inert={t !== tab}
+      className="flex w-full shrink-0 snap-start snap-always flex-col gap-3.5 overflow-y-auto overscroll-y-contain px-4 pt-1 pb-4"
+    >
+      {mounted.has(t) && children}
+    </section>
+  );
   return (
     <>
-      <div id={`pane-${tab}`} className="-mx-4 flex min-h-0 flex-1 flex-col gap-3.5 overflow-y-auto overscroll-contain px-4 pt-1 pb-4">
-        {tab === 'rolls' && (
+      <div ref={pager} className="-mx-4 flex min-h-0 flex-1 snap-x snap-mandatory overflow-x-auto overflow-y-hidden overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {pane(
+          'rolls',
           <>
             <RollPanel role="player" />
             <FeedCard />
-          </>
+          </>,
         )}
-        {tab === 'card' && <PlayerHome theme={theme} base={base} choice={choice} onChoice={pickTheme} />}
-        {tab === 'diary' && <Diary />}
+        {pane('card', <PlayerHome active={tab === 'card'} theme={theme} base={base} choice={choice} onChoice={pickTheme} />)}
+        {pane('diary', <Diary active={tab === 'diary'} />)}
       </div>
       <TabBar
         value={tab}
         onChange={pick}
         controls={(v) => `pane-${v}`}
         items={[
-          { value: 'rolls', label: 'Броски', icon: TAB_ICONS.rolls },
-          { value: 'card', label: 'Карточка', icon: TAB_ICONS.card, dot: unread.card },
-          { value: 'diary', label: 'Дневник', icon: TAB_ICONS.diary, dot: unread.diary },
+          { value: 'rolls', label: LABELS.rolls, icon: TAB_ICONS.rolls },
+          { value: 'card', label: LABELS.card, icon: TAB_ICONS.card, dot: unread.card },
+          { value: 'diary', label: LABELS.diary, icon: TAB_ICONS.diary, dot: unread.diary },
         ]}
       />
     </>
   );
 }
+
+const LABELS: Record<Tab, string> = { rolls: 'Броски', card: 'Карточка', diary: 'Дневник' };
 
 /** Лента игрока с фильтром «Все» / «Мои». Выбор запоминается на устройстве. */
 function FeedCard() {
