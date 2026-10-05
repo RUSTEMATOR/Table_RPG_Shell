@@ -8,6 +8,7 @@ import type { AuthContext } from '../../auth/sessions.ts';
 import { notifyCharacterChanged } from '../notify.ts';
 import { replyForbidden, safeAck } from '../publish.ts';
 import { log } from '../log.ts';
+import { on } from '../guarded.ts';
 
 // Мастерские действия с чертами. Первая строка каждого обработчика — проверка роли мастера.
 
@@ -17,7 +18,7 @@ function onGm<S extends z.ZodTypeAny>(
   schema: S,
   mutate: (slot: Slot, data: z.infer<S>) => boolean,
 ) {
-  socket.on(event, (raw: unknown, ack: unknown) => {
+  on(socket, event, (raw: unknown, ack: unknown) => {
     const auth = socket.data.auth as AuthContext;
     if (auth.member.role !== 'gm') {
       log().warn({ event, memberId: auth.member.id, role: auth.member.role }, 'gm: событие без роли мастера');

@@ -1,14 +1,20 @@
 import type { Socket } from 'socket.io';
-import { SyncHelloSchema, SyncWelcomeSchema } from '@zg/shared';
+import { SyncHelloSchema, type SyncWelcome } from '@zg/shared';
+import type { AuthContext } from '../../auth/sessions.ts';
 import { BUILD_ID } from '../../config.ts';
+import { catchUp } from '../feed.ts';
 import { safeAck } from '../publish.ts';
+import { on } from '../guarded.ts';
 
 export function registerSyncHandlers(socket: Socket) {
-  socket.on('sync:hello', (raw: unknown, ack: unknown) => {
+  on(socket, 'sync:hello', (raw: unknown, ack: unknown) => {
     if (typeof ack !== 'function') return;
+    const auth = socket.data.auth as AuthContext;
     const hello = SyncHelloSchema.safeParse(raw);
+    const lastSeq = hello.success ? hello.data.lastSeq : {};
     const reload = hello.success ? hello.data.buildId !== BUILD_ID : false;
-    // Лента событий появится на этапе 3; пока seq всегда 0.
-    safeAck(socket, 'sync:hello', ack as (p: unknown) => void, SyncWelcomeSchema.parse({ buildId: BUILD_ID, reload, seq: 0 }));
+    const { reset, events } = catchUp(auth, lastSeq);
+    const welcome: SyncWelcome = { buildId: BUILD_ID, reload, reset, events };
+    safeAck(socket, 'sync:hello', ack as (p: SyncWelcome) => void, welcome);
   });
 }

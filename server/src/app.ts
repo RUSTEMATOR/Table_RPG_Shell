@@ -7,6 +7,7 @@ import { BUILD_ID, config } from './config.ts';
 import { jevRoutes } from './ai/jev/routes.ts';
 import { gmCharacterRoutes } from './routes/gmCharacters.ts';
 import { playerRoutes } from './routes/player.ts';
+import { gmSessionRoutes } from './routes/gmSession.ts';
 import { findGmLeak } from './visibility/guard.ts';
 
 declare module 'fastify' {
@@ -48,6 +49,7 @@ export async function buildApp() {
   await app.register(jevRoutes);
   await app.register(gmCharacterRoutes);
   await app.register(playerRoutes);
+  await app.register(gmSessionRoutes);
 
   return app;
 }

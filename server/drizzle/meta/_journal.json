@@ -15,6 +15,13 @@
       "when": 1791159162509,
       "tag": "0001_characters",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1791159602745,
+      "tag": "0002_rolls",
+      "breakpoints": true
     }
   ]
 }

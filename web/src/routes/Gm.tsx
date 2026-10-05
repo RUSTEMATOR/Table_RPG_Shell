@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
 import { ru, type GmCharacterListItem, type GmMember, type InviteCreated } from '@zg/shared';
+import { Feed } from '../components/Feed.tsx';
+import { OpponentBox } from '../components/OpponentBox.tsx';
+import { RollPanel } from '../components/RollPanel.tsx';
 import { RoleScreen } from '../components/Shell.tsx';
 import { api } from '../lib/api.ts';
 import { useSocketEvent } from '../lib/socket.ts';
@@ -88,6 +91,15 @@ export function Gm() {
 
   return (
     <RoleScreen role="gm">
+      <section className="card">
+        <h2>Сессия</h2>
+        <OpponentBox />
+      </section>
+      <RollPanel role="gm" />
+      <section className="card">
+        <h2>Лента</h2>
+        <Feed gm limit={40} />
+      </section>
       <Characters />
 
       <section className="card">

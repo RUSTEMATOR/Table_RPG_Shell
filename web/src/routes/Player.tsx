@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { PlayerCharacter } from '@zg/shared';
+import { Feed } from '../components/Feed.tsx';
 import { PlayerCard } from '../components/PlayerCard.tsx';
+import { RollPanel } from '../components/RollPanel.tsx';
 import { RoleScreen } from '../components/Shell.tsx';
 import { api } from '../lib/api.ts';
 import { useConnection, useSocketEvent } from '../lib/socket.ts';
@@ -10,6 +12,11 @@ export function Player() {
   useWakeLock();
   return (
     <RoleScreen role="player">
+      <RollPanel role="player" />
+      <section className="card">
+        <h2>Лента</h2>
+        <Feed />
+      </section>
       <PlayerHome />
     </RoleScreen>
   );
