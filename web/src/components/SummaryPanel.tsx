@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { SUMMARY_TITLES, type GmCharacterView, type GmSummary, type SummaryCheck, type SummaryOptions } from '@zg/shared';
 import { api } from '../lib/api.ts';
+import { Badge, Button, Card, CardTitle, Select, Spinner, Textarea, toast } from '../ui/index.ts';
 
 let optionsCache: SummaryOptions | null = null;
 
@@ -18,18 +19,18 @@ export function SummaryPanel({ c, onChange }: { c: GmCharacterView; onChange: (c
   }, []);
   if (!opts || c.kind !== 'popadanets') return null;
   return (
-    <details className="card collapsible">
-      <summary>
-        <h2>Сводки</h2>
-        <span className="small muted">
+    <Card>
+      <div className="flex flex-wrap items-center gap-3">
+        <CardTitle className="grow">Сводки</CardTitle>
+        <Badge tone={c.summaries.some((s) => s.show) ? 'ok' : 'neutral'}>
           {c.summaries.filter((s) => s.text).length} из 3 · {c.summaries.some((s) => s.show) ? 'игрок видит' : 'игроку не опубликовано'}
-        </span>
-      </summary>
-      {!opts.configured && <p className="small error">Ключ Claude API не задан: написать сводку не получится, править и публиковать — можно.</p>}
+        </Badge>
+      </div>
+      {!opts.configured && <p className="small error m-0">Ключ Claude API не задан: написать сводку не получится, править и публиковать — можно.</p>}
       {c.summaries.map((s) => (
         <SummaryItem key={s.kind} c={c} s={s} opts={opts} onChange={onChange} />
       ))}
-    </details>
+    </Card>
   );
 }
 
@@ -63,9 +64,7 @@ function SummaryItem({ c, s, opts, onChange }: { c: GmCharacterView; s: GmSummar
     setBusy('Проверяю…');
     const r = await api<SummaryCheck>('POST', `${base}/check`);
     setBusy(null);
-    const res: SummaryCheck = r.ok
-      ? r.data
-      : { facts: { status: 'unavailable', flagged: [] }, leak: { status: 'unavailable', others: [] } };
+    const res: SummaryCheck = r.ok ? r.data : { facts: { status: 'unavailable', flagged: [] }, leak: { status: 'unavailable', others: [] } };
     return res;
   };
   const publish = async (force: boolean) => {
@@ -77,70 +76,73 @@ function SummaryItem({ c, s, opts, onChange }: { c: GmCharacterView; s: GmSummar
       if (bad(res.facts) || bad(res.leak)) return setCheck(res);
     }
     setCheck(null);
-    await save({ show: true });
+    if (await save({ show: true })) toast('Сводка опубликована игроку');
   };
 
   return (
-    <div className="summary">
-      <div className="row spread">
-        <h3>{SUMMARY_TITLES[s.kind]}</h3>
-        {forPlayer && s.text && <span className={`small ${s.show ? 'jev-note' : 'muted'}`}>{s.show ? 'игрок видит' : 'не опубликовано'}</span>}
+    <div className="grid gap-2 border-t border-solid border-border pt-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <h3 className="m-0 grow">{SUMMARY_TITLES[s.kind]}</h3>
+        {forPlayer && s.text && <Badge tone={s.show ? 'ok' : 'neutral'}>{s.show ? 'игрок видит' : 'не опубликовано'}</Badge>}
       </div>
-      <div className="row">
-        <select value={tone} onChange={(e) => setTone(e.target.value)} aria-label="Тон">
-          {opts.tones.map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-        </select>
+      <div className="flex flex-wrap gap-2">
+        <Select aria-label="Тон" value={tone} onValueChange={setTone} options={opts.tones.map((t) => ({ value: t, label: t }))} className="w-auto min-w-[160px]" />
         {forPlayer && (
-          <select value={person} onChange={(e) => setPerson(e.target.value)} aria-label="Лицо">
-            {opts.persons.map((p) => (
-              <option key={p.key} value={p.key}>
-                {p.label}
-              </option>
-            ))}
-          </select>
+          <Select
+            aria-label="Лицо"
+            value={person}
+            onValueChange={setPerson}
+            options={opts.persons.map((p) => ({ value: p.key, label: p.label }))}
+            className="w-auto min-w-[160px]"
+          />
         )}
-      </div>
-      <div className="row">
-        <button type="button" className="btn btn-secondary" disabled={!!busy || !opts.configured} onClick={() => generate(false)}>
+        <Button disabled={!!busy || !opts.configured} onClick={() => generate(false)}>
           {s.text ? 'Переписать' : 'Написать'}
-        </button>
-        <button type="button" className="btn btn-ghost" disabled={!!busy || !opts.configured} onClick={() => generate(true)}>
+        </Button>
+        <Button variant="ghost" disabled={!!busy || !opts.configured} onClick={() => generate(true)}>
           Быстрый черновик
-        </button>
+        </Button>
       </div>
-      {busy && <p className="small muted">{busy}</p>}
-      {error && <p className="small error">{error}</p>}
+      {busy && (
+        <p className="m-0 flex items-center gap-2 text-[13.6px] text-muted" role="status">
+          <Spinner /> {busy}
+        </p>
+      )}
+      {error && <p className="small error m-0">{error}</p>}
       {(s.text || text) && (
         <>
-          <textarea className="summary-text" rows={10} value={text} onChange={(e) => setText(e.target.value)} maxLength={20000} />
-          <p className="small muted">
+          <Textarea
+            rows={10}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            maxLength={20000}
+            aria-label={SUMMARY_TITLES[s.kind]}
+            className="font-read text-base leading-relaxed"
+          />
+          <p className="m-0 text-[13px] text-muted">
             {s.model && `${s.model}`}
             {s.edited && ' · правлено вручную'}
           </p>
-          <div className="row">
+          <div className="flex flex-wrap gap-2">
             {text !== s.text && (
-              <button type="button" className="btn btn-secondary" disabled={!!busy} onClick={() => save({ text })}>
+              <Button disabled={!!busy} onClick={async () => (await save({ text })) && toast('Правка сохранена')}>
                 Сохранить правку
-              </button>
+              </Button>
             )}
             {forPlayer && !s.show && (
-              <button type="button" className="btn" disabled={!!busy || !text.trim()} onClick={() => publish(false)}>
+              <Button variant="primary" disabled={!!busy || !text.trim()} onClick={() => publish(false)}>
                 Опубликовать игроку
-              </button>
+              </Button>
             )}
             {forPlayer && s.show && (
-              <button type="button" className="btn btn-ghost" disabled={!!busy} onClick={() => save({ show: false })}>
+              <Button variant="ghost" disabled={!!busy} onClick={async () => (await save({ show: false })) && toast('Сводка снята с публикации')}>
                 Снять с публикации
-              </button>
+              </Button>
             )}
             {!forPlayer && (
-              <button type="button" className="btn btn-ghost" disabled={!!busy || text !== s.text} onClick={async () => setCheck(await runCheck())}>
+              <Button variant="ghost" disabled={!!busy || text !== s.text} onClick={async () => setCheck(await runCheck())}>
                 Проверить выдумки
-              </button>
+              </Button>
             )}
           </div>
         </>
@@ -159,15 +161,11 @@ function SummaryItem({ c, s, opts, onChange }: { c: GmCharacterView; s: GmSummar
               Похоже, выдаёт скрытую черту «{o.traitName}» ({Math.round(o.probability * 100)}%).
             </p>
           ))}
-          <div className="row">
-            {forPlayer && !s.show && (
-              <button type="button" className="btn btn-secondary" onClick={() => publish(true)}>
-                Опубликовать всё равно
-              </button>
-            )}
-            <button type="button" className="btn btn-ghost" onClick={() => setCheck(null)}>
+          <div className="flex gap-2">
+            {forPlayer && !s.show && <Button onClick={() => publish(true)}>Опубликовать всё равно</Button>}
+            <Button variant="ghost" onClick={() => setCheck(null)}>
               {forPlayer ? 'Поправить' : 'Закрыть'}
-            </button>
+            </Button>
           </div>
         </div>
       )}

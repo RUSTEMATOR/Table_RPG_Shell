@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { SHEET_KINDS, SHEET_TITLES, type GmCharacterView, type GmSheetEntry, type SheetKind } from '@zg/shared';
 import { api } from '../lib/api.ts';
+import { cn } from '../lib/cn.ts';
+import { Badge, Button, Card, CardTitle, Input, Select, Switch, Textarea } from '../ui/index.ts';
 
 /** Лист персонажа у мастера: снаряжение, состояния, связи. Флаг «видна игроку» и заметка мастера у каждой записи. */
 export function SheetPanel({ c, onChange }: { c: GmCharacterView; onChange: (c: GmCharacterView) => void }) {
@@ -19,40 +21,42 @@ export function SheetPanel({ c, onChange }: { c: GmCharacterView; onChange: (c: 
   };
 
   return (
-    <details className="card collapsible">
-      <summary>
-        <h2>Лист</h2>
-        <span className="small muted">
-          {c.sheet.length} {hidden ? `· скрыто ${hidden}` : ''}
-        </span>
-      </summary>
+    <Card>
+      <div className="flex flex-wrap items-center gap-3">
+        <CardTitle className="grow">Лист</CardTitle>
+        <Badge>
+          {c.sheet.length}
+          {hidden ? ` · скрыто ${hidden}` : ''}
+        </Badge>
+      </div>
       {SHEET_KINDS.map((k) => {
         const list = c.sheet.filter((e) => e.kind === k);
         return (
-          <div key={k} className="sheet-group">
-            <h3>{SHEET_TITLES[k]}</h3>
-            {list.length === 0 && <p className="small muted">Пусто.</p>}
+          <div key={k} className="grid gap-2">
+            <h3 className="m-0">{SHEET_TITLES[k]}</h3>
+            {list.length === 0 && <p className="m-0 text-[13.6px] text-muted">Пусто.</p>}
             {list.map((e) => (
               <SheetItem key={e.id} e={e} base={base} onChange={onChange} />
             ))}
           </div>
         );
       })}
-      <div className="row">
-        <select value={kind} onChange={(e) => setKind(e.target.value as SheetKind)} aria-label="Раздел">
-          {SHEET_KINDS.map((k) => (
-            <option key={k} value={k}>
-              {SHEET_TITLES[k]}
-            </option>
-          ))}
-        </select>
-        <input value={title} maxLength={120} placeholder="Название" onChange={(e) => setTitle(e.target.value)} />
-        <button type="button" className="btn btn-secondary" disabled={!title.trim()} onClick={add}>
+      <div className="grid gap-2 border-t border-solid border-border pt-3 sm:grid-cols-[200px_minmax(0,1fr)_auto]">
+        <Select aria-label="Раздел" value={kind} onValueChange={(v) => setKind(v as SheetKind)} options={SHEET_KINDS.map((k) => ({ value: k, label: SHEET_TITLES[k] }))} />
+        <Input
+          aria-label="Название новой записи"
+          value={title}
+          maxLength={120}
+          placeholder="Название"
+          onChange={(e) => setTitle(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && title.trim() && void add()}
+        />
+        <Button variant="primary" disabled={!title.trim()} onClick={add}>
           Добавить
-        </button>
+        </Button>
       </div>
-      {error && <p className="error small">{error}</p>}
-    </details>
+      {error && <p className="error small m-0">{error}</p>}
+    </Card>
   );
 }
 
@@ -84,28 +88,25 @@ function SheetItem({ e, base, onChange }: { e: GmSheetEntry; base: string; onCha
   };
 
   return (
-    <div className={`sheet-entry ${e.visible ? '' : 'sheet-hidden'}`}>
-      <div className="row spread">
-        <input value={title} maxLength={120} onChange={(x) => setTitle(x.target.value)} aria-label="Название" />
-        <label className="check">
-          <input type="checkbox" checked={e.visible} onChange={(x) => patch({ visible: x.target.checked })} />
-          видна игроку
-        </label>
+    <div className={cn('grid gap-2 rounded-control border border-solid border-border p-3', !e.visible && 'border-dashed opacity-75')}>
+      <div className="flex flex-wrap items-center gap-3">
+        <Input value={title} maxLength={120} onChange={(x) => setTitle(x.target.value)} aria-label="Название" className="min-w-0 flex-1 font-semibold" />
+        <Switch checked={e.visible} onCheckedChange={(v) => patch({ visible: v })} label="видна игроку" />
       </div>
-      <textarea rows={2} value={text} maxLength={2000} placeholder="Текст для игрока" onChange={(x) => setText(x.target.value)} />
-      <textarea rows={2} value={textGm} maxLength={4000} placeholder="Заметка мастера (игрок не видит)" onChange={(x) => setTextGm(x.target.value)} />
-      <div className="row">
+      <Textarea rows={2} value={text} maxLength={2000} placeholder="Текст для игрока" aria-label="Текст для игрока" onChange={(x) => setText(x.target.value)} />
+      <Textarea rows={2} value={textGm} maxLength={4000} placeholder="Заметка мастера (игрок не видит)" aria-label="Заметка мастера" onChange={(x) => setTextGm(x.target.value)} />
+      <div className="flex flex-wrap items-center gap-2">
         {dirty && (
-          <button type="button" className="btn btn-secondary" disabled={!title.trim()} onClick={() => patch({ title, text, textGm })}>
+          <Button size="sm" variant="primary" disabled={!title.trim()} onClick={() => patch({ title, text, textGm })}>
             Сохранить
-          </button>
+          </Button>
         )}
-        <button type="button" className="btn btn-ghost" onClick={remove} onBlur={() => setConfirmDel(false)}>
+        <Button size="sm" variant={confirmDel ? 'danger' : 'ghost'} onClick={remove} onBlur={() => setConfirmDel(false)}>
           {confirmDel ? 'Точно удалить?' : 'Удалить'}
-        </button>
-        {e.byPlayer && <span className="small muted">последним правил игрок</span>}
+        </Button>
+        {e.byPlayer && <span className="text-[13px] text-muted">последним правил игрок</span>}
       </div>
-      {error && <p className="error small">{error}</p>}
+      {error && <p className="error small m-0">{error}</p>}
     </div>
   );
 }
