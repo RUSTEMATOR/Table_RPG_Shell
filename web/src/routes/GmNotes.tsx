@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { GmNote, GmPastNote } from '@zg/shared';
 import { api } from '../lib/api.ts';
 import { useConnection, useSocketEvent } from '../lib/socket.ts';
+import { Badge, Button, Card, CardTitle, Dialog, DialogContent, Textarea } from '../ui/index.ts';
 
 const SAVE_DELAY = 800;
 
@@ -117,49 +118,55 @@ function Notes() {
   };
   const isSession = status === 'session';
 
+  const tone: Record<Status, 'ok' | 'neutral' | 'warn' | 'danger'> = { saved: 'ok', dirty: 'neutral', saving: 'neutral', error: 'danger', conflict: 'warn', session: 'warn' };
+  const takeTheirs = () => {
+    if (!theirs) return;
+    sessionId.current = theirs.sessionId;
+    base.current = theirs.updatedAt;
+    latest.current = theirs.text;
+    dirty.current = false;
+    setText(theirs.text);
+    setTheirs(null);
+    setStatus('saved');
+  };
+  const keepMine = () => {
+    if (!theirs) return;
+    const over = theirs.updatedAt;
+    sessionId.current = theirs.sessionId;
+    setTheirs(null);
+    void save(latest.current, over);
+  };
+
   return (
-    <section className="card">
-      <div className="row spread">
-        <h2>Заметки сессии</h2>
-        <span className={`small ${status === 'error' || status === 'conflict' || isSession ? 'error' : 'muted'}`}>{label[status]}</span>
+    <Card>
+      <div className="flex flex-wrap items-center gap-3">
+        <CardTitle className="grow">Заметки сессии</CardTitle>
+        <Badge tone={tone[status]} role="status" aria-live="polite">
+          {(status === 'saving' || status === 'dirty') && <span aria-hidden="true" className="size-1.5 animate-pulse rounded-full bg-current" />}
+          {status === 'saved' ? 'Сохранено' : status === 'saving' ? 'Сохраняю' : status === 'dirty' ? 'Есть изменения' : status === 'error' ? 'Не сохранилось' : 'Конфликт'}
+        </Badge>
       </div>
-      {(status === 'conflict' || isSession) && theirs && (
-        <div className="conflict">
-          <p className="small">{isSession ? 'Заметки новой сессии:' : 'Версия из другой вкладки:'}</p>
-          <pre className="prewrap small">{theirs.text.slice(0, 2000) || '(пусто)'}</pre>
-          <div className="row">
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => {
-                sessionId.current = theirs.sessionId;
-                base.current = theirs.updatedAt;
-                latest.current = theirs.text;
-                dirty.current = false;
-                setText(theirs.text);
-                setTheirs(null);
-                setStatus('saved');
-              }}
-            >
-              {isSession ? 'Открыть новую, мой текст выбросить' : 'Взять ту версию'}
-            </button>
-            <button
-              type="button"
-              className="btn btn-ghost"
-              onClick={() => {
-                const over = theirs.updatedAt;
-                sessionId.current = theirs.sessionId;
-                setTheirs(null);
-                void save(latest.current, over);
-              }}
-            >
+      {status === 'error' && <p className="m-0 text-[13.6px] text-danger">{label.error}</p>}
+      <Textarea
+        rows={18}
+        value={text}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Что случилось, кого встретили, что обещали…"
+        className="font-read text-base leading-relaxed"
+      />
+      <Dialog open={(status === 'conflict' || isSession) && !!theirs} onOpenChange={() => {}}>
+        <DialogContent title={isSession ? 'Началась новая сессия' : 'Заметки изменились в другой вкладке'} description={label[status]} className="w-[min(560px,calc(100vw-32px))]">
+          <p className="m-0 text-[13.6px] text-muted">{isSession ? 'Заметки новой сессии:' : 'Версия из другой вкладки:'}</p>
+          <pre className="prewrap m-0 max-h-60 overflow-y-auto rounded-control bg-surface-2 p-3 font-read text-sm">{theirs?.text.slice(0, 2000) || '(пусто)'}</pre>
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button onClick={takeTheirs}>{isSession ? 'Открыть новую, мой текст выбросить' : 'Взять ту версию'}</Button>
+            <Button variant="primary" onClick={keepMine}>
               {isSession ? 'Перенести мой текст в новую' : 'Оставить мою'}
-            </button>
+            </Button>
           </div>
-        </div>
-      )}
-      <textarea className="notes" rows={18} value={text} onChange={(e) => onChange(e.target.value)} placeholder="Что случилось, кого встретили, что обещали…" />
-    </section>
+        </DialogContent>
+      </Dialog>
+    </Card>
   );
 }
 
@@ -178,21 +185,26 @@ function PastNotes() {
   useSocketEvent('gm:session.changed', () => void load());
   if (!list?.length) return null;
   return (
-    <details className="card collapsible">
-      <summary>
-        <h2>Прошлые сессии</h2>
-        <span className="small muted">{list.length}</span>
-      </summary>
-      <ul className="list">
-        {list.map((n) => (
-          <li key={n.sessionId}>
-            <p className="small muted">
-              {day(n.startedAt)} — {day(n.endedAt)}
-            </p>
-            <p className="prewrap">{n.text}</p>
-          </li>
-        ))}
-      </ul>
-    </details>
+    <Card as="section">
+      <details className="group">
+        <summary className="flex cursor-pointer list-none items-center gap-3 [&::-webkit-details-marker]:hidden">
+          <CardTitle className="grow">Прошлые сессии</CardTitle>
+          <Badge>{list.length}</Badge>
+          <span aria-hidden="true" className="text-muted transition-transform group-open:rotate-90">
+            ›
+          </span>
+        </summary>
+        <ul className="m-0 mt-3 grid list-none gap-0 p-0">
+          {list.map((n) => (
+            <li key={n.sessionId} className="grid gap-1 border-b border-solid border-border py-3 last:border-0">
+              <span className="font-ui text-xs font-medium uppercase tracking-[.06em] text-muted">
+                {day(n.startedAt)} — {day(n.endedAt)}
+              </span>
+              <p className="prewrap m-0 font-read">{n.text}</p>
+            </li>
+          ))}
+        </ul>
+      </details>
+    </Card>
   );
 }
