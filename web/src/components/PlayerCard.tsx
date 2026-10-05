@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { cn } from '../lib/cn.ts';
+import { Button, Field, Input, Sheet, Textarea } from '../ui/index.ts';
 import type { PlayerCharacter, PlayerItem, PlayerSheetNote, PlayerTrait } from '@zg/shared';
 import { api } from '../lib/api.ts';
 import {
@@ -23,9 +24,7 @@ import {
 
 const html = (h: string) => ({ __html: h });
 const Deco = () => <i className="ct-fr" aria-hidden="true" />;
-const Chip = ({ k, label, st }: { k: string; label: string; st?: string }) => (
-  <div className="top" dangerouslySetInnerHTML={html(catChipHtml(k, label, st))} />
-);
+const Chip = ({ k, label, st }: { k: string; label: string; st?: string }) => <div className="top" dangerouslySetInnerHTML={html(catChipHtml(k, label, st))} />;
 
 /** Карточка, как её видит игрок. В предпросмотре у мастера onChange не передаётся (правки нет) и частиц нет (fx=false). */
 export function PlayerCard({
@@ -52,8 +51,7 @@ export function PlayerCard({
   }, [fx, th, c.look.genre]);
 
   const sub = [c.origin, c.pronoun !== 'не указано' ? c.pronoun : ''].filter(Boolean).join(' · ');
-  const empty =
-    c.traits.length === 0 && c.hints.length === 0 && !c.bio && c.items.length + c.conditions.length + c.relations.length === 0 && !onChange;
+  const empty = c.traits.length === 0 && c.hints.length === 0 && !c.bio && c.items.length + c.conditions.length + c.relations.length === 0 && !onChange;
   return (
     <div ref={ref} className={cn('card-theme p-card', className)} data-ct={th} data-frame={String(T.frame)} data-seg={String(T.segment)}>
       <div className="p-head ct-head">
@@ -228,55 +226,56 @@ function Items({ items, onChange }: { items: PlayerItem[]; onChange?: (c: Player
     done(await api<Res>('POST', `/api/player/sheet/items/${encodeURIComponent(id)}/delete`));
   };
 
-  const form = (
-    <div className="stack">
-      <input value={title} maxLength={120} placeholder="Что это" onChange={(e) => setTitle(e.target.value)} />
-      <textarea rows={2} value={text} maxLength={2000} placeholder="Подробности (необязательно)" onChange={(e) => setText(e.target.value)} />
-      <div className="row">
-        <button type="button" className="btn btn-secondary" disabled={busy || !title.trim()} onClick={save}>
-          Сохранить
-        </button>
-        <button type="button" className="btn btn-ghost" disabled={busy} onClick={() => setEditing(null)}>
-          Отмена
-        </button>
-      </div>
-    </div>
-  );
-
   return (
     <Slot chip={<Chip k="block" label="Снаряжение" />}>
-      {items.length === 0 && !editing && <p className="hint">Пока пусто.</p>}
+      {items.length === 0 && <p className="hint">Пока пусто.</p>}
       <ul className="sheet-list">
         {items.map((it) => (
           <li key={it.id}>
-            {editing === it.id ? (
-              form
-            ) : (
-              <>
-                <b>{it.title}</b>
-                {it.text && <span className="prewrap"> — {it.text}</span>}
-                {onChange && (
-                  <span className="sheet-actions">
-                    <button type="button" className="linkish" onClick={() => open(it)}>
-                      Изменить
-                    </button>
-                    <button type="button" className="linkish" disabled={busy} onClick={() => remove(it.id)} onBlur={() => setConfirmDel(null)}>
-                      {confirmDel === it.id ? 'Точно удалить?' : 'Удалить'}
-                    </button>
-                  </span>
-                )}
-              </>
+            <b>{it.title}</b>
+            {it.text && <span className="prewrap"> — {it.text}</span>}
+            {onChange && (
+              <span className="sheet-actions">
+                <button type="button" className="linkish" onClick={() => open(it)}>
+                  Изменить
+                </button>
+                <button type="button" className="linkish" disabled={busy} onClick={() => remove(it.id)} onBlur={() => setConfirmDel(null)}>
+                  {confirmDel === it.id ? 'Точно удалить?' : 'Удалить'}
+                </button>
+              </span>
             )}
           </li>
         ))}
       </ul>
-      {editing === 'new' && form}
-      {onChange && !editing && (
-        <button type="button" className="btn btn-ghost" onClick={() => open(null)}>
+      {onChange && (
+        <button type="button" className="linkish" onClick={() => open(null)}>
           Добавить
         </button>
       )}
-      {error && <p className="error small">{error}</p>}
+      {error && !editing && <p className="error small">{error}</p>}
+      <Sheet open={editing !== null} onOpenChange={(o) => !o && setEditing(null)} title={editing === 'new' ? 'Новая вещь' : 'Вещь'}>
+        <form
+          className="grid gap-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (title.trim()) void save();
+          }}
+        >
+          <Field label="Что это">{(id) => <Input id={id} value={title} maxLength={120} onChange={(e) => setTitle(e.target.value)} autoFocus />}</Field>
+          <Field label="Подробности (необязательно)" error={error}>
+            {(id, d) => <Textarea id={id} aria-describedby={d} rows={3} value={text} maxLength={2000} onChange={(e) => setText(e.target.value)} />}
+          </Field>
+          <p className="m-0 text-[13.6px] text-muted">Мастер увидит изменения сразу.</p>
+          <div className="flex gap-2">
+            <Button variant="ghost" className="flex-1" disabled={busy} onClick={() => setEditing(null)}>
+              Отмена
+            </Button>
+            <Button type="submit" variant="primary" className="flex-[2]" disabled={busy || !title.trim()}>
+              {busy ? 'Сохраняю…' : 'Сохранить'}
+            </Button>
+          </div>
+        </form>
+      </Sheet>
     </Slot>
   );
 }

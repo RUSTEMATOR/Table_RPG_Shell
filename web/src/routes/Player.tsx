@@ -16,7 +16,7 @@ import { resolveTheme, themeVariant } from '../lib/cardTheme/index.ts';
 import { useScheme } from '../lib/colorScheme.ts';
 import { ThemeChoice } from '../components/ThemeChoice.tsx';
 import { TAB_ICONS, TabBar } from '../components/TabBar.tsx';
-import { Card, CardTitle, Segmented } from '../ui/index.ts';
+import { Card, CardTitle, Segmented, Skeleton } from '../ui/index.ts';
 import { useSkin } from '../lib/cardTheme/skin.ts';
 import { noteCardChange, noteDiaryChange, rememberCard, setActiveTab, useUnread } from '../lib/unread.ts';
 
@@ -49,12 +49,12 @@ function PlayerHome({ active, theme, base, choice, onChoice }: { active: boolean
     if (conn === 'online') void load();
   }, [conn, load]);
 
-  if (character === undefined) return <p className="muted">Загрузка…</p>;
+  if (character === undefined) return <Skeleton className="h-64" />;
   if (character === null)
     return (
-      <section className="card">
-        <p className="muted">Мастер ещё не выдал тебе персонажа.</p>
-      </section>
+      <Card>
+        <p className="m-0 text-muted">Мастер ещё не выдал тебе персонажа.</p>
+      </Card>
     );
   return (
     <>
