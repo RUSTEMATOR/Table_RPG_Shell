@@ -30,6 +30,7 @@ const router = createBrowserRouter([
       { path: 'notes', lazy: lazy(() => import('./routes/GmNotes.tsx'), 'GmNotes') },
       { path: 'table', lazy: lazy(() => import('./routes/GmTable.tsx'), 'GmTable') },
       { path: 'npcs', lazy: lazy(() => import('./routes/GmNpcs.tsx'), 'GmNpcs') },
+      { path: 'maps', lazy: lazy(() => import('./routes/GmMaps.tsx'), 'GmMaps'), handle: { ownRail: true } },
       { path: 'jev', lazy: lazy(() => import('./routes/GmJev.tsx'), 'GmJev') },
       { path: 'new', lazy: lazy(() => import('./routes/GmNew.tsx'), 'GmNew') },
       { path: 'char/:id', lazy: lazy(() => import('./routes/GmCharacter.tsx'), 'GmCharacter'), handle: { ownRail: true } },

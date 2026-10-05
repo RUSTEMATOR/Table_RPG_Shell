@@ -14,6 +14,7 @@ export const GM_SECTIONS = [
   },
   { to: '/gm/npcs', label: 'Противники', key: 'o', icon: 'M4 18h16M4 18L3 8l5 4 4-7 4 7 5-4-1 10' },
   { to: '/gm/table', label: 'Стол', key: 't', icon: 'M6 21V8l2-2V3h2v2h4V3h2v3l2 2v13zM10 21v-5h4v5' },
+  { to: '/gm/maps', label: 'Карты', key: 'm', icon: 'M4 18l5-6 4 3 7-10M4 18v.1M9 12v.1M13 15v.1M20 5v.1' },
   { to: '/gm/requests', label: 'Запросы', key: 'r', icon: 'M6 3h9l3 3v15H6zM15 3v3h3M9 10h6M9 14h6M9 18h4' },
   { to: '/gm/notes', label: 'Заметки', key: 'n', icon: 'M20 3c-6 1-11 5-13 11l-2 6 6-2c6-2 10-7 11-13zM7 17l6-6M5 21h6' },
   { to: '/gm/members', label: 'Участники', key: 'u', icon: 'M12 4a8 8 0 1 0 0 16a8 8 0 0 0 0-16zM13 7l-3 5h4l-3 5' },

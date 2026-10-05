@@ -59,6 +59,11 @@ const loaders = {
 };
 const cache = new Map<MapId, Art>();
 
+/** Загрузить рельеф заранее (переход на соседнюю карту без «Рисую карту…»). */
+export async function preloadArt(id: MapId): Promise<void> {
+  if (!cache.has(id)) cache.set(id, await loaders[id]());
+}
+
 /** Рельеф карты: отдельный чанк на карту, грузится при первом показе. */
 export function useArt(id: MapId): Art | null {
   const [art, setArt] = useState<Art | null>(() => cache.get(id) ?? null);
