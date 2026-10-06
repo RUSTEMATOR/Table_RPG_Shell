@@ -8,6 +8,7 @@ import { fogClouds, landmarkClouds, natureOf } from './nature.ts';
 import { radiusOf, settlementOf } from './settlements.ts';
 import { StrategyCamera } from './strategyCamera.ts';
 import { perfStats, timed } from '../maps/perf.ts';
+import { load, save } from '../lib/storage.ts';
 import { buildHeights, fogMask, paintTerrain, WATER, type FogMask, type Heights } from './terrain.ts';
 
 // Сцена 3D-карты (three.js без React): рельеф, вода, природа, поселения, туман, свет, камера. Рисует только когда нужно
@@ -32,6 +33,8 @@ type Anchor = {
 const FAR_ZOOM = 1.8;
 
 const SKY = '#c9d6dc';
+/** Сниженная чёткость 3D на этом устройстве (если кадры были долгими). */
+const DPR_KEY = 'zg:3d:dpr';
 /** Размер поселений на карте: мир — в половину (у него крупнее масштаб). */
 const SETTLEMENT_SCALE = { world: 0.5, razdolye: 1, frozen: 0.9 } as const;
 
@@ -80,9 +83,14 @@ export class MapScene {
     this.shadows = !opts.touch;
     this.texSize = opts.touch ? 1536 : 2048;
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, opts.touch ? 1.5 : 1.75));
+    // чёткость: в покое — по экрану (на телефоне до 1,5, после замедлений — меньше), в движении — 1
+    const saved = Number(load(DPR_KEY));
+    this.dpr = Math.min(window.devicePixelRatio || 1, opts.touch ? 1.5 : 1.75, saved > 0 ? saved : 9);
+    this.renderer.setPixelRatio(this.dpr);
     this.renderer.shadowMap.enabled = this.shadows;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.type = THREE.PCFShadowMap;
+    // тени не меняются, пока не сдвинулся вид или сцена: пересчёт — только тогда
+    this.renderer.shadowMap.autoUpdate = false;
     this.renderer.domElement.className = 'absolute inset-0 block size-full';
     host.appendChild(this.renderer.domElement);
 
@@ -127,6 +135,15 @@ export class MapScene {
   }
 
   private holds = 0;
+  private dpr = 1;
+  private lowRes = false;
+  private stillSince = 0;
+  private slowFrames = 0;
+  private frameCount = 0;
+  private lastRender = 0;
+  private shadowDirty = true;
+  private shadowAt = '';
+  private propsShown: boolean | null = null;
   /** Держать кадры, пока что-то движется поверх (фигурка идёт). Возвращает «отпустить». */
   hold(): () => void {
     this.holds++;
@@ -201,7 +218,9 @@ export class MapScene {
     if (fogKey !== this.fogKey) {
       const first = this.fogKey === '';
       this.fogKey = fogKey;
+      const prevFog = first || this.instant ? null : this.fog;
       this.fog = fogMask(regions, !gm);
+      this.buildClouds(prevFog);
       const t = maskTexture(this.fog);
       // старая маска → новая плавно (кроме первого показа)
       const old = this.u.uFogB.value;
@@ -333,16 +352,25 @@ export class MapScene {
       mats = this.mats!,
       H = this.heights!,
       art = this.art!;
-    for (const g of [this.nature, this.landmarks, this.clouds]) this.drop(g);
+    for (const g of [this.nature, this.landmarks]) this.drop(g);
     const k = SETTLEMENT_SCALE[art.id];
     const keep = places.map((p) => ({ x: p.x, y: p.y, r: radiusOf(p.kind) * k }));
     this.nature = instanceGroup(lib, natureOf(art, H, keep), mats.model, { shadows: this.shadows, depth: mats.depth });
     this.landmarks = instanceGroup(lib, landmarkClouds(art, H), mats.tinted, { shadows: false });
     this.scene.add(this.nature, this.landmarks);
-    if (this.mode !== 'gm') {
-      this.clouds = instanceGroup(lib, fogClouds(H), mats.cloud, { shadows: false });
-      this.scene.add(this.clouds);
-    } else this.clouds = null;
+    this.shadowDirty = true;
+    this.propsShown = null;
+  }
+
+  /** Облака тумана: над прежним и новым туманом (переход растворяет лишние), мастеру — нет. */
+  private buildClouds(prev: FogMask | null) {
+    this.drop(this.clouds);
+    this.clouds = null;
+    if (this.mode === 'gm' || !this.lib || !this.mats || !this.heights) return;
+    const now = this.fog;
+    const at = prev ? (x: number, y: number) => Math.max(now.at(x, y), prev.at(x, y)) : now.at;
+    this.clouds = instanceGroup(this.lib, fogClouds(this.heights, at), this.mats.cloud, { shadows: false });
+    this.scene.add(this.clouds);
   }
 
   /** Поселения: по местам (вид, точка, цвет фракции). */
@@ -368,6 +396,8 @@ export class MapScene {
       { shadows: this.shadows, depth: mats.depth },
     );
     this.scene.add(this.towns);
+    this.shadowDirty = true;
+    this.propsShown = null;
   }
 
   // ---- путь (этап 28) ----
@@ -439,15 +469,41 @@ export class MapScene {
     if (this.fogFade < 1) {
       this.fogFade = Math.min(1, this.fogFade + dt / 1.6);
       this.u.uFogT.value = this.fogFade * this.fogFade * (3 - 2 * this.fogFade);
-      active = true;
-    }
-    if (this.mode === 'table' && !this.instant) {
-      this.u.uTime.value = now / 1000;
+      // объекты проявляются из тумана — их тени тоже
+      this.shadowDirty = true;
       active = true;
     }
     if (this.holds > 0) active = true;
+    // движется камера (жест, полёт, инерция) или фигурка — рисуем с чёткостью 1, остановилась — чётко
+    const moving = active || this.cam.interacting;
+    if (moving) this.stillSince = now;
+    const low = moving || now - this.stillSince < 200;
+    if (low !== this.lowRes && this.dpr > 1) {
+      this.lowRes = low;
+      this.renderer.setPixelRatio(low ? 1 : this.dpr);
+      this.dirty = true;
+    }
+    // стол: туман клубится, но не чаще 30 кадров в секунду
+    if (this.mode === 'table' && !this.instant && now - this.lastRender >= 33) {
+      this.u.uTime.value = now / 1000;
+      this.dirty = true;
+    }
     if (!active && !this.dirty) return;
     this.dirty = false;
+    this.lastRender = now;
+    // кадры в движении долгие (больше 28 мс в среднем за ~2 с) — снизить обычную чёткость на этом устройстве
+    if (moving && this.dpr > 1) {
+      this.frameCount++;
+      if (dt > 0.028) this.slowFrames++;
+      if (this.frameCount >= 120) {
+        if (this.slowFrames > 80) {
+          this.dpr = Math.max(1, Math.round((this.dpr - 0.25) * 100) / 100);
+          save(DPR_KEY, String(this.dpr));
+        }
+        this.frameCount = 0;
+        this.slowFrames = 0;
+      }
+    }
     this.render();
   }
 
@@ -466,6 +522,21 @@ export class MapScene {
       sc.updateProjectionMatrix();
       this.sun.target.position.set(c.x, 0, c.y);
       this.sun.position.set(c.x - 380, 760, c.y + 420);
+      const at = `${Math.round(c.x / 8)},${Math.round(c.y / 8)},${Math.round(s / 8)}`;
+      if (this.shadowDirty || at !== this.shadowAt) {
+        this.shadowAt = at;
+        this.shadowDirty = false;
+        this.renderer.shadowMap.needsUpdate = true;
+      }
+    }
+    // мелочи (бочки, флаги, камни) — только вблизи
+    const showProps = c.view().zoom >= 2.2;
+    if (showProps !== this.propsShown) {
+      this.propsShown = showProps;
+      for (const g of [this.towns, this.nature])
+        g?.traverse((o) => {
+          if (o.userData.prop) o.visible = showProps;
+        });
     }
     // дымка у горизонта: вблизи заметна, издали карта видна целиком
     const f = this.scene.fog as THREE.Fog;

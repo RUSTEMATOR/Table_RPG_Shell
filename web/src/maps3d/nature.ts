@@ -143,8 +143,11 @@ export function landmarkClouds(art: Art, H: Heights): Instance[] {
   return out;
 }
 
-/** Облака тумана — по всей карте; шейдер оставляет их только там, где туман. */
-export function fogClouds(H: Heights): Instance[] {
+/**
+ * Облака тумана — только над туманом (fogAt: 0…1; при открытии региона — над старым и новым туманом вместе, шейдер
+ * растворяет их над открытым). Сетка и случай постоянные: облака не прыгают при пересборке.
+ */
+export function fogClouds(H: Heights, fogAt: (x: number, y: number) => number): Instance[] {
   const out: Instance[] = [];
   const r = rng(7331);
   const step = 92;
@@ -152,7 +155,12 @@ export function fogClouds(H: Heights): Instance[] {
     for (let x = step / 2; x < MAP_W; x += step) {
       const cx = x + (r() - 0.5) * step * 0.7,
         cy = y + (r() - 0.5) * step * 0.7;
-      out.push({ model: r() < 0.6 ? 'cloud_big' : 'cloud_small', x: cx, y: cy, base: Math.max(4, H.at(cx, cy) * 0.15) + 6 + r() * 10, rot: r() * 6.28, scale: 11 + r() * 6 });
+      const big = r() < 0.6,
+        lift = 6 + r() * 10,
+        rot = r() * 6.28,
+        scale = 11 + r() * 6;
+      if (fogAt(cx, cy) < 0.3) continue;
+      out.push({ model: big ? 'cloud_big' : 'cloud_small', x: cx, y: cy, base: Math.max(4, H.at(cx, cy) * 0.15) + lift, rot, scale });
     }
   return out;
 }

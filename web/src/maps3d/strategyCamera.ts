@@ -261,6 +261,11 @@ export class StrategyCamera {
     return active;
   }
 
+  /** палец или мышь двигают камеру прямо сейчас */
+  get interacting(): boolean {
+    return !!this.gesture && this.pts.size > 0;
+  }
+
   get busy(): boolean {
     return !!this.spin || !!this.flight || Math.abs(this.vel.x) > 0.5 || Math.abs(this.vel.y) > 0.5 || this.keys.size > 0;
   }

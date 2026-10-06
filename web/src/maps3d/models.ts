@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { MAP_H, MAP_W } from '@zg/shared';
 import catalog from './models.json';
 import { patchMaterial, type FogUniforms } from './fog.ts';
 
@@ -105,18 +106,33 @@ const sc = new THREE.Vector3();
  * Экземпляры, сгруппированные по моделям: по InstancedMesh на модель. material — общий материал моделей
  * (или облаков); shadows — отбрасывать тень.
  */
+/** Мелочи (бочки, ящики, флаги, камни, кувшинки…): видны только вблизи — издали их всё равно не разглядеть. */
+export const PROPS = new Set<ModelId>(['barrel', 'crate', 'sack', 'weaponrack', 'lumber', 'stone', 'lily', 'flag', 'rock_a', 'rock_b', 'rock_c', 'rock_d']);
+
+/** Сетка ячеек карты для отсечения невидимого: вблизи камера не рисует ячейки за краем кадра. */
+const CELLS_X = 4,
+  CELLS_Y = 4;
+
 export function instanceGroup(lib: Library, list: Instance[], material: THREE.Material, opts: { shadows: boolean; depth?: THREE.Material }): THREE.Group {
   const group = new THREE.Group();
-  const by = new Map<ModelId, Instance[]>();
+  const by = new Map<string, Instance[]>();
   for (const i of list) {
-    const arr = by.get(i.model);
+    const cx = Math.min(CELLS_X - 1, Math.max(0, Math.floor((i.x / MAP_W) * CELLS_X)));
+    const cy = Math.min(CELLS_Y - 1, Math.max(0, Math.floor((i.y / MAP_H) * CELLS_Y)));
+    const key = `${i.model}|${cx}|${cy}`;
+    const arr = by.get(key);
     if (arr) arr.push(i);
-    else by.set(i.model, [i]);
+    else by.set(key, [i]);
   }
-  for (const [id, arr] of by) {
+  for (const [key, arr] of by) {
+    const id = key.split('|')[0] as ModelId;
     const geo = lib.geometry.get(id);
     if (!geo) continue;
-    const mesh = new THREE.InstancedMesh(geo, material, arr.length);
+    // своя геометрия у каждой кучки (атрибут цвета фракции экземпляров), но буферы вершин — общие с моделью
+    const g = new THREE.BufferGeometry();
+    for (const [name, attr] of Object.entries(geo.attributes)) g.setAttribute(name, attr);
+    g.setIndex(geo.index);
+    const mesh = new THREE.InstancedMesh(g, material, arr.length);
     const team = new Float32Array(arr.length);
     arr.forEach((it, n) => {
       q.setFromAxisAngle(up, it.rot);
@@ -127,24 +143,29 @@ export function instanceGroup(lib: Library, list: Instance[], material: THREE.Ma
       team[n] = TEAM_SHIFT[it.team ?? 'blue'];
       if (it.color) mesh.setColorAt(n, new THREE.Color(it.color));
     });
-    mesh.geometry = geo.clone();
-    mesh.geometry.setAttribute('zgInstTeam', new THREE.InstancedBufferAttribute(team, 1));
+    g.setAttribute('zgInstTeam', new THREE.InstancedBufferAttribute(team, 1));
     mesh.instanceMatrix.needsUpdate = true;
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-    mesh.castShadow = opts.shadows;
+    mesh.castShadow = opts.shadows && !PROPS.has(id);
     mesh.receiveShadow = opts.shadows;
     if (opts.depth) mesh.customDepthMaterial = opts.depth;
     mesh.computeBoundingSphere();
     mesh.userData.instances = arr;
+    mesh.userData.prop = PROPS.has(id);
     group.add(mesh);
   }
   return group;
 }
 
-/** Освободить геометрии группы (копии с атрибутом цвета фракции). Общие материалы и библиотека остаются. */
+/**
+ * Освободить группу. Буферы вершин у кучек одной модели общие: three.js после освобождения просто загрузит их заново
+ * для тех кучек, что остались на сцене.
+ */
 export function disposeGroup(g: THREE.Object3D): void {
   g.traverse((o) => {
     const m = o as THREE.InstancedMesh;
-    if (m.isInstancedMesh) m.geometry.dispose();
+    if (!m.isInstancedMesh) return;
+    m.geometry.dispose();
+    m.dispose();
   });
 }
