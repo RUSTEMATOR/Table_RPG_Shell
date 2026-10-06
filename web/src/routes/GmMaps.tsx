@@ -5,7 +5,9 @@ import { api } from '../lib/api.ts';
 import { useConnection, useSocketEvent } from '../lib/socket.ts';
 import { load, save } from '../lib/storage.ts';
 import { cn } from '../lib/cn.ts';
-import { MapView, ZoomButtons, type MapViewData } from '../maps/MapView.tsx';
+import { type MapViewData } from '../maps/MapView.tsx';
+import { MapLookToggle, MapStage, useMapLook } from '../maps/MapStage.tsx';
+import { MapHud } from '../maps/overlay/MapHud.tsx';
 import type { MapCamera } from '../maps/camera.ts';
 import { preloadArt } from '../maps/MapArt.tsx';
 import { Badge, Button, Card, CardTitle, Field, Input, Segmented, Select, Sheet, Switch, Textarea, toast } from '../ui/index.ts';
@@ -33,6 +35,7 @@ export function GmMaps() {
   const [piece, setPiece] = useState('');
   const [token, setToken] = useState<string | null>(null);
   const [camera, setCamera] = useState<MapCamera | null>(null);
+  const [look, setLook, can3d] = useMapLook();
   const [panel, setPanel] = useState(false);
   // Лист — только когда боковой панели нет на экране (узкое окно).
   const openPanel = () => {
@@ -138,6 +141,7 @@ export function GmMaps() {
         <div className="flex flex-wrap items-center gap-3">
           <CardTitle className="grow">Карты</CardTitle>
           <Segmented label="Карта" value={mapId} onChange={setMapId} options={MAP_IDS.map((m) => ({ value: m, label: TITLES[m] }))} />
+          {can3d && <MapLookToggle look={look} onChange={setLook} />}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Segmented
@@ -188,7 +192,9 @@ export function GmMaps() {
         <div className="grid items-start gap-4 @4xl/gmmap:grid-cols-[minmax(0,1fr)_340px]">
           <div id="gm-map-box" className="relative overflow-hidden rounded-card border border-solid border-border">
             {data ? (
-              <MapView
+              <MapStage
+                key={look}
+                look={look}
                 data={data}
                 mode="gm"
                 selected={selected}
@@ -210,8 +216,8 @@ export function GmMaps() {
                 camera={setCamera}
                 className={cn('h-[min(72dvh,820px)] min-h-[420px]', tool !== 'select' && 'cursor-crosshair')}
               >
-                <ZoomButtons camera={camera} />
-              </MapView>
+                <MapHud camera={camera} places={data.places} regions={data.regions} party={data.party} onPlace={select} />
+              </MapStage>
             ) : (
               <div className="grid h-[min(72dvh,820px)] min-h-[420px] place-items-center text-muted">Загрузка…</div>
             )}

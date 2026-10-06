@@ -15,6 +15,8 @@ export type MapCamera = {
   zoomBy: (f: number) => void;
   /** куда смотрит камера сейчас: центр и масштаб */
   view: () => { x: number; y: number; zoom: number };
+  /** подписка на движение камеры; возвращает «отписаться» */
+  onChange: (fn: () => void) => () => void;
   /** 3D: повернуть на север и угол поворота (0 — север вверху) */
   north?: () => void;
   yaw?: () => number;
@@ -231,5 +233,9 @@ export function useCamera(box: RefObject<HTMLElement | null>, opts: { reducedMot
     const kk = k.get();
     return { x: (w / 2 - x.get()) / kk, y: (h / 2 - y.get()) / kk, zoom: Math.min(MAX_ZOOM, Math.max(1, kk / fitRef.current)) };
   };
-  return { k, x, y, moving, fit, toMap, flyTo, zoomBy, view, handlers, wasDrag: () => dragged.current };
+  const onChange = (fn: () => void) => {
+    const offs = [k.on('change', fn), x.on('change', fn), y.on('change', fn)];
+    return () => offs.forEach((off) => off());
+  };
+  return { k, x, y, moving, fit, toMap, flyTo, zoomBy, view, onChange, handlers, wasDrag: () => dragged.current };
 }

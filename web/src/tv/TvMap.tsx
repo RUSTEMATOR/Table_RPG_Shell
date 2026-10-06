@@ -3,7 +3,7 @@ import { AnimatePresence, m } from 'motion/react';
 import type { MapFocus, MapId, MapPublic } from '@zg/shared';
 import { api } from '../lib/api.ts';
 import { useConnection, useSocketEvent } from '../lib/socket.ts';
-import { MapView } from '../maps/MapView.tsx';
+import { MapStage, can3d } from '../maps/MapStage.tsx';
 import type { MapCamera } from '../maps/camera.ts';
 
 const TITLES: Record<MapId, string> = { world: 'Карта мира', razdolye: 'Раздолье', frozen: 'Замёрзшие земли' };
@@ -11,20 +11,21 @@ const TITLES: Record<MapId, string> = { world: 'Карта мира', razdolye: 
 /**
  * Карта на столе: только открытое, туман над остальным. Мастер показал место — камера медленно наезжает на него;
  * открыл регион — туман над ним расходится. Без движения («Анимация выкл.») камера встаёт сразу.
+ * 3D — если стол не в облегчённом режиме, иначе пергамент.
  */
-export function TvMap({ show, still }: { show: { id: MapId; focus: MapFocus | null } | null; still: boolean }) {
+export function TvMap({ show, still, lite }: { show: { id: MapId; focus: MapFocus | null } | null; still: boolean; lite: boolean }) {
   return (
     <AnimatePresence>
       {show && (
         <m.div key={show.id} className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 1 }}>
-          <TvMapBody id={show.id} focus={show.focus} still={still} />
+          <TvMapBody id={show.id} focus={show.focus} still={still} lite={lite} />
         </m.div>
       )}
     </AnimatePresence>
   );
 }
 
-function TvMapBody({ id, focus, still }: { id: MapId; focus: MapFocus | null; still: boolean }) {
+function TvMapBody({ id, focus, still, lite }: { id: MapId; focus: MapFocus | null; still: boolean; lite: boolean }) {
   const [map, setMap] = useState<MapPublic | null>(null);
   const [camera, setCamera] = useState<MapCamera | null>(null);
   const reload = useCallback(async () => {
@@ -52,7 +53,7 @@ function TvMapBody({ id, focus, still }: { id: MapId; focus: MapFocus | null; st
   if (!map) return null;
   return (
     <>
-      <MapView data={map} mode="table" camera={setCamera} instant={still} className="absolute inset-0 !cursor-default" />
+      <MapStage look={!lite && can3d() ? '3d' : '2d'} data={map} mode="table" camera={setCamera} instant={still} className="absolute inset-0 !cursor-default" />
       {/* тёмная виньетка: карта на тёмном экране, текст стола читается */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 shadow-[inset_0_0_18vh_rgba(13,15,13,.85)]" />
       <div className="pointer-events-none absolute bottom-[7vh] left-[5vw] grid gap-[1vh]">

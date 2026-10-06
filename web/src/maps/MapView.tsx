@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, type MouseEvent as RMouseEvent, type PointerEvent as RPointerEvent, type ReactNode } from 'react';
 import { m } from 'motion/react';
-import type { MapId, MapNote, MapPlacePublic, MapRegionPublic, PlaceKind } from '@zg/shared';
+import { PLACE_KIND_LABELS, type MapId, type MapNote, type MapPlacePublic, type MapRegionPublic, type PlaceKind } from '@zg/shared';
 import { ArtBase, ArtDefs, ArtPaper, ArtRelief, ArtTop, PaperDefs, useArt } from './MapArt.tsx';
 import { useCamera, type MapCamera } from './camera.ts';
 import { ensureMapFonts } from './fonts.ts';
@@ -369,6 +369,7 @@ export function MapView({
                     if (!onPlaceMove) onPlace?.(pl.id);
                   }}
                 >
+                  <title>{[pl.name, PLACE_KIND_LABELS[pl.kind], pl.subtitle].filter(Boolean).join(' · ')}</title>
                   <g data-pin transform={`translate(${pl.x} ${pl.y})`}>
                     {sel && <circle r={22} fill="none" stroke="#c9971f" strokeWidth={2.5} strokeDasharray="4 4" />}
                     <circle r={16} fill="transparent" />
@@ -453,22 +454,6 @@ export function MapView({
         )}
       </m.div>
       {children}
-    </div>
-  );
-}
-
-/** Кнопки масштаба поверх карты (как в макете). */
-export function ZoomButtons({ camera, className }: { camera: MapCamera | null; className?: string }) {
-  const btn =
-    'grid size-11 cursor-pointer place-items-center rounded-[10px] border border-solid border-[rgba(74,59,38,.22)] bg-[rgba(250,247,238,.94)] font-ui text-[22px] text-[#2e2416] shadow-[0_6px_18px_rgba(60,50,30,.14)]';
-  return (
-    <div className={cn('absolute top-4 right-4 flex flex-col gap-2', className)} onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
-      <button type="button" aria-label="Приблизить" className={btn} onClick={() => camera?.zoomBy(1.5)}>
-        +
-      </button>
-      <button type="button" aria-label="Отдалить" className={btn} onClick={() => camera?.zoomBy(1 / 1.5)}>
-        −
-      </button>
     </div>
   );
 }

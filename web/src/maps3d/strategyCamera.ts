@@ -358,6 +358,8 @@ export class StrategyCamera {
     if (!keys.includes(e.code) || e.metaKey || e.ctrlKey || e.altKey) return;
     if (!this.interactive) return;
     e.preventDefault();
+    // клавиши карты не доходят до горячих клавиш экрана
+    e.stopPropagation();
     if (down) this.keys.add(e.code);
     else this.keys.delete(e.code);
     this.changed();

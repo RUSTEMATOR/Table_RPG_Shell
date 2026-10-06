@@ -4,7 +4,8 @@ import { api } from '../lib/api.ts';
 import { useConnection, useSocketEvent } from '../lib/socket.ts';
 import { load, save } from '../lib/storage.ts';
 import { cn } from '../lib/cn.ts';
-import { MapView, ZoomButtons } from '../maps/MapView.tsx';
+import { MapLookToggle, MapStage, useMapLook } from '../maps/MapStage.tsx';
+import { MapHud } from '../maps/overlay/MapHud.tsx';
 import type { MapCamera } from '../maps/camera.ts';
 import { Button, Field, Sheet, Textarea, toast } from '../ui/index.ts';
 
@@ -23,6 +24,7 @@ export function PlayerMap({ active }: { active: boolean }) {
   const [map, setMap] = useState<MapPublic | null>(null);
   const [camera, setCamera] = useState<MapCamera | null>(null);
   const [noteMode, setNoteMode] = useState(false);
+  const [look, setLook, can3d] = useMapLook();
   const [edit, setEdit] = useState<{ note: MapNote | null; x: number; y: number } | null>(null);
 
   const reload = useCallback(async () => {
@@ -79,13 +81,16 @@ export function PlayerMap({ active }: { active: boolean }) {
           )}
           <strong className="truncate font-['Cormorant_SC',Georgia,serif] text-xl font-bold text-text">{TITLES[mapId]}</strong>
         </nav>
+        {can3d && <MapLookToggle look={look} onChange={setLook} />}
         <Button size="sm" variant={noteMode ? 'primary' : 'default'} aria-pressed={noteMode} onClick={() => setNoteMode((v) => !v)}>
           {noteMode ? 'Нажми на карту' : '+ Заметка'}
         </Button>
       </div>
       <div className="relative min-h-[320px] flex-1 overflow-hidden rounded-card border border-solid border-border">
         {map ? (
-          <MapView
+          <MapStage
+            key={look}
+            look={look}
             data={map}
             mode="player"
             camera={setCamera}
@@ -98,8 +103,8 @@ export function PlayerMap({ active }: { active: boolean }) {
             onNote={(n) => setEdit({ note: n, x: n.x, y: n.y })}
             className={cn('absolute inset-0', noteMode && 'cursor-crosshair')}
           >
-            <ZoomButtons camera={camera} />
-          </MapView>
+            <MapHud camera={camera} places={map.places} regions={map.regions} party={map.party} />
+          </MapStage>
         ) : (
           <div className="grid h-full place-items-center text-muted">Загрузка…</div>
         )}

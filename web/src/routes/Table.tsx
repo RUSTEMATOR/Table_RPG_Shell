@@ -88,7 +88,7 @@ function TableScreen({ room, demo }: { room: string; demo: boolean }) {
       >
         <TvScene scene={scene} motion={!still && !lite} idle={loaded && !state.npc} />
         {!still && !lite && !capabilities.reducedMotion() && <TvParticles onSlow={slow} />}
-        <TvMap show={state.map} still={still} />
+        <TvMap show={state.map} still={still} lite={lite} />
 
         <header className="absolute inset-x-[5vw] top-[3vh] flex items-center gap-4 text-[clamp(14px,1.1vw,22px)] opacity-70">
           <span className="grow tracking-[.08em] text-[var(--tv-muted)] uppercase">

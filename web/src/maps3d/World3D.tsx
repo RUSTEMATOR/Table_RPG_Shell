@@ -75,6 +75,7 @@ export function World3D({
       flyTo: (x, y, zoom, o) => scene.cam.flyTo(x, y, zoom, { ...o, instant: o?.instant || scene.instant }),
       zoomBy: (f) => scene.cam.zoomBy(f),
       view: () => scene.cam.view(),
+      onChange: (fn) => scene.onFrame(fn),
       north: () => scene.cam.north(),
       yaw: () => scene.cam.yaw,
     };
@@ -275,6 +276,7 @@ function PlaceLabel({
         onPointerUp={up}
         role={onPlace ? 'button' : undefined}
         aria-label={`${p.name || PLACE_KIND_LABELS[p.kind]}${hidden ? ' (скрыто)' : ''}`}
+        title={[p.name, PLACE_KIND_LABELS[p.kind], p.subtitle].filter(Boolean).join(' · ')}
       >
         {named ? (
           <span
