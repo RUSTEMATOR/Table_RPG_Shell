@@ -177,8 +177,11 @@ export const ArtRelief = memo(function ArtRelief({ p }: { p: string }) {
   return <rect width="1600" height="1100" filter={`url(#${p}-relief)`} style={{ mixBlendMode: 'multiply' }} opacity={0.5} pointerEvents="none" />;
 });
 
-/** Верхние слои рельефа: реки, леса, горы и прочее — поверх заливок регионов. */
-export const ArtTop = memo(function ArtTop({ art, p }: { art: Art; p: string }) {
+/**
+ * Мягкие слои рельефа (с фильтрами: мглы, размытые леса, свечение берега и бури). Их можно запечь в картинку (bake.ts):
+ * они размыты сами по себе, и растр в умеренном разрешении выглядит так же и вблизи.
+ */
+export const ArtSoft = memo(function ArtSoft({ art, p }: { art: Art; p: string }) {
   if (art.id === 'world') {
     const a = art.art;
     return (
@@ -197,6 +200,38 @@ export const ArtTop = memo(function ArtTop({ art, p }: { art: Art; p: string }) 
         <g filter={`url(#${p}-mist)`} fill="#3b3631" opacity={0.26}>
           <ellipse cx="790" cy="950" rx="140" ry="50" />
         </g>
+        {a.woods.map((w, i) => (
+          <path key={i} d={w.d} fill={w.base} opacity={0.55} filter={`url(#${p}-wash)`} />
+        ))}
+      </>
+    );
+  }
+  if (art.id === 'razdolye') {
+    const a = art.art;
+    return (
+      <>
+        <g clipPath={`url(#${p}-in)`}>
+          <path d={a.land} fill="none" stroke="#5b4630" strokeWidth={30} opacity={0.26} filter={`url(#${p}-glow)`} />
+        </g>
+        <g filter={`url(#${p}-mist)`} fill="#5e3f7a" opacity={0.32}>
+          <ellipse cx={a.twilight.x} cy={a.twilight.y} rx="120" ry="56" />
+        </g>
+        {a.woods.map((w, i) => (
+          <path key={i} d={w.d} fill={w.base} opacity={0.5} filter={`url(#${p}-wash)`} />
+        ))}
+      </>
+    );
+  }
+  const a = art.art;
+  return <path d={a.storm} fill="none" stroke="#c050c6" strokeWidth={26} opacity={0.28} filter={`url(#${p}-glow)`} />;
+});
+
+/** Чёткие слои рельефа (без фильтров): реки, деревья, горы, штрихи, стена — остаются векторными и чёткими вблизи. */
+export const ArtCrisp = memo(function ArtCrisp({ art, p }: { art: Art; p: string }) {
+  if (art.id === 'world') {
+    const a = art.art;
+    return (
+      <>
         <Rivers list={a.rivers} />
         <Strokes list={a.fields} stroke="#7a6346" width={0.8} opacity={0.35} />
         <Strokes list={a.dunes} stroke="#8a6e2a" width={1} opacity={0.45} />
@@ -206,9 +241,6 @@ export const ArtTop = memo(function ArtTop({ art, p }: { art: Art; p: string }) 
         ))}
         <Strokes list={a.tufts} stroke="#5d2b3a" width={1.1} opacity={0.65} cap />
         <Strokes list={a.cracks} stroke="#6b5420" width={1} opacity={0.5} />
-        {a.woods.map((w, i) => (
-          <path key={i} d={w.d} fill={w.base} opacity={0.55} filter={`url(#${p}-wash)`} />
-        ))}
         <Trees list={a.trees} />
         <Mountains list={a.mounts} />
         {a.volcs.map((v, i) => (
@@ -231,18 +263,11 @@ export const ArtTop = memo(function ArtTop({ art, p }: { art: Art; p: string }) 
           <Mountains list={a.nMounts} light="#f1f4f7" shade="#a6b3c3" opacity={0.75} />
         </g>
         <g clipPath={`url(#${p}-in)`}>
-          <path d={a.land} fill="none" stroke="#5b4630" strokeWidth={30} opacity={0.26} filter={`url(#${p}-glow)`} />
           <Strokes list={a.fields} stroke="#7a6346" width={0.8} opacity={0.35} />
           <Strokes list={a.hills} stroke="#6b5a3c" width={1.2} opacity={0.55} cap />
         </g>
         <path d={a.land} fill="none" stroke="#f5eedb" strokeWidth={5} opacity={0.75} />
         <path d={a.land} fill="none" stroke="#4a3a26" strokeWidth={1.8} strokeDasharray="9 3 1.5 3" strokeLinecap="round" />
-        <g filter={`url(#${p}-mist)`} fill="#5e3f7a" opacity={0.32}>
-          <ellipse cx={a.twilight.x} cy={a.twilight.y} rx="120" ry="56" />
-        </g>
-        {a.woods.map((w, i) => (
-          <path key={i} d={w.d} fill={w.base} opacity={0.5} filter={`url(#${p}-wash)`} />
-        ))}
         <Rivers list={a.rivers} />
         <Trees list={a.trees} />
         <Mountains list={a.mounts} light="#efe6cc" shade="#b7a37a" />
@@ -259,7 +284,6 @@ export const ArtTop = memo(function ArtTop({ art, p }: { art: Art; p: string }) 
       <Strokes list={a.ice} stroke="#7f93ab" width={0.9} opacity={0.55} />
       <Strokes list={a.drifts} stroke="#9fb0c2" width={1.2} opacity={0.7} cap />
       <Strokes list={a.dunes} stroke="#8a6e2a" width={1} opacity={0.45} />
-      <path d={a.storm} fill="none" stroke="#c050c6" strokeWidth={26} opacity={0.28} filter={`url(#${p}-glow)`} />
       <path d={a.storm} fill="none" stroke="#a03aa6" strokeWidth={2.4} strokeDasharray="2 6" strokeLinecap="round" />
       <circle cx={a.eye.x} cy={a.eye.y} r={96} fill={`url(#${p}-eye)`} />
       <g fill="none" stroke="#6a1f70" strokeWidth={1.6} strokeLinecap="round" opacity={0.75}>
@@ -298,37 +322,42 @@ export const ArtTop = memo(function ArtTop({ art, p }: { art: Art; p: string }) 
   );
 });
 
-/** Заключительные слои: край бумаги, зерно. На карте мира — «неизведанные земли» по краям. */
-export const ArtPaper = memo(function ArtPaper({ art, p }: { art: Art; p: string }) {
+/** Край бумаги и зерно (мягкое, можно запечь). На карте мира — дымка по краям. */
+export const ArtPaperFx = memo(function ArtPaperFx({ art, p }: { art: Art; p: string }) {
   return (
     <>
       <rect width="1600" height="1100" fill={`url(#${p}-edge)`} pointerEvents="none" />
       {art.id === 'world' && (
-        <>
-          <g filter={`url(#${p}-mist)`} fill="#f3ecd9" opacity={0.75}>
-            <ellipse cx="60" cy="300" rx="120" ry="200" />
-            <ellipse cx="1560" cy="760" rx="110" ry="220" />
-            <ellipse cx="800" cy="1090" rx="380" ry="60" />
-            <ellipse cx="1000" cy="10" rx="360" ry="50" />
-          </g>
-          <g style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontStyle: 'italic' }} fontSize={22} fill="#6b5a40" letterSpacing={8} opacity={0.75}>
-            <text x="44" y="560" transform="rotate(-90 44 560)" textAnchor="middle">
-              неизведанные земли
-            </text>
-            <text x="1562" y="420" transform="rotate(90 1562 420)" textAnchor="middle">
-              неизведанные земли
-            </text>
-            <text x="800" y="1084" textAnchor="middle">
-              неизведанные земли
-            </text>
-            <text x="1060" y="34" textAnchor="middle">
-              неизведанные земли
-            </text>
-          </g>
-        </>
+        <g filter={`url(#${p}-mist)`} fill="#f3ecd9" opacity={0.75}>
+          <ellipse cx="60" cy="300" rx="120" ry="200" />
+          <ellipse cx="1560" cy="760" rx="110" ry="220" />
+          <ellipse cx="800" cy="1090" rx="380" ry="60" />
+          <ellipse cx="1000" cy="10" rx="360" ry="50" />
+        </g>
       )}
       <rect width="1600" height="1100" filter={`url(#${p}-grain)`} pointerEvents="none" />
     </>
+  );
+});
+
+/** Надписи бумаги (шрифт карты — только в живом SVG: в запечённой картинке внешние шрифты не грузятся). */
+export const ArtPaperText = memo(function ArtPaperText({ art }: { art: Art }) {
+  if (art.id !== 'world') return null;
+  return (
+    <g style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontStyle: 'italic' }} fontSize={22} fill="#6b5a40" letterSpacing={8} opacity={0.75}>
+      <text x="44" y="560" transform="rotate(-90 44 560)" textAnchor="middle">
+        неизведанные земли
+      </text>
+      <text x="1562" y="420" transform="rotate(90 1562 420)" textAnchor="middle">
+        неизведанные земли
+      </text>
+      <text x="800" y="1084" textAnchor="middle">
+        неизведанные земли
+      </text>
+      <text x="1060" y="34" textAnchor="middle">
+        неизведанные земли
+      </text>
+    </g>
   );
 });
 

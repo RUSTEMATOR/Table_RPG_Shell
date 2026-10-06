@@ -1,7 +1,8 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type MouseEvent as RMouseEvent, type PointerEvent as RPointerEvent, type ReactNode } from 'react';
 import { m } from 'motion/react';
 import { PLACE_KIND_LABELS, type MapId, type MapNote, type MapPlacePublic, type MapRegionPublic, type PartyFigure, type PartyMove, type PlaceKind } from '@zg/shared';
-import { ArtBase, ArtDefs, ArtPaper, ArtRelief, ArtTop, PaperDefs, useArt } from './MapArt.tsx';
+import { ArtBase, ArtCrisp, ArtDefs, ArtPaperFx, ArtPaperText, ArtRelief, ArtSoft, PaperDefs, useArt } from './MapArt.tsx';
+import { Baked, bakeAllowed } from './bake.ts';
 import { useCamera, type MapCamera } from './camera.ts';
 import { ensureMapFonts } from './fonts.ts';
 import { cn } from '../lib/cn.ts';
@@ -258,231 +259,278 @@ export function MapView({
     onPick(q.x, q.y);
   };
 
+  // Слои карты — функциями: одни и те же для запечённого вида (мягкие слои в картинке) и для живых фильтров (запасной).
+  const seed = data.id === 'world' ? 7 : data.id === 'razdolye' ? 9 : 19;
+  const defsOf = (pp: string, withLabels: boolean) => (
+    <>
+      <defs>
+        <PaperDefs p={pp} seed={seed} />
+        <ArtDefs art={art!} p={pp} />
+        {shown.map((r) => (
+          <clipPath key={r.id} id={`${pp}-r-${r.id}`}>
+            <path d={ringsPath(r.shape)} />
+          </clipPath>
+        ))}
+        {withLabels && shown.map((r) => r.label.path && <path key={r.id} id={`${pp}-l-${r.id}`} d={r.label.path} />)}
+        <filter id={`${pp}-fogb`} x="-10%" y="-10%" width="120%" height="120%">
+          <feGaussianBlur stdDeviation={28} />
+        </filter>
+        <filter id={`${pp}-fogn`} x="0" y="0" width="100%" height="100%">
+          <feTurbulence type="fractalNoise" baseFrequency=".008" numOctaves={3} seed={77} />
+          <feColorMatrix values="0 0 0 0 .55  0 0 0 0 .54  0 0 0 0 .5  0 0 0 .55 .45" />
+        </filter>
+        <mask id={`${pp}-fog`}>
+          <rect width="1600" height="1100" fill="white" />
+          <g filter={`url(#${pp}-fogb)`} fill="black">
+            {fogRegions.map((r) => (
+              <path key={r.id} d={ringsPath(r.shape)} className="zg-fog-open" />
+            ))}
+          </g>
+        </mask>
+        <pattern id={`${pp}-hatch`} width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <rect width="10" height="10" fill="#3a2c1c" fillOpacity={0.08} />
+          <path d="M0 0 V10" stroke="#3a2c1c" strokeWidth={1.4} strokeOpacity={0.35} />
+        </pattern>
+      </defs>
+    </>
+  );
+  /** Мягкие слои под чётким рисунком: бумага, тон земель, свечение границ, светотень, мглы и леса. */
+  const softUnder = (pp: string) => (
+    <>
+      <ArtBase art={art!} p={pp} />
+      {/* заливки регионов (тон земли) */}
+      <g style={{ mixBlendMode: 'multiply' }} opacity={0.5} filter={`url(#${pp}-wash)`}>
+        {shown.map((r) => r.fill && <path key={r.id} d={ringsPath(r.shape)} fill={r.fill} />)}
+        {shown.flatMap((r) => r.extra.map((x, i) => <path key={`${r.id}-${i}`} d={ringsPath(x.shape)} fill={x.fill} />))}
+      </g>
+      {shown
+        .filter((r) => r.border)
+        .map((r) => (
+          <g key={r.id} clipPath={`url(#${pp}-r-${r.id})`}>
+            <path d={ringsPath(r.shape)} fill="none" stroke={r.edge} strokeWidth={26} opacity={0.38} filter={`url(#${pp}-glow)`} />
+          </g>
+        ))}
+      <ArtRelief p={pp} />
+      <ArtSoft art={art!} p={pp} />
+    </>
+  );
+  /** Чёткий рисунок: реки, деревья, горы, границы, дороги, путь. */
+  const crisp = (
+    <>
+      <ArtCrisp art={art!} p={p} />
+      {shown
+        .filter((r) => r.border)
+        .map((r) => (
+          <g key={r.id}>
+            <path d={ringsPath(r.shape)} fill="none" stroke="#f5eedb" strokeWidth={4} opacity={0.7} />
+            <path d={ringsPath(r.shape)} fill="none" stroke="#5b4630" strokeWidth={1.5} strokeDasharray="7 3 1.5 3" strokeLinecap="round" opacity={0.85} />
+          </g>
+        ))}
+      {roads.map((r, i) => (
+        <path key={i} d={r.d} fill="none" stroke="#7a5b3a" strokeWidth={1.6} strokeDasharray="1 5" strokeLinecap="round" opacity={r.open === false ? 0.45 : 0.9} />
+      ))}
+
+      {route && route.length > 1 && (
+        <g pointerEvents="none">
+          <path d={'M' + route.map((q) => `${q[0]},${q[1]}`).join('L')} fill="none" stroke="#f3ecd9" strokeWidth={7} strokeLinecap="round" strokeLinejoin="round" opacity={0.8} />
+          <path
+            d={'M' + route.map((q) => `${q[0]},${q[1]}`).join('L')}
+            fill="none"
+            stroke="#c9971f"
+            strokeWidth={3.4}
+            strokeDasharray="9 6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </g>
+      )}
+    </>
+  );
+  /** Мягкие слои над рисунком: туман (у игрока и стола), штриховка скрытого (мастеру), край и зерно бумаги. */
+  const softOver = (pp: string) => (
+    <>
+      {/* туман: всё, кроме открытых регионов. Мастеру — без тумана, скрытое заштриховано. */}
+      {!gm && (
+        <g pointerEvents="none">
+          <rect width="1600" height="1100" fill="#e9dfc4" mask={`url(#${pp}-fog)`} />
+          <rect width="1600" height="1100" filter={`url(#${pp}-fogn)`} mask={`url(#${pp}-fog)`} />
+        </g>
+      )}
+      {hidden.map((r) => (
+        <path key={r.id} d={ringsPath(r.shape)} fill={`url(#${pp}-hatch)`} stroke="#3a2c1c" strokeOpacity={0.35} strokeDasharray="4 4" pointerEvents="none" />
+      ))}
+      <ArtPaperFx art={art!} p={pp} />
+    </>
+  );
+  const labelsOf = (
+    <>
+      <ArtPaperText art={art!} />
+      {/* подписи регионов */}
+      {shown.map((r) => {
+        const l = r.label;
+        const dim = gm && r.visible === false;
+        const style = {
+          fontFamily: l.italic ? "'Cormorant Garamond', Georgia, serif" : "'Cormorant SC', Georgia, serif",
+          fontWeight: l.italic ? 500 : 600,
+          fontStyle: l.italic ? 'italic' : undefined,
+        };
+        const common = {
+          fill: l.ink,
+          fillOpacity: l.muted ? 0.7 : 0.82,
+          stroke: '#f3ecd9',
+          strokeOpacity: 0.8,
+          strokeWidth: l.muted ? 0 : 5,
+          paintOrder: 'stroke' as const,
+          fontSize: l.size,
+          letterSpacing: l.spacing ?? 0,
+          opacity: dim ? 0.45 : 1,
+          style,
+        };
+        const linked = !!r.link && !!onRegion && (gm || r.visible !== false);
+        const click = linked
+          ? (e: RMouseEvent) => {
+              e.stopPropagation();
+              onRegion?.(r);
+            }
+          : undefined;
+        return l.path ? (
+          <text key={r.id} {...common} onClick={click} className={cn(linked && 'cursor-pointer')}>
+            <textPath href={`#${p}-l-${r.id}`} startOffset="50%" textAnchor="middle">
+              {r.name.toUpperCase()}
+              {linked ? ' ›' : ''}
+            </textPath>
+          </text>
+        ) : (
+          <text
+            key={r.id}
+            {...common}
+            x={l.x}
+            y={l.y}
+            textAnchor="middle"
+            transform={l.rotate ? `rotate(${l.rotate} ${l.x} ${l.y})` : undefined}
+            onClick={click}
+            className={cn(linked && 'cursor-pointer')}
+          >
+            {l.italic ? r.name : r.name.toUpperCase()}
+            {linked ? ' ›' : ''}
+          </text>
+        );
+      })}
+
+      {/* места */}
+      {places.map((pl) => {
+        const l = labelOf(pl);
+        const dim = gm && pl.visible === false;
+        const sel = selected === pl.id;
+        return (
+          <g
+            key={pl.id}
+            opacity={dim ? 0.55 : 1}
+            className={cn((onPlace || onPlaceMove) && 'cursor-pointer')}
+            onPointerDown={placeDown(pl.id)}
+            onPointerMove={placeMove}
+            onPointerUp={placeUp}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!onPlaceMove) onPlace?.(pl.id);
+            }}
+          >
+            <title>{[pl.name, PLACE_KIND_LABELS[pl.kind], pl.subtitle, placeHint?.(pl.id)].filter(Boolean).join(' · ')}</title>
+            <g data-pin transform={`translate(${pl.x} ${pl.y})`}>
+              {sel && <circle r={22} fill="none" stroke="#c9971f" strokeWidth={2.5} strokeDasharray="4 4" />}
+              <circle r={16} fill="transparent" />
+              <PlaceIcon kind={pl.kind} ink={pl.ink} />
+            </g>
+            {pl.name && (
+              <text
+                x={l.lx}
+                y={l.ly}
+                textAnchor={l.anchor}
+                fontSize={l.size}
+                fill={l.fill}
+                stroke="#f3ecd9"
+                strokeWidth={4}
+                paintOrder="stroke"
+                style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: l.italic ? 600 : 700, fontStyle: l.italic ? 'italic' : undefined }}
+              >
+                {pl.name}
+              </text>
+            )}
+            {pl.subtitle && (
+              <text
+                x={l.lx}
+                y={l.ly + 18}
+                textAnchor={l.anchor}
+                fontSize={15}
+                fill="#5a4630"
+                stroke="#f3ecd9"
+                strokeWidth={3.5}
+                paintOrder="stroke"
+                style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontStyle: 'italic' }}
+              >
+                {pl.subtitle}
+              </text>
+            )}
+          </g>
+        );
+      })}
+
+      {/* личные заметки игрока */}
+      {data.notes.map((n, i) => (
+        <g
+          key={n.id}
+          transform={`translate(${n.x} ${n.y})`}
+          className="cursor-pointer"
+          onClick={(e) => {
+            e.stopPropagation();
+            onNote?.(n);
+          }}
+        >
+          <circle r={18} fill="transparent" />
+          <path d="M0 0 c0 -16 24 -16 24 0 c0 11 -12 24 -12 24 c0 0 -12 -13 -12 -24z" transform="translate(-12 -24)" fill="#9a6a12" stroke="#f3ecd9" strokeWidth={2} />
+          <text y={-26} textAnchor="middle" fontSize={11} fontWeight={700} fill="#f3ecd9" style={{ fontFamily: "'IBM Plex Sans', system-ui, sans-serif" }}>
+            {i + 1}
+          </text>
+        </g>
+      ))}
+    </>
+  );
+  const keyUnder = `${data.id}|${gm}|${shown.map((r) => `${r.id}:${r.visible !== false}:${r.fill}`).join(',')}`;
+  const keyOver = `${data.id}|${gm}|${fogRegions.map((r) => r.id).join(',')}|${hidden.map((r) => r.id).join(',')}`;
+  const [bakeFailed, setBakeFailed] = useState(false);
+  const baked = bakeAllowed() && !bakeFailed;
+  const onBaked = (ok: boolean) => !ok && setBakeFailed(true);
+  const fade = reduced || instant ? 0 : 1600;
+
   return (
     <div ref={box} className={cn('relative touch-none overflow-hidden overscroll-contain bg-[#e7dcbf] select-none', className)} {...cam.handlers} onClick={pick}>
       <m.div ref={cam.layerRef} className="absolute top-0 left-0 h-[1100px] w-[1600px] origin-top-left" style={{ x: cam.x, y: cam.y, scale: cam.k }}>
-        {art ? (
+        {art && baked ? (
+          <>
+            <Baked bakeKey={`u|${keyUnder}`} fade={fade} onResult={onBaked} className="absolute inset-0">
+              {defsOf(`${p}u`, false)}
+              {softUnder(`${p}u`)}
+            </Baked>
+            <svg viewBox="0 0 1600 1100" width={1600} height={1100} className="absolute top-0 left-0 block" aria-hidden="true">
+              {defsOf(p, false)}
+              {crisp}
+            </svg>
+            <Baked bakeKey={`o|${keyOver}`} fade={fade} onResult={onBaked} className="absolute inset-0">
+              {defsOf(`${p}o`, false)}
+              {softOver(`${p}o`)}
+            </Baked>
+            <svg viewBox="0 0 1600 1100" width={1600} height={1100} className="absolute top-0 left-0 block" role="img" aria-label="Карта">
+              <defs>{shown.map((r) => r.label.path && <path key={r.id} id={`${p}-l-${r.id}`} d={r.label.path} />)}</defs>
+              {labelsOf}
+            </svg>
+          </>
+        ) : art ? (
           <svg viewBox="0 0 1600 1100" width={1600} height={1100} className="block" role="img" aria-label="Карта">
-            <defs>
-              <PaperDefs p={p} seed={data.id === 'world' ? 7 : data.id === 'razdolye' ? 9 : 19} />
-              <ArtDefs art={art} p={p} />
-              {shown.map((r) => (
-                <clipPath key={r.id} id={`${p}-r-${r.id}`}>
-                  <path d={ringsPath(r.shape)} />
-                </clipPath>
-              ))}
-              {shown.map((r) => r.label.path && <path key={r.id} id={`${p}-l-${r.id}`} d={r.label.path} />)}
-              <filter id={`${p}-fogb`} x="-10%" y="-10%" width="120%" height="120%">
-                <feGaussianBlur stdDeviation={28} />
-              </filter>
-              <filter id={`${p}-fogn`} x="0" y="0" width="100%" height="100%">
-                <feTurbulence type="fractalNoise" baseFrequency=".008" numOctaves={3} seed={77} />
-                <feColorMatrix values="0 0 0 0 .55  0 0 0 0 .54  0 0 0 0 .5  0 0 0 .55 .45" />
-              </filter>
-              <mask id={`${p}-fog`}>
-                <rect width="1600" height="1100" fill="white" />
-                <g filter={`url(#${p}-fogb)`} fill="black">
-                  {fogRegions.map((r) => (
-                    <path key={r.id} d={ringsPath(r.shape)} className="zg-fog-open" />
-                  ))}
-                </g>
-              </mask>
-              <pattern id={`${p}-hatch`} width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-                <rect width="10" height="10" fill="#3a2c1c" fillOpacity={0.08} />
-                <path d="M0 0 V10" stroke="#3a2c1c" strokeWidth={1.4} strokeOpacity={0.35} />
-              </pattern>
-            </defs>
-
-            <ArtBase art={art} p={p} />
-            {/* заливки регионов (тон земли) */}
-            <g style={{ mixBlendMode: 'multiply' }} opacity={0.5} filter={`url(#${p}-wash)`}>
-              {shown.map((r) => r.fill && <path key={r.id} d={ringsPath(r.shape)} fill={r.fill} />)}
-              {shown.flatMap((r) => r.extra.map((x, i) => <path key={`${r.id}-${i}`} d={ringsPath(x.shape)} fill={x.fill} />))}
-            </g>
-            {shown
-              .filter((r) => r.border)
-              .map((r) => (
-                <g key={r.id} clipPath={`url(#${p}-r-${r.id})`}>
-                  <path d={ringsPath(r.shape)} fill="none" stroke={r.edge} strokeWidth={26} opacity={0.38} filter={`url(#${p}-glow)`} />
-                </g>
-              ))}
-            <ArtRelief p={p} />
-            <ArtTop art={art} p={p} />
-            {shown
-              .filter((r) => r.border)
-              .map((r) => (
-                <g key={r.id}>
-                  <path d={ringsPath(r.shape)} fill="none" stroke="#f5eedb" strokeWidth={4} opacity={0.7} />
-                  <path d={ringsPath(r.shape)} fill="none" stroke="#5b4630" strokeWidth={1.5} strokeDasharray="7 3 1.5 3" strokeLinecap="round" opacity={0.85} />
-                </g>
-              ))}
-            {roads.map((r, i) => (
-              <path key={i} d={r.d} fill="none" stroke="#7a5b3a" strokeWidth={1.6} strokeDasharray="1 5" strokeLinecap="round" opacity={r.open === false ? 0.45 : 0.9} />
-            ))}
-
-            {route && route.length > 1 && (
-              <g pointerEvents="none">
-                <path
-                  d={'M' + route.map((q) => `${q[0]},${q[1]}`).join('L')}
-                  fill="none"
-                  stroke="#f3ecd9"
-                  strokeWidth={7}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  opacity={0.8}
-                />
-                <path
-                  d={'M' + route.map((q) => `${q[0]},${q[1]}`).join('L')}
-                  fill="none"
-                  stroke="#c9971f"
-                  strokeWidth={3.4}
-                  strokeDasharray="9 6"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </g>
-            )}
-
-            {/* туман: всё, кроме открытых регионов. Мастеру — без тумана, скрытое заштриховано. */}
-            {!gm && (
-              <g pointerEvents="none">
-                <rect width="1600" height="1100" fill="#e9dfc4" mask={`url(#${p}-fog)`} />
-                <rect width="1600" height="1100" filter={`url(#${p}-fogn)`} mask={`url(#${p}-fog)`} />
-              </g>
-            )}
-            {hidden.map((r) => (
-              <path key={r.id} d={ringsPath(r.shape)} fill={`url(#${p}-hatch)`} stroke="#3a2c1c" strokeOpacity={0.35} strokeDasharray="4 4" pointerEvents="none" />
-            ))}
-            <ArtPaper art={art} p={p} />
-
-            {/* подписи регионов */}
-            {shown.map((r) => {
-              const l = r.label;
-              const dim = gm && r.visible === false;
-              const style = {
-                fontFamily: l.italic ? "'Cormorant Garamond', Georgia, serif" : "'Cormorant SC', Georgia, serif",
-                fontWeight: l.italic ? 500 : 600,
-                fontStyle: l.italic ? 'italic' : undefined,
-              };
-              const common = {
-                fill: l.ink,
-                fillOpacity: l.muted ? 0.7 : 0.82,
-                stroke: '#f3ecd9',
-                strokeOpacity: 0.8,
-                strokeWidth: l.muted ? 0 : 5,
-                paintOrder: 'stroke' as const,
-                fontSize: l.size,
-                letterSpacing: l.spacing ?? 0,
-                opacity: dim ? 0.45 : 1,
-                style,
-              };
-              const linked = !!r.link && !!onRegion && (gm || r.visible !== false);
-              const click = linked
-                ? (e: RMouseEvent) => {
-                    e.stopPropagation();
-                    onRegion?.(r);
-                  }
-                : undefined;
-              return l.path ? (
-                <text key={r.id} {...common} onClick={click} className={cn(linked && 'cursor-pointer')}>
-                  <textPath href={`#${p}-l-${r.id}`} startOffset="50%" textAnchor="middle">
-                    {r.name.toUpperCase()}
-                    {linked ? ' ›' : ''}
-                  </textPath>
-                </text>
-              ) : (
-                <text
-                  key={r.id}
-                  {...common}
-                  x={l.x}
-                  y={l.y}
-                  textAnchor="middle"
-                  transform={l.rotate ? `rotate(${l.rotate} ${l.x} ${l.y})` : undefined}
-                  onClick={click}
-                  className={cn(linked && 'cursor-pointer')}
-                >
-                  {l.italic ? r.name : r.name.toUpperCase()}
-                  {linked ? ' ›' : ''}
-                </text>
-              );
-            })}
-
-            {/* места */}
-            {places.map((pl) => {
-              const l = labelOf(pl);
-              const dim = gm && pl.visible === false;
-              const sel = selected === pl.id;
-              return (
-                <g
-                  key={pl.id}
-                  opacity={dim ? 0.55 : 1}
-                  className={cn((onPlace || onPlaceMove) && 'cursor-pointer')}
-                  onPointerDown={placeDown(pl.id)}
-                  onPointerMove={placeMove}
-                  onPointerUp={placeUp}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (!onPlaceMove) onPlace?.(pl.id);
-                  }}
-                >
-                  <title>{[pl.name, PLACE_KIND_LABELS[pl.kind], pl.subtitle, placeHint?.(pl.id)].filter(Boolean).join(' · ')}</title>
-                  <g data-pin transform={`translate(${pl.x} ${pl.y})`}>
-                    {sel && <circle r={22} fill="none" stroke="#c9971f" strokeWidth={2.5} strokeDasharray="4 4" />}
-                    <circle r={16} fill="transparent" />
-                    <PlaceIcon kind={pl.kind} ink={pl.ink} />
-                  </g>
-                  {pl.name && (
-                    <text
-                      x={l.lx}
-                      y={l.ly}
-                      textAnchor={l.anchor}
-                      fontSize={l.size}
-                      fill={l.fill}
-                      stroke="#f3ecd9"
-                      strokeWidth={4}
-                      paintOrder="stroke"
-                      style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: l.italic ? 600 : 700, fontStyle: l.italic ? 'italic' : undefined }}
-                    >
-                      {pl.name}
-                    </text>
-                  )}
-                  {pl.subtitle && (
-                    <text
-                      x={l.lx}
-                      y={l.ly + 18}
-                      textAnchor={l.anchor}
-                      fontSize={15}
-                      fill="#5a4630"
-                      stroke="#f3ecd9"
-                      strokeWidth={3.5}
-                      paintOrder="stroke"
-                      style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontStyle: 'italic' }}
-                    >
-                      {pl.subtitle}
-                    </text>
-                  )}
-                </g>
-              );
-            })}
-
-            {/* личные заметки игрока */}
-            {data.notes.map((n, i) => (
-              <g
-                key={n.id}
-                transform={`translate(${n.x} ${n.y})`}
-                className="cursor-pointer"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onNote?.(n);
-                }}
-              >
-                <circle r={18} fill="transparent" />
-                <path d="M0 0 c0 -16 24 -16 24 0 c0 11 -12 24 -12 24 c0 0 -12 -13 -12 -24z" transform="translate(-12 -24)" fill="#9a6a12" stroke="#f3ecd9" strokeWidth={2} />
-                <text y={-26} textAnchor="middle" fontSize={11} fontWeight={700} fill="#f3ecd9" style={{ fontFamily: "'IBM Plex Sans', system-ui, sans-serif" }}>
-                  {i + 1}
-                </text>
-              </g>
-            ))}
+            {defsOf(p, true)}
+            {softUnder(p)}
+            {crisp}
+            {softOver(p)}
+            {labelsOf}
           </svg>
         ) : (
           <div className="grid size-full place-items-center font-ui text-[#6b5d48]">Рисую карту…</div>
