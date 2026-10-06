@@ -11,6 +11,7 @@ import { MapHud } from '../maps/overlay/MapHud.tsx';
 import type { MapCamera } from '../maps/camera.ts';
 import { preloadArt } from '../maps/MapArt.tsx';
 import { Badge, Button, Card, CardTitle, Field, Input, Segmented, Select, Sheet, Switch, Textarea, toast } from '../ui/index.ts';
+import { GmPlaceCity } from './GmPlaceCity.tsx';
 
 const TITLES: Record<MapId, string> = { world: 'Мир', razdolye: 'Раздолье', frozen: 'Замёрзшие земли' };
 type Tool = 'select' | 'place' | 'party' | 'token';
@@ -124,8 +125,8 @@ export function GmMaps() {
     }
   };
 
-  const showOnTable = async (focus: { x: number; y: number; zoom: number } | null) => {
-    await post('/api/gm/table/map', { mapId, focus }, focus ? 'Стол наезжает на это место' : 'Карта на столе');
+  const showOnTable = async (focus: { x: number; y: number; zoom: number; place?: string } | null) => {
+    await post('/api/gm/table/map', { mapId, focus }, focus?.place ? 'На столе — экран города' : focus ? 'Стол наезжает на это место' : 'Карта на столе');
     void reload();
   };
   const currentFocus = () => {
@@ -296,9 +297,15 @@ function SidePanel({
   onSelectToken: (id: string) => void;
   post: Post;
   onDone: () => void;
-  showOnTable: (f: { x: number; y: number; zoom: number } | null) => void;
+  showOnTable: (f: { x: number; y: number; zoom: number; place?: string } | null) => void;
 }) {
-  if (place) return <PlaceEditor key={place.id} place={place} post={post} onDone={onDone} showOnTable={showOnTable} />;
+  if (place)
+    return (
+      <div className="grid gap-3">
+        <PlaceEditor key={place.id} place={place} post={post} onDone={onDone} showOnTable={showOnTable} />
+        {place.kind !== 'mark' && <GmPlaceCity placeId={place.id} />}
+      </div>
+    );
   if (token) return <TokenEditor key={token.id} token={token} post={post} onDone={onDone} showOnTable={showOnTable} />;
   return <Lists view={view} onSelect={onSelect} onSelectToken={onSelectToken} post={post} />;
 }
@@ -413,7 +420,7 @@ function PlaceEditor({
   place: GmMapPlace;
   post: Post;
   onDone: () => void;
-  showOnTable: (f: { x: number; y: number; zoom: number } | null) => void;
+  showOnTable: (f: { x: number; y: number; zoom: number; place?: string } | null) => void;
 }) {
   const [name, setName] = useState(place.name);
   const [subtitle, setSubtitle] = useState(place.subtitle);
@@ -470,6 +477,16 @@ function PlaceEditor({
         <Button size="sm" onClick={() => showOnTable({ x: place.x, y: place.y, zoom: 3 })}>
           На стол: наехать сюда
         </Button>
+        {place.kind !== 'mark' && (
+          <Button
+            size="sm"
+            disabled={!place.visible}
+            title={place.visible ? undefined : 'Сначала откройте место игрокам'}
+            onClick={() => showOnTable({ x: place.x, y: place.y, zoom: 3.4, place: place.id })}
+          >
+            На стол: город
+          </Button>
+        )}
         <Button
           size="sm"
           variant={confirmDel ? 'danger' : 'ghost'}
@@ -498,7 +515,7 @@ function TokenEditor({
   token: GmMapToken;
   post: Post;
   onDone: () => void;
-  showOnTable: (f: { x: number; y: number; zoom: number } | null) => void;
+  showOnTable: (f: { x: number; y: number; zoom: number; place?: string } | null) => void;
 }) {
   const [confirmDel, setConfirmDel] = useState(false);
   const url = `/api/gm/maps/tokens/${token.id}`;
