@@ -47,6 +47,7 @@ export function projectForPlayer({ row, doc }: LoadedCharacter): PlayerCharacter
     origin: row.kind === 'popadanets' ? originOf(doc) : '',
     look: { theme: doc.cardTheme ?? '', universe: doc.universe ?? '', genre: doc.source ?? '' },
     ...(doc.image ? { portrait: portraitUrl(row.id, doc.image) } : {}),
+    ...(doc.figure ? { figure: doc.figure } : {}),
     ...(row.publicBio.trim() ? { bio: row.publicBio.slice(0, 4000) } : {}),
     ...(doc.showPower === true ? { powerBand: powerBand(powerOf(doc)).name } : {}),
     ...(cr ? { profession: { label: cr.label, local: cr.local, demand: Math.max(0, Math.min(3, Math.trunc(cr.demand))), edge: cr.edge } } : {}),

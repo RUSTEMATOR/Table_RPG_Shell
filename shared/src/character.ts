@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { FigureSchema, type Figure } from './figure.ts';
 import { SHEET_KINDS, type SheetKind } from './constants.ts';
 
 // ---- Что видит игрок: единственный формат, белый список, strictObject на всех уровнях ----
@@ -45,6 +46,8 @@ export const PlayerCharacterSchema = z.strictObject({
   items: z.array(PlayerItemSchema),
   conditions: z.array(PlayerSheetNoteSchema),
   relations: z.array(PlayerSheetNoteSchema),
+  /** Пиксель-арт фигурка (этап 23). */
+  figure: FigureSchema.optional(),
 });
 export type PlayerCharacter = z.infer<typeof PlayerCharacterSchema>;
 export type PlayerTrait = z.infer<typeof PlayerTraitSchema>;
@@ -187,6 +190,8 @@ export interface GmCharacterListItem {
 
 export interface GmCharacterView {
   id: string;
+  /** Пиксель-арт фигурка (этап 23); null — ещё не собрана. */
+  figure: Figure | null;
   kind: 'popadanets' | 'local';
   name: string;
   ownerMemberId: string | null;

@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
-import { RollParamsSchema, type Catalog, type GmCharacterListItem } from '@zg/shared';
+import { RollParamsSchema, type Catalog, type GmCharacterListItem, FigureSchema } from '@zg/shared';
 import { requireGm } from '../auth/requireGm.ts';
 import { newId } from '../auth/tokens.ts';
 import { db, schema } from '../db/client.ts';
@@ -95,7 +95,10 @@ export async function gmCharacterRoutes(app: FastifyInstance) {
   });
 
   app.get<{ Querystring: { q?: string; cat?: string } }>('/api/gm/traits', async (request) => {
-    const q = String(request.query.q ?? '').toLowerCase().replace(/ё/g, 'е').trim();
+    const q = String(request.query.q ?? '')
+      .toLowerCase()
+      .replace(/ё/g, 'е')
+      .trim();
     const cat = String(request.query.cat ?? '');
     return TRAIT_LIST.filter((t) => (cat ? t.cat === cat : t.cat !== 'class' && t.cat !== 'green'))
       .filter((t) => !q || `${t.name} ${traitDesc(t)} ${t.src ?? ''}`.toLowerCase().replace(/ё/g, 'е').includes(q))
@@ -186,7 +189,12 @@ export async function gmCharacterRoutes(app: FastifyInstance) {
 
   app.get('/api/gm/characters', async (request) => {
     const members = new Map(
-      db.select().from(schema.member).where(eq(schema.member.roomId, request.auth!.room.id)).all().map((m) => [m.id, m.name]),
+      db
+        .select()
+        .from(schema.member)
+        .where(eq(schema.member.roomId, request.auth!.room.id))
+        .all()
+        .map((m) => [m.id, m.name]),
     );
     return listCharacters(request.auth!.room.id)
       .map(({ row, doc }): GmCharacterListItem => {
@@ -230,6 +238,21 @@ export async function gmCharacterRoutes(app: FastifyInstance) {
       .max(40)
       .refine((k) => k === '' || SOURCES.some(([s]) => s === k) || Object.prototype.hasOwnProperty.call(UNIVERSES, k))
       .optional(),
+  });
+
+  // Фигурка персонажа (этап 23): мастер может собрать или поправить любую. null — убрать.
+  app.post<{ Params: { id: string } }>('/api/gm/characters/:id/figure', async (request, reply) => {
+    const b = FigureSchema.nullable().safeParse(request.body);
+    if (!b.success) return bad(reply);
+    const roomId = request.auth!.room.id;
+    const lc = loadCharacter(roomId, request.params.id);
+    if (!lc) return reply.code(404).send({ error: 'not_found' });
+    if (b.data) lc.doc.figure = b.data;
+    else delete lc.doc.figure;
+    saveDoc(lc.row.id, lc.doc);
+    const fresh = loadCharacter(roomId, lc.row.id)!;
+    notifyCharacterChanged(roomId, fresh);
+    return characterView(fresh);
   });
 
   app.post<{ Params: { id: string } }>('/api/gm/characters/:id/meta', async (request, reply) => {

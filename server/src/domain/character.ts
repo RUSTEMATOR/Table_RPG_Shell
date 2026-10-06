@@ -1,3 +1,4 @@
+import type { Figure } from '@zg/shared';
 import type { Tier, TraitCat } from './data.ts';
 
 // Документ персонажа — та же форма, что Char в рандомизаторе (импорт и экспорт без потерь).
@@ -103,6 +104,8 @@ export interface CharDoc {
   showPortrait?: boolean;
   cardTheme?: string;
   image?: { dataUri: string; w: number; h: number };
+  /** Пиксель-арт фигурка (этап 23): описание деталей LPC, внешность — видна всем. */
+  figure?: Figure;
 }
 
 export const STAGE_NAMES = ['Спит', 'Пробуждение', 'Освоение', 'Мастерство', 'Предел'] as const;

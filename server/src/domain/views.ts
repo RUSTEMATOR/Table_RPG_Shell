@@ -98,6 +98,7 @@ export function characterView(lc: LoadedCharacter): GmCharacterView {
   const power = powerOf(doc);
   return {
     id: row.id,
+    figure: doc.figure ?? null,
     kind: row.kind,
     name: row.name,
     ownerMemberId: row.ownerMemberId,
