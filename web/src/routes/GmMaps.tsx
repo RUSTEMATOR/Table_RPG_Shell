@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { MAP_IDS, PLACE_KINDS, PLACE_KIND_LABELS, daysText, type GmMapPlace, type GmMapToken, type GmMapView, type GmProposal, type MapId, type PlaceKind } from '@zg/shared';
 import { api } from '../lib/api.ts';
@@ -8,6 +8,7 @@ import { cn } from '../lib/cn.ts';
 import { type MapViewData } from '../maps/MapView.tsx';
 import { MapLookToggle, MapStage, useMapLook } from '../maps/MapStage.tsx';
 import { MapHud } from '../maps/overlay/MapHud.tsx';
+import { useMapNav } from '../maps/nav.ts';
 import type { MapCamera } from '../maps/camera.ts';
 import { preloadArt } from '../maps/MapArt.tsx';
 import { Badge, Button, Card, CardTitle, Field, Input, Segmented, Select, Sheet, Switch, Textarea, toast } from '../ui/index.ts';
@@ -37,6 +38,14 @@ export function GmMaps() {
   const [token, setToken] = useState<string | null>(null);
   const [camera, setCamera] = useState<MapCamera | null>(null);
   const [look, setLook, can3d] = useMapLook();
+  // переход мир ⇄ регион: наезд, затемнение, отъезд
+  const nav = useMapNav(mapId, setMapId, camera, view?.id === mapId ? view.regions : []);
+  const arrivedFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (!view || view.id !== mapId || !camera || arrivedFor.current === view.id) return;
+    arrivedFor.current = view.id;
+    nav.arrived(view);
+  }, [view, camera, mapId]);
   const [panel, setPanel] = useState(false);
   // Лист — только когда боковой панели нет на экране (узкое окно).
   const openPanel = () => {
@@ -48,8 +57,8 @@ export function GmMaps() {
     const r = await api<GmMapView>('GET', `/api/gm/maps/${mapId}`);
     if (r.ok) setView(r.data);
   }, [mapId]);
+  // при смене карты прежняя остаётся на экране, пока не придёт новая (переход её затемняет)
   useEffect(() => {
-    setView(null);
     setSelected(null);
     setToken(null);
     void reload();
@@ -143,7 +152,7 @@ export function GmMaps() {
       <Card className="gap-3">
         <div className="flex flex-wrap items-center gap-3">
           <CardTitle className="grow">Карты</CardTitle>
-          <Segmented label="Карта" value={mapId} onChange={setMapId} options={MAP_IDS.map((m) => ({ value: m, label: TITLES[m] }))} />
+          <Segmented label="Карта" value={mapId} onChange={(m) => void nav.go(m)} options={MAP_IDS.map((m) => ({ value: m, label: TITLES[m] }))} />
           {can3d && <MapLookToggle look={look} onChange={setLook} />}
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -196,6 +205,10 @@ export function GmMaps() {
       <div className="@container/gmmap">
         <div className="grid items-start gap-4 @4xl/gmmap:grid-cols-[minmax(0,1fr)_340px]">
           <div id="gm-map-box" className="relative overflow-hidden rounded-card border border-solid border-border">
+            <div
+              aria-hidden="true"
+              className={cn('pointer-events-none absolute inset-0 z-[4] bg-[#14110b] transition-opacity duration-200', nav.fading ? 'opacity-100' : 'opacity-0')}
+            />
             {data ? (
               <MapStage
                 key={look}
@@ -217,7 +230,7 @@ export function GmMaps() {
                 onTokenMove={(id, x, y) => void post(`/api/gm/maps/tokens/${id}`, { x, y })}
                 onPlaceMove={(id, x, y) => void post(`/api/gm/maps/places/${id}`, { x, y })}
                 onPick={pick}
-                onRegion={(r) => r.link && setMapId(r.link)}
+                onRegion={(r) => r.link && void nav.go(r.link)}
                 camera={setCamera}
                 className={cn('h-[min(72dvh,820px)] min-h-[420px]', tool !== 'select' && 'cursor-crosshair')}
               >

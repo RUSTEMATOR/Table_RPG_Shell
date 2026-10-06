@@ -7,6 +7,7 @@ import { cn } from '../lib/cn.ts';
 import { MapLookToggle, MapStage, useMapLook } from '../maps/MapStage.tsx';
 import { MapHud } from '../maps/overlay/MapHud.tsx';
 import { CityScreen, PlaceCard, usePlaceDetail } from '../maps/overlay/PlaceCard.tsx';
+import { inRegion, useMapNav } from '../maps/nav.ts';
 import type { MapCamera } from '../maps/camera.ts';
 import { Button, Field, Sheet, Textarea, toast } from '../ui/index.ts';
 
@@ -77,8 +78,8 @@ export function PlayerMap({ active }: { active: boolean }) {
     const r = await api<MapPublic>('GET', `/api/player/maps/${mapId}`);
     if (r.ok) setMap(r.data);
   }, [mapId]);
+  // при смене карты прежняя остаётся на экране, пока не придёт новая (переход её затемняет)
   useEffect(() => {
-    setMap(null);
     void reload();
   }, [reload]);
   useSocketEvent('map:changed', (e) => e.mapId === mapId && void reload());
@@ -88,13 +89,19 @@ export function PlayerMap({ active }: { active: boolean }) {
     if (conn === 'online') void reload();
   }, [conn, reload]);
 
-  // Первый показ карты: к маркеру партии, иначе — вся карта.
+  // Переход мир ⇄ регион (наезд, затемнение, отъезд) и первый показ карты: к маркеру партии, иначе — вся карта.
+  const nav = useMapNav(mapId, setMapId, camera, map?.id === mapId ? map.regions : []);
   const centered = useRef<string | null>(null);
   useEffect(() => {
-    if (!camera || !map || !active || centered.current === map.id) return;
+    if (!camera || !map || map.id !== mapId || !active || centered.current === map.id) return;
     centered.current = map.id;
+    if (nav.arrived(map)) return;
     if (map.party) camera.flyTo(map.party.x, map.party.y, 2.6, { instant: true });
-  }, [camera, map, active]);
+  }, [camera, map, active, mapId]);
+  // на карте мира: нажатие внутри земли со своей картой — крупная кнопка «открыть карту»
+  const [regionHint, setRegionHint] = useState<{ name: string; link: MapId } | null>(null);
+  useEffect(() => setRegionHint(null), [mapId]);
+  const links = map && map.id === mapId ? map.regions.filter((r) => r.link) : [];
 
   const saveNote = async (text: string) => {
     if (!edit) return;
@@ -116,22 +123,43 @@ export function PlayerMap({ active }: { active: boolean }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
       <div className="flex items-center gap-2">
-        <nav aria-label="Путь по карте" className="flex min-w-0 grow items-center gap-1.5 font-ui text-sm text-muted">
-          {mapId !== 'world' && (
-            <>
-              <button type="button" className="cursor-pointer border-0 bg-transparent p-0 font-[inherit] text-link" onClick={() => setMapId('world')}>
-                Мир
-              </button>
-              <span aria-hidden="true">›</span>
-            </>
-          )}
-          <strong className="truncate font-['Cormorant_SC',Georgia,serif] text-xl font-bold text-text">{TITLES[mapId]}</strong>
-        </nav>
+        {mapId !== 'world' && (
+          <button
+            type="button"
+            onClick={() => void nav.go('world')}
+            aria-label="Назад, к карте мира"
+            className="inline-flex h-10 shrink-0 cursor-pointer items-center gap-1 rounded-control border border-solid border-border bg-surface-2 px-3 font-ui text-[15px] font-semibold text-text"
+          >
+            <span aria-hidden="true" className="text-[20px] leading-none">
+              ‹
+            </span>
+            Мир
+          </button>
+        )}
+        <strong className="min-w-0 grow truncate font-['Cormorant_SC',Georgia,serif] text-xl font-bold text-text">{TITLES[mapId]}</strong>
         {can3d && <MapLookToggle look={look} onChange={setLook} />}
         <Button size="sm" variant={noteMode ? 'primary' : 'default'} aria-pressed={noteMode} onClick={() => setNoteMode((v) => !v)}>
           {noteMode ? 'Нажми на карту' : '+ Заметка'}
         </Button>
       </div>
+      {links.length > 0 && (
+        <nav aria-label="Земли со своей картой" className="-mt-0.5 flex gap-2 overflow-x-auto pb-0.5 [scrollbar-width:none]">
+          {links.map((r) => (
+            <button
+              key={r.id}
+              type="button"
+              onClick={() => r.link && void nav.go(r.link)}
+              className="inline-flex h-10 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-solid border-border bg-surface-2 px-4 font-ui text-[15px] font-semibold whitespace-nowrap text-text"
+            >
+              <span aria-hidden="true" className="size-3 rounded-full" style={{ background: r.fill ?? r.edge }} />
+              {r.name}
+              <span aria-hidden="true" className="text-[18px] leading-none text-muted">
+                ›
+              </span>
+            </button>
+          ))}
+        </nav>
+      )}
       <div className="relative min-h-[320px] flex-1 overflow-hidden rounded-card border border-solid border-border">
         {map ? (
           <MapStage
@@ -147,9 +175,13 @@ export function PlayerMap({ active }: { active: boolean }) {
               return r && r.units > 0 ? `${daysText(r.days.foot)} пешком` : null;
             }}
             {...(noteMode ? {} : { onPlace: openPlace })}
-            onRegion={(r) => r.link && setMapId(r.link)}
+            onRegion={(r) => r.link && void nav.go(r.link)}
             onPick={(x, y) => {
-              if (!noteMode) return;
+              if (!noteMode) {
+                const r = links.find((l) => inRegion(l.shape, x, y));
+                setRegionHint(r?.link ? { name: r.name, link: r.link } : null);
+                return;
+              }
               setNoteMode(false);
               setEdit({ note: null, x, y });
             }}
@@ -160,6 +192,32 @@ export function PlayerMap({ active }: { active: boolean }) {
           </MapStage>
         ) : (
           <div className="grid h-full place-items-center text-muted">Загрузка…</div>
+        )}
+        {/* затемнение на переходе между картами */}
+        <div
+          aria-hidden="true"
+          className={cn('pointer-events-none absolute inset-0 z-[4] bg-[#14110b] transition-opacity duration-200', nav.fading ? 'opacity-100' : 'opacity-0')}
+        />
+        {regionHint && !card && (
+          <div className="absolute inset-x-0 bottom-4 z-[2] flex justify-center px-3">
+            <div className="flex items-center gap-1 rounded-full bg-[rgba(32,26,18,.92)] p-1 shadow-[0_10px_30px_rgba(10,8,4,.4)]">
+              <button
+                type="button"
+                onClick={() => void nav.go(regionHint.link)}
+                className="h-11 cursor-pointer rounded-full border-0 bg-[#c9971f] px-5 font-ui text-[15px] font-bold text-[#201a12]"
+              >
+                {regionHint.name}: открыть карту ›
+              </button>
+              <button
+                type="button"
+                aria-label="Закрыть"
+                onClick={() => setRegionHint(null)}
+                className="grid size-11 cursor-pointer place-items-center rounded-full border-0 bg-transparent text-[20px] text-[#f3ecd9]"
+              >
+                ×
+              </button>
+            </div>
+          </div>
         )}
         {card && !inCity && (
           <PlaceCard

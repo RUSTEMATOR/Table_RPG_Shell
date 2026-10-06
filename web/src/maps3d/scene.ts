@@ -31,6 +31,8 @@ type Anchor = {
 const FAR_ZOOM = 1.8;
 
 const SKY = '#c9d6dc';
+/** Размер поселений на карте: мир — в половину (у него крупнее масштаб). */
+const SETTLEMENT_SCALE = { world: 0.5, razdolye: 1, frozen: 0.9 } as const;
 
 export class MapScene {
   readonly renderer: THREE.WebGLRenderer;
@@ -317,11 +319,20 @@ export class MapScene {
       this.scene.remove(g);
       disposeGroup(g);
     }
-    const keep = places.map((p) => ({ x: p.x, y: p.y, r: radiusOf(p.kind) }));
+    // карта мира крупнее по масштабу — поселения на ней меньше, иначе столица занимает полкоролевства
+    const k = SETTLEMENT_SCALE[art.id];
+    const keep = places.map((p) => ({ x: p.x, y: p.y, r: radiusOf(p.kind) * k }));
     this.nature = instanceGroup(lib, natureOf(art, H, keep), mats.model, { shadows: this.shadows, depth: mats.depth });
     this.towns = instanceGroup(
       lib,
-      places.flatMap((p) => settlementOf(p, H)),
+      places.flatMap((p) =>
+        settlementOf(p, H).map((i) => {
+          const x = p.x + (i.x - p.x) * k,
+            y = p.y + (i.y - p.y) * k;
+          // высота подошвы — та же относительно земли (лилии остаются на воде)
+          return { ...i, x, y, base: i.base + H.at(x, y) - H.at(i.x, i.y), scale: i.scale * k };
+        }),
+      ),
       mats.model,
       { shadows: this.shadows, depth: mats.depth },
     );
