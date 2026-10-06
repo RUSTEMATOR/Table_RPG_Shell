@@ -7,6 +7,7 @@ import { disposeGroup, instanceGroup, loadLibrary, makeMaterials, type Library, 
 import { fogClouds, landmarkClouds, natureOf } from './nature.ts';
 import { radiusOf, settlementOf } from './settlements.ts';
 import { StrategyCamera } from './strategyCamera.ts';
+import { perfStats, timed } from '../maps/perf.ts';
 import { buildHeights, fogMask, paintTerrain, WATER, type FogMask, type Heights } from './terrain.ts';
 
 // Сцена 3D-карты (three.js без React): рельеф, вода, природа, поселения, туман, свет, камера. Рисует только когда нужно
@@ -154,7 +155,7 @@ export class MapScene {
   async setArt(art: Art) {
     if (this.art === art) return;
     this.art = art;
-    this.heights = buildHeights(art);
+    this.heights = timed('рельеф', () => buildHeights(art));
     this.cam.apply();
     this.lib ??= await loadLibrary();
     if (!this.alive || this.art !== art) return;
@@ -176,7 +177,7 @@ export class MapScene {
     const paintKey = JSON.stringify([regions.map((r) => [r.id, r.visible !== false, r.fill]), roads.map((r) => [r.d.length, r.d.slice(0, 24), r.open !== false])]);
     if (paintKey !== this.paintKey) {
       this.paintKey = paintKey;
-      const canvas = paintTerrain(this.art, regions, roads, gm, this.texSize);
+      const canvas = timed('текстура', () => paintTerrain(this.art!, regions, roads, gm, this.texSize));
       if (this.terrainTex) {
         this.terrainTex.image = canvas;
         this.terrainTex.needsUpdate = true;
@@ -209,7 +210,7 @@ export class MapScene {
     const townsKey = JSON.stringify(places.map((p) => [p.id, p.kind, Math.round(p.x), Math.round(p.y), p.ink]));
     if (townsKey !== this.townsKey) {
       this.townsKey = townsKey;
-      this.buildObjects(places);
+      timed('объекты', () => this.buildObjects(places));
     }
     this.requestRender();
   }
@@ -446,6 +447,8 @@ export class MapScene {
     f.near = c.dist * 1.25;
     f.far = c.dist * 3.4 + 400;
     this.renderer.render(this.scene, c.camera);
+    perfStats.calls = this.renderer.info.render.calls;
+    perfStats.triangles = this.renderer.info.render.triangles;
     this.placeAnchors();
     this.frameListeners.forEach((fn) => fn());
   }
@@ -517,6 +520,9 @@ export class MapScene {
 
   dispose() {
     this.alive = false;
+    perfStats.calls = undefined;
+    perfStats.triangles = undefined;
+    perfStats.build = {};
     cancelAnimationFrame(this.raf);
     this.ro.disconnect();
     this.cam.dispose();

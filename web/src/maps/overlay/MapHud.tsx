@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { MAP_H, MAP_W, PLACE_KIND_LABELS, type PlaceKind } from '@zg/shared';
 import type { MapCamera } from '../camera.ts';
 import { cn } from '../../lib/cn.ts';
+import { PerfOverlay, perfOn } from '../perf.ts';
 
 // Навигация поверх карты — одна для пергамента и 3D: поиск места по названию (перелёт и выбор), масштаб, компас
 // (3D: показывает, где север; нажать — повернуть на север), «К отряду», «Вся карта» и мини-карта с рамкой вида.
@@ -57,6 +58,7 @@ export function MapHud({
         </button>
       </div>
       {minimap && <MiniMap camera={camera} places={places} regions={regions} party={party} />}
+      {perfOn() && <PerfOverlay />}
     </>
   );
 }
