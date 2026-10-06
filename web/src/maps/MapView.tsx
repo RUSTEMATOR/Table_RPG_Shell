@@ -231,13 +231,11 @@ export function MapView({
 
   // поход отряда (этап 28): маркер идёт по дороге
   // отряд — фигурки персонажей игроков (если собраны), иначе значок; в походе фигурки идут
-  const partyG = useRef<SVGGElement>(null);
   const partyBox = useRef<HTMLDivElement>(null);
   const [partyPose, setPartyPose] = useState<'idle' | 'walk'>('idle');
   const [partyDir, setPartyDir] = useState<'up' | 'left' | 'down' | 'right'>('down');
   const partyFigures = (data.party?.figures ?? []).filter((f) => f.figure);
   const putParty = (x: number, y: number) => {
-    partyG.current?.setAttribute('transform', `translate(${x} ${y})`);
     if (partyBox.current) partyBox.current.style.transform = `translate(${x}px, ${y}px)`;
   };
   usePartyWalk(data.party, {
@@ -262,7 +260,7 @@ export function MapView({
 
   return (
     <div ref={box} className={cn('relative touch-none overflow-hidden overscroll-contain bg-[#e7dcbf] select-none', className)} {...cam.handlers} onClick={pick}>
-      <m.div className="absolute top-0 left-0 h-[1100px] w-[1600px] origin-top-left" style={{ x: cam.x, y: cam.y, scale: cam.k, willChange: cam.moving ? 'transform' : 'auto' }}>
+      <m.div ref={cam.layerRef} className="absolute top-0 left-0 h-[1100px] w-[1600px] origin-top-left" style={{ x: cam.x, y: cam.y, scale: cam.k }}>
         {art ? (
           <svg viewBox="0 0 1600 1100" width={1600} height={1100} className="block" role="img" aria-label="Карта">
             <defs>
@@ -467,14 +465,6 @@ export function MapView({
               );
             })}
 
-            {/* маркер партии */}
-            {data.party && (
-              <g ref={partyG} transform={`translate(${data.party.x} ${data.party.y})`} pointerEvents="none" aria-label="Партия здесь" opacity={partyFigures.length ? 0 : 1}>
-                <circle r={22} fill="#1f7a4d" opacity={0.18} className="zg-party-pulse" />
-                <path d="M0 -13 L12 9 H-12Z" fill="#1f7a4d" stroke="#f3ecd9" strokeWidth={2.2} strokeLinejoin="round" />
-              </g>
-            )}
-
             {/* личные заметки игрока */}
             {data.notes.map((n, i) => (
               <g
@@ -497,15 +487,26 @@ export function MapView({
         ) : (
           <div className="grid size-full place-items-center font-ui text-[#6b5d48]">Рисую карту…</div>
         )}
-        {art && data.party && partyFigures.length > 0 && (
+        {/* отряд — HTML над SVG: пульс анимирует только свой слой, а не всю карту с фильтрами */}
+        {art && data.party && (
           <div
             ref={partyBox}
+            aria-label="Отряд здесь"
             className="pointer-events-none absolute top-0 left-0"
             style={{ transform: `translate(${data.party.x}px, ${data.party.y}px)`, zIndex: Math.round(data.party.y) }}
           >
-            <Suspense fallback={null}>
-              <PartyFigures figures={partyFigures} pose={partyPose} dir={partyDir} />
-            </Suspense>
+            {partyFigures.length > 0 ? (
+              <Suspense fallback={null}>
+                <PartyFigures figures={partyFigures} pose={partyPose} dir={partyDir} />
+              </Suspense>
+            ) : (
+              <>
+                <span aria-hidden="true" className="zg-party-pulse absolute top-[-22px] left-[-22px] size-[44px] rounded-full bg-[#1f7a4d]/20 will-change-transform" />
+                <svg aria-hidden="true" viewBox="-14 -15 28 27" width={28} height={27} className="absolute top-[-15px] left-[-14px] overflow-visible">
+                  <path d="M0 -13 L12 9 H-12Z" fill="#1f7a4d" stroke="#f3ecd9" strokeWidth={2.2} strokeLinejoin="round" />
+                </svg>
+              </>
+            )}
           </div>
         )}
         {art && tokens.length > 0 && (

@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import type { MapId } from '@zg/shared';
 
-// Рельеф карт по одобренным макетам этапа 15. Геометрия — из web/src/maps/art/*.json (tools/extract-maps), здесь только
+// Рельеф карт по одобренным макетам этапа 15. Слои — memo: рисунок не меняется, перерисовка карты их не трогает. Геометрия — из web/src/maps/art/*.json (tools/extract-maps), здесь только
 // отрисовка. В рельефе нет имён, мест, дорог и границ регионов: их приносят данные карты (только открытое).
 
 type Pt = { x: number; y: number };
@@ -129,7 +129,7 @@ function Strokes({ list, stroke, width, opacity, cap }: { list: string[]; stroke
 }
 
 /** Общие фильтры бумаги. p — префикс id (на странице может быть несколько карт). */
-export function PaperDefs({ p, seed }: { p: string; seed: number }) {
+export const PaperDefs = memo(function PaperDefs({ p, seed }: { p: string; seed: number }) {
   return (
     <>
       <filter id={`${p}-grain`} x="0" y="0" width="100%" height="100%">
@@ -160,25 +160,25 @@ export function PaperDefs({ p, seed }: { p: string; seed: number }) {
       </radialGradient>
     </>
   );
-}
+});
 
 /** Нижний слой: бумага (и лёд Замёрзших земель). Заливки регионов ложатся поверх. */
-export function ArtBase({ art, p }: { art: Art; p: string }) {
+export const ArtBase = memo(function ArtBase({ art, p }: { art: Art; p: string }) {
   return (
     <>
       <rect width="1600" height="1100" fill="#ece2c6" />
       {art.id === 'frozen' && <path d={art.art.land} fill="#d6e2ee" opacity={0.72} filter={`url(#${p}-wash)`} />}
     </>
   );
-}
+});
 
 /** Светотень рельефа — поверх заливок регионов (умножением). */
-export function ArtRelief({ p }: { p: string }) {
+export const ArtRelief = memo(function ArtRelief({ p }: { p: string }) {
   return <rect width="1600" height="1100" filter={`url(#${p}-relief)`} style={{ mixBlendMode: 'multiply' }} opacity={0.5} pointerEvents="none" />;
-}
+});
 
 /** Верхние слои рельефа: реки, леса, горы и прочее — поверх заливок регионов. */
-export function ArtTop({ art, p }: { art: Art; p: string }) {
+export const ArtTop = memo(function ArtTop({ art, p }: { art: Art; p: string }) {
   if (art.id === 'world') {
     const a = art.art;
     return (
@@ -296,10 +296,10 @@ export function ArtTop({ art, p }: { art: Art; p: string }) {
       </g>
     </>
   );
-}
+});
 
 /** Заключительные слои: край бумаги, зерно. На карте мира — «неизведанные земли» по краям. */
-export function ArtPaper({ art, p }: { art: Art; p: string }) {
+export const ArtPaper = memo(function ArtPaper({ art, p }: { art: Art; p: string }) {
   return (
     <>
       <rect width="1600" height="1100" fill={`url(#${p}-edge)`} pointerEvents="none" />
@@ -330,10 +330,10 @@ export function ArtPaper({ art, p }: { art: Art; p: string }) {
       <rect width="1600" height="1100" filter={`url(#${p}-grain)`} pointerEvents="none" />
     </>
   );
-}
+});
 
 /** Дополнительные определения рельефа конкретной карты (маски берега, градиенты озера и бури). */
-export function ArtDefs({ art, p }: { art: Art; p: string }) {
+export const ArtDefs = memo(function ArtDefs({ art, p }: { art: Art; p: string }) {
   if (art.id === 'razdolye')
     return (
       <>
@@ -361,4 +361,4 @@ export function ArtDefs({ art, p }: { art: Art; p: string }) {
       </>
     );
   return null;
-}
+});

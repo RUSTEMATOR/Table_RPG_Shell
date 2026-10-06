@@ -28,8 +28,8 @@ export type Camera = MapCamera & {
   k: MotionValue<number>;
   x: MotionValue<number>;
   y: MotionValue<number>;
-  /** идёт жест или полёт: слой можно держать растром */
-  moving: boolean;
+  /** слой камеры: на время жеста или полёта ему ставится will-change (без перерисовки React) */
+  layerRef: (el: HTMLElement | null) => void;
   /** минимальный масштаб (вся карта целиком) */
   fit: number;
   handlers: {
@@ -49,7 +49,14 @@ export function useCamera(box: RefObject<HTMLElement | null>, opts: { reducedMot
   const k = useMotionValue(0.25);
   const x = useMotionValue(0);
   const y = useMotionValue(0);
-  const [moving, setMoving] = useState(false);
+  // Жест или полёт: слой держится растром (will-change) — меняется прямо в DOM, без перерисовки карты React.
+  const layer = useRef<HTMLElement | null>(null);
+  const setMoving = useCallback((v: boolean) => {
+    if (layer.current) layer.current.style.willChange = v ? 'transform' : 'auto';
+  }, []);
+  const layerRef = useCallback((el: HTMLElement | null) => {
+    layer.current = el;
+  }, []);
   const [fit, setFit] = useState(0.25);
   const size = useRef({ w: 1, h: 1 });
   const fitRef = useRef(0.25);
@@ -239,5 +246,5 @@ export function useCamera(box: RefObject<HTMLElement | null>, opts: { reducedMot
     const offs = [k.on('change', fn), x.on('change', fn), y.on('change', fn)];
     return () => offs.forEach((off) => off());
   };
-  return { k, x, y, moving, fit, toMap, flyTo, zoomBy, view, onChange, handlers, wasDrag: () => dragged.current };
+  return { k, x, y, layerRef, fit, toMap, flyTo, zoomBy, view, onChange, handlers, wasDrag: () => dragged.current };
 }

@@ -205,7 +205,7 @@ export function PartyFigures({ figures, pose, dir, size = S }: { figures: { name
     <div className="pointer-events-none absolute top-0 left-0" aria-label={`Отряд: ${figures.map((f) => f.name).join(', ')}`}>
       <span
         aria-hidden="true"
-        className="zg-party-pulse absolute rounded-[50%] bg-[#1f7a4d]/30"
+        className="zg-party-pulse absolute rounded-[50%] bg-[#1f7a4d]/30 will-change-transform"
         style={{ left: -size * 0.55, top: -size * 0.1, width: size * 1.1, height: size * 0.24 }}
       />
       {shown
