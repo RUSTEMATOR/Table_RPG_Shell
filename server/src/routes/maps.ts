@@ -1,6 +1,20 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { and, eq } from 'drizzle-orm';
-import { MapIdSchema, NoteWriteSchema, PartyWriteSchema, PlaceWriteSchema, RegionWriteSchema, TableMapWriteSchema, TokenAddSchema, TokenWriteSchema, type MapId } from '@zg/shared';
+import {
+  MapIdSchema,
+  NoteWriteSchema,
+  PartyWriteSchema,
+  PlaceWriteSchema,
+  ProposalDecideSchema,
+  ProposeSchema,
+  RegionWriteSchema,
+  TableMapWriteSchema,
+  TokenAddSchema,
+  TokenWriteSchema,
+  TravelSchema,
+  type MapId,
+} from '@zg/shared';
+import { cancelProposal, decideProposal, getProposal, gmProposals, ownProposal, propose, publicRoute, travelTo } from '../domain/travel.ts';
 import { requireGm } from '../auth/requireGm.ts';
 import { newId } from '../auth/tokens.ts';
 import { db, schema } from '../db/client.ts';
@@ -121,6 +135,53 @@ export async function gmMapRoutes(app: FastifyInstance) {
     return { ok: true };
   });
 
+  // Поход отряда (этап 28): отряд сразу в месте, путь по открытым дорогам — анимация у всех.
+  app.post('/api/gm/maps/party/travel', async (request, reply) => {
+    const b = TravelSchema.safeParse(request.body);
+    if (!b.success) return reply.code(400).send({ error: 'bad_request' });
+    const roomId = request.auth!.room.id;
+    const place = getPlace(roomId, b.data.placeId);
+    if (!place || place.kind === 'deleted' || place.mapId !== b.data.mapId) return reply.code(404).send({ error: 'not_found' });
+    const before = db.select({ mapId: schema.mapParty.mapId }).from(schema.mapParty).where(eq(schema.mapParty.roomId, roomId)).get();
+    travelTo(roomId, b.data.mapId, place);
+    const touched = new Set([before?.mapId, b.data.mapId].filter((m): m is MapId => MapIdSchema.safeParse(m).success));
+    touched.forEach((m) => notifyMapChanged(roomId, m));
+    return { ok: true };
+  });
+
+  app.get<{ Params: { id: string } }>('/api/gm/maps/:id/proposals', async (request, reply) => {
+    const mapId = mapParam(request, reply);
+    if (!mapId) return;
+    return gmProposals(request.auth!.room.id, mapId);
+  });
+
+  app.post<{ Params: { id: string } }>('/api/gm/maps/proposals/:id', async (request, reply) => {
+    const b = ProposalDecideSchema.safeParse(request.body);
+    if (!b.success) return reply.code(400).send({ error: 'bad_request' });
+    const roomId = request.auth!.room.id;
+    const p = getProposal(roomId, request.params.id);
+    if (!p || p.status !== 'pending') return reply.code(404).send({ error: 'not_found' });
+    const mapId = MapIdSchema.parse(p.mapId);
+    // принятое закрывает и остальные ожидающие — их авторы тоже узнают
+    const affected = db
+      .select({ m: schema.mapProposal.memberId })
+      .from(schema.mapProposal)
+      .where(and(eq(schema.mapProposal.roomId, roomId), eq(schema.mapProposal.mapId, mapId), eq(schema.mapProposal.status, 'pending')))
+      .all()
+      .map((r) => r.m);
+    decideProposal(p, b.data.status);
+    if (b.data.status === 'accepted') {
+      const place = getPlace(roomId, p.placeId);
+      if (place && place.kind !== 'deleted') {
+        travelTo(roomId, mapId, place);
+        notifyMapChanged(roomId, mapId);
+      }
+    }
+    new Set(affected).forEach((memberId) => publish(roomId, { kind: 'member', memberId }, 'map:proposal.changed', { mapId }));
+    publish(roomId, { kind: 'gm' }, 'gm:map.proposal', { mapId });
+    return gmProposals(roomId, mapId);
+  });
+
   // Фигурки (этап 24). Персонаж на карте один: повторная постановка переносит его фигурку.
   app.post<{ Params: { id: string } }>('/api/gm/maps/:id/tokens', async (request, reply) => {
     const mapId = mapParam(request, reply);
@@ -193,6 +254,42 @@ export async function playerMapRoutes(app: FastifyInstance) {
     const mapId = mapParam(request, reply);
     if (!mapId) return;
     return projectMapForPlayer(auth.room.id, auth.member.id, mapId);
+  });
+
+  // Предложение «идём туда» (этап 28): только открытое место; дни — по пути от отряда по открытым дорогам.
+  app.get<{ Params: { id: string } }>('/api/player/maps/:id/proposal', async (request, reply) => {
+    const auth = player(request, reply);
+    if (!auth) return;
+    const mapId = mapParam(request, reply);
+    if (!mapId) return;
+    return { proposal: ownProposal(auth.room.id, auth.member.id, mapId) };
+  });
+
+  app.post<{ Params: { id: string } }>('/api/player/maps/:id/propose', async (request, reply) => {
+    const auth = player(request, reply);
+    if (!auth) return;
+    const mapId = mapParam(request, reply);
+    if (!mapId) return;
+    const b = ProposeSchema.safeParse(request.body);
+    if (!b.success) return reply.code(400).send({ error: 'bad_request' });
+    const place = getPlace(auth.room.id, b.data.placeId);
+    if (!place || !place.visible || place.kind === 'deleted' || place.mapId !== mapId) return reply.code(404).send({ error: 'not_found' });
+    const route = publicRoute(auth.room.id, mapId, place.id);
+    propose(auth.room.id, auth.member.id, mapId, place, Math.round((route?.days.foot ?? 0) * 10) / 10);
+    publish(auth.room.id, { kind: 'gm' }, 'gm:map.proposal', { mapId, who: auth.member.name, placeName: place.name });
+    publish(auth.room.id, { kind: 'member', memberId: auth.member.id }, 'map:proposal.changed', { mapId });
+    return { proposal: ownProposal(auth.room.id, auth.member.id, mapId) };
+  });
+
+  app.post<{ Params: { id: string } }>('/api/player/maps/:id/propose/cancel', async (request, reply) => {
+    const auth = player(request, reply);
+    if (!auth) return;
+    const mapId = mapParam(request, reply);
+    if (!mapId) return;
+    cancelProposal(auth.room.id, auth.member.id, mapId);
+    publish(auth.room.id, { kind: 'gm' }, 'gm:map.proposal', { mapId });
+    publish(auth.room.id, { kind: 'member', memberId: auth.member.id }, 'map:proposal.changed', { mapId });
+    return { proposal: ownProposal(auth.room.id, auth.member.id, mapId) };
   });
 
   const ownNote = (roomId: string, memberId: string, id: string) =>

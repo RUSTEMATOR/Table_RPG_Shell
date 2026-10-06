@@ -9,6 +9,7 @@ import { FigureSprite, type Dir, type Pose } from '../figure/FigureSprite.tsx';
 import { capabilities } from '../lib/capabilities.ts';
 import { cn } from '../lib/cn.ts';
 import { flatten, midpoint } from './path.ts';
+import { usePartyWalk } from '../maps/walk.ts';
 import { MapScene } from './scene.ts';
 import { liftOf, teamOf } from './settlements.ts';
 
@@ -43,6 +44,9 @@ export function World3D({
   onTokenMove,
   camera,
   instant,
+  route,
+  placeHint,
+  follow,
   className,
   children,
 }: MapViewProps) {
@@ -107,6 +111,10 @@ export function World3D({
     if (scene && ready) scene.setData(data);
   }, [scene, ready, data]);
 
+  useEffect(() => {
+    if (scene && ready) scene.setRoute(route ?? null);
+  }, [scene, ready, route]);
+
   const gm = mode === 'gm';
   const places = gm ? data.places : data.places.filter((p) => p.visible !== false);
   const regions = gm ? data.regions : data.regions.filter((r) => r.visible !== false);
@@ -152,9 +160,18 @@ export function World3D({
             <RegionLabel key={r.id} scene={scene} r={r} gm={gm} {...(onRegion ? { onRegion } : {})} />
           ))}
           {places.map((p) => (
-            <PlaceLabel key={p.id} scene={scene} p={p} gm={gm} selected={selected === p.id} {...(onPlace ? { onPlace } : {})} {...(onPlaceMove ? { onPlaceMove } : {})} />
+            <PlaceLabel
+              key={p.id}
+              scene={scene}
+              p={p}
+              gm={gm}
+              selected={selected === p.id}
+              hint={placeHint?.(p.id) ?? null}
+              {...(onPlace ? { onPlace } : {})}
+              {...(onPlaceMove ? { onPlaceMove } : {})}
+            />
           ))}
-          {data.party && <PartyBanner scene={scene} x={data.party.x} y={data.party.y} />}
+          {data.party && <PartyBanner scene={scene} party={data.party} instant={!!instant || reduced} follow={!!follow} />}
           {tokens.map((t) => (
             <Token3D
               key={t.id}
@@ -228,6 +245,7 @@ function PlaceLabel({
   p,
   gm,
   selected,
+  hint,
   onPlace,
   onPlaceMove,
 }: {
@@ -235,6 +253,7 @@ function PlaceLabel({
   p: ViewPlace;
   gm: boolean;
   selected: boolean;
+  hint: string | null;
   onPlace?: (id: string) => void;
   onPlaceMove?: (id: string, x: number, y: number) => void;
 }) {
@@ -287,7 +306,7 @@ function PlaceLabel({
         onPointerUp={up}
         role={onPlace ? 'button' : undefined}
         aria-label={`${p.name || PLACE_KIND_LABELS[p.kind]}${hidden ? ' (скрыто)' : ''}`}
-        title={[p.name, PLACE_KIND_LABELS[p.kind], p.subtitle].filter(Boolean).join(' · ')}
+        title={[p.name, PLACE_KIND_LABELS[p.kind], p.subtitle, hint].filter(Boolean).join(' · ')}
       >
         {named ? (
           <span
@@ -372,9 +391,39 @@ function RegionLabel({ scene, r, gm, onRegion }: { scene: MapScene; r: ViewRegio
   );
 }
 
-function PartyBanner({ scene, x, y }: { scene: MapScene; x: number; y: number }) {
+function PartyBanner({ scene, party, instant, follow }: { scene: MapScene; party: NonNullable<MapViewProps['data']['party']>; instant: boolean; follow: boolean }) {
+  const at = useRef({ x: party.x, y: party.y });
+  const walking = useRef(false);
+  useEffect(() => {
+    if (walking.current) return;
+    at.current = { x: party.x, y: party.y };
+    scene.requestRender();
+  }, [party.x, party.y, scene]);
+  // поход по дороге (этап 28): знамя идёт по пути; на столе камера следует за ним
+  const release = useRef<(() => void) | null>(null);
+  usePartyWalk(party, {
+    instant,
+    onStart: () => {
+      walking.current = true;
+      release.current = scene.hold();
+    },
+    onStep: (q) => {
+      at.current = { x: q.x, y: q.y };
+      if (follow) {
+        scene.cam.x = q.x;
+        scene.cam.y = q.y;
+        scene.cam.apply();
+      }
+    },
+    onEnd: () => {
+      walking.current = false;
+      at.current = { x: party.x, y: party.y };
+      release.current?.();
+      release.current = null;
+    },
+  });
   return (
-    <Anchored scene={scene} pos={() => ({ x, y, lift: 0 })} size={34} min={0.55} max={1.4}>
+    <Anchored scene={scene} pos={() => ({ x: at.current.x, y: at.current.y, lift: 0 })} size={34} min={0.55} max={1.4}>
       <div aria-label="Отряд здесь" className="absolute bottom-0 left-0 h-[86px] w-[60px] -translate-x-[8px]">
         <span aria-hidden="true" className="zg-party-pulse absolute bottom-[-10px] left-[-12px] h-[20px] w-[40px] rounded-[50%] bg-[#1f7a4d]/30" />
         <svg viewBox="0 0 60 86" width={60} height={86} className="absolute inset-0 drop-shadow-[0_4px_6px_rgba(20,16,10,.45)]">

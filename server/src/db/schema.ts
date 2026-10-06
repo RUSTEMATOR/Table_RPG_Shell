@@ -408,8 +408,33 @@ export const mapParty = sqliteTable('map_party', {
   x: real('x').notNull(),
   y: real('y').notNull(),
   visible: integer('visible', { mode: 'boolean' }).notNull().default(true),
+  /** Последний поход по дороге (этап 28), JSON {path, ms, seq}: клиенты проигрывают его как анимацию. */
+  move: text('move'),
   updatedAt: integer('updated_at').notNull(),
 });
+
+// Предложения игроков «идём туда» (этап 28). Видит мастер и сам предложивший; решает мастер.
+export const mapProposal = sqliteTable(
+  'map_proposal',
+  {
+    id: text('id').primaryKey(),
+    roomId: text('room_id')
+      .notNull()
+      .references(() => room.id, { onDelete: 'cascade' }),
+    memberId: text('member_id')
+      .notNull()
+      .references(() => member.id, { onDelete: 'cascade' }),
+    mapId: text('map_id').notNull(),
+    placeId: text('place_id')
+      .notNull()
+      .references(() => mapPlace.id, { onDelete: 'cascade' }),
+    days: real('days').notNull(),
+    status: text('status', { enum: ['pending', 'accepted', 'declined'] }).notNull(),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  (t) => [index('map_proposal_room_idx').on(t.roomId, t.mapId)],
+);
 
 // Фигурки на карте (этап 24): персонаж или противник из библиотеки (ровно одно из двух). Игрок и стол видят только visible.
 // Персонаж — не больше одной фигурки на карте (проверяет сервер); противник — сколько угодно (стая волков).

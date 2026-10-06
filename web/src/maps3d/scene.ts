@@ -321,6 +321,64 @@ export class MapScene {
     } else this.clouds = null;
   }
 
+  // ---- путь (этап 28) ----
+
+  private route: THREE.Mesh | null = null;
+
+  /** Предпросмотр пути: золотая лента по земле. null — убрать. */
+  setRoute(points: [number, number][] | null) {
+    if (this.route) {
+      this.scene.remove(this.route);
+      this.route.geometry.dispose();
+      (this.route.material as THREE.Material).dispose();
+      this.route = null;
+    }
+    if (points && points.length > 1 && this.heights) {
+      const H = this.heights;
+      // точки погуще: лента ложится на холмы, а не режет их
+      const dense: [number, number][] = [];
+      for (let i = 1; i < points.length; i++) {
+        const [x0, y0] = points[i - 1]!;
+        const [x1, y1] = points[i]!;
+        const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 4));
+        for (let k = 0; k < n; k++) dense.push([x0 + ((x1 - x0) * k) / n, y0 + ((y1 - y0) * k) / n]);
+      }
+      dense.push(points[points.length - 1]!);
+      const W = 2.6;
+      const pos: number[] = [];
+      const idx: number[] = [];
+      dense.forEach(([x, y], i) => {
+        const [ax, ay] = dense[Math.max(0, i - 1)]!;
+        const [bx, by] = dense[Math.min(dense.length - 1, i + 1)]!;
+        const l = Math.hypot(bx - ax, by - ay) || 1;
+        const nx = -(by - ay) / l,
+          ny = (bx - ax) / l;
+        const h = Math.max(H.at(x, y), WATER) + 0.9;
+        pos.push(x + nx * W, h, y + ny * W, x - nx * W, h, y - ny * W);
+        if (i > 0) {
+          const a = (i - 1) * 2;
+          idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
+        }
+      });
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      g.setIndex(idx);
+      const m = new THREE.MeshBasicMaterial({
+        color: '#e0b23a',
+        transparent: true,
+        opacity: 0.88,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+        polygonOffset: true,
+        polygonOffsetFactor: -4,
+      });
+      this.route = new THREE.Mesh(g, m);
+      this.route.renderOrder = 2;
+      this.scene.add(this.route);
+    }
+    this.requestRender();
+  }
+
   // ---- кадр ----
 
   private loop(now: number) {
@@ -423,6 +481,7 @@ export class MapScene {
     this.skirt?.geometry.dispose();
     this.water?.geometry.dispose();
     this.terrainTex?.dispose();
+    this.setRoute(null);
     this.renderer.dispose();
     this.renderer.domElement.remove();
   }

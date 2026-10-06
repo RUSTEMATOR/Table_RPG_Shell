@@ -1,11 +1,12 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, type MouseEvent as RMouseEvent, type PointerEvent as RPointerEvent, type ReactNode } from 'react';
 import { m } from 'motion/react';
-import { PLACE_KIND_LABELS, type MapId, type MapNote, type MapPlacePublic, type MapRegionPublic, type PlaceKind } from '@zg/shared';
+import { PLACE_KIND_LABELS, type MapId, type MapNote, type MapPlacePublic, type MapRegionPublic, type PartyMove, type PlaceKind } from '@zg/shared';
 import { ArtBase, ArtDefs, ArtPaper, ArtRelief, ArtTop, PaperDefs, useArt } from './MapArt.tsx';
 import { useCamera, type MapCamera } from './camera.ts';
 import { ensureMapFonts } from './fonts.ts';
 import { cn } from '../lib/cn.ts';
 import type { ViewToken } from './MapTokens.tsx';
+import { usePartyWalk } from './walk.ts';
 
 // Фигурки — отдельный чанк (каталог деталей LPC, сборка листов): грузится, только когда на карте есть фигурки.
 const MapTokens = lazy(() => import('./MapTokens.tsx').then((m) => ({ default: m.MapTokens })));
@@ -19,8 +20,8 @@ export type MapViewData = {
   id: MapId;
   regions: ViewRegion[];
   places: ViewPlace[];
-  roads: { d: string; open?: boolean }[];
-  party: { x: number; y: number } | null;
+  roads: { d: string; open?: boolean; a?: string; b?: string }[];
+  party: { x: number; y: number; move?: PartyMove | null } | null;
   tokens?: ViewToken[];
   notes: MapNote[];
 };
@@ -143,6 +144,12 @@ export type MapViewProps = {
   camera?: (c: MapCamera) => void;
   /** без полётов камеры (стол с «Анимация выкл.») */
   instant?: boolean;
+  /** предпросмотр пути (этап 28): точки карты */
+  route?: [number, number][] | null;
+  /** добавка к подсказке места (например, «≈ 3 дня пешком») */
+  placeHint?: (id: string) => string | null;
+  /** стол: камера следует за отрядом, пока он идёт (только 3D) */
+  follow?: boolean;
   className?: string;
   /** кнопки поверх карты (масштаб, легенда) */
   children?: ReactNode;
@@ -162,6 +169,8 @@ export function MapView({
   onTokenMove,
   camera: external,
   instant,
+  route,
+  placeHint,
   className,
   children,
 }: MapViewProps) {
@@ -218,6 +227,14 @@ export function MapView({
       onPlaceMove?.(d.id, Math.round(Math.min(1600, Math.max(0, q.x)) * 10) / 10, Math.round(Math.min(1100, Math.max(0, q.y)) * 10) / 10);
     } else onPlace?.(d.id);
   };
+
+  // поход отряда (этап 28): маркер идёт по дороге
+  const partyG = useRef<SVGGElement>(null);
+  usePartyWalk(data.party, {
+    instant: !!(reduced || instant),
+    onStep: (q) => partyG.current?.setAttribute('transform', `translate(${q.x} ${q.y})`),
+    onEnd: () => data.party && partyG.current?.setAttribute('transform', `translate(${data.party.x} ${data.party.y})`),
+  });
 
   const pick = (e: RMouseEvent) => {
     if (cam.wasDrag() || !onPick) return;
@@ -286,6 +303,29 @@ export function MapView({
             {roads.map((r, i) => (
               <path key={i} d={r.d} fill="none" stroke="#7a5b3a" strokeWidth={1.6} strokeDasharray="1 5" strokeLinecap="round" opacity={r.open === false ? 0.45 : 0.9} />
             ))}
+
+            {route && route.length > 1 && (
+              <g pointerEvents="none">
+                <path
+                  d={'M' + route.map((q) => `${q[0]},${q[1]}`).join('L')}
+                  fill="none"
+                  stroke="#f3ecd9"
+                  strokeWidth={7}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  opacity={0.8}
+                />
+                <path
+                  d={'M' + route.map((q) => `${q[0]},${q[1]}`).join('L')}
+                  fill="none"
+                  stroke="#c9971f"
+                  strokeWidth={3.4}
+                  strokeDasharray="9 6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </g>
+            )}
 
             {/* туман: всё, кроме открытых регионов. Мастеру — без тумана, скрытое заштриховано. */}
             {!gm && (
@@ -369,7 +409,7 @@ export function MapView({
                     if (!onPlaceMove) onPlace?.(pl.id);
                   }}
                 >
-                  <title>{[pl.name, PLACE_KIND_LABELS[pl.kind], pl.subtitle].filter(Boolean).join(' · ')}</title>
+                  <title>{[pl.name, PLACE_KIND_LABELS[pl.kind], pl.subtitle, placeHint?.(pl.id)].filter(Boolean).join(' · ')}</title>
                   <g data-pin transform={`translate(${pl.x} ${pl.y})`}>
                     {sel && <circle r={22} fill="none" stroke="#c9971f" strokeWidth={2.5} strokeDasharray="4 4" />}
                     <circle r={16} fill="transparent" />
@@ -411,7 +451,7 @@ export function MapView({
 
             {/* маркер партии */}
             {data.party && (
-              <g transform={`translate(${data.party.x} ${data.party.y})`} pointerEvents="none" aria-label="Партия здесь">
+              <g ref={partyG} transform={`translate(${data.party.x} ${data.party.y})`} pointerEvents="none" aria-label="Партия здесь">
                 <circle r={22} fill="#1f7a4d" opacity={0.18} className="zg-party-pulse" />
                 <path d="M0 -13 L12 9 H-12Z" fill="#1f7a4d" stroke="#f3ecd9" strokeWidth={2.2} strokeLinejoin="round" />
               </g>

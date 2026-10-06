@@ -54,6 +54,10 @@ export interface ServerToClientEvents {
   'map:place.changed': (payload: { mapId: MapId; placeId: string }) => void;
   /** Мастеру: карточка места изменилась (другое устройство). */
   'gm:place.changed': (payload: { placeId: string }) => void;
+  /** Мастеру: новое предложение игрока «идём туда» или решение по нему (этап 28). */
+  'gm:map.proposal': (payload: { mapId: MapId; who?: string; placeName?: string }) => void;
+  /** Игроку: судьба его предложения изменилась. */
+  'map:proposal.changed': (payload: { mapId: MapId }) => void;
   /** Мастеру: список сцен или показанная сцена изменились. */
   'gm:scenes.changed': () => void;
   /** Мастеру: библиотека противников изменилась. */

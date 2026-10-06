@@ -73,6 +73,10 @@ export const MapTokenPublicSchema = z.strictObject({
 });
 export type MapTokenPublic = z.infer<typeof MapTokenPublicSchema>;
 
+/** Поход отряда: путь (точки карты), длительность анимации в мс, номер похода (меняется с каждым походом). */
+export const PartyMoveSchema = z.strictObject({ path: z.array(Pt).max(2000), ms: z.number().int().min(0).max(30000), seq: z.number().int() });
+export type PartyMove = z.infer<typeof PartyMoveSchema>;
+
 /** Карта для игрока и стола: только открытое. notes — личные заметки игрока (столу — пусто). */
 export const MapPublicSchema = z.strictObject({
   id: MapIdSchema,
@@ -80,8 +84,10 @@ export const MapPublicSchema = z.strictObject({
   parent: MapIdSchema.nullable(),
   regions: z.array(MapRegionPublicSchema),
   places: z.array(MapPlacePublicSchema),
-  roads: z.array(z.strictObject({ d: z.string() })),
-  party: z.strictObject({ x: Num, y: Num }).nullable(),
+  /** открытые дороги: путь и концы (id открытых мест) — для маршрута (этап 28) */
+  roads: z.array(z.strictObject({ d: z.string(), a: z.string(), b: z.string() })),
+  /** отряд; move — последний поход по дороге (этап 28): путь, длительность анимации, отметка похода (не время) */
+  party: z.strictObject({ x: Num, y: Num, move: PartyMoveSchema.nullable() }).nullable(),
   tokens: z.array(MapTokenPublicSchema),
   notes: z.array(MapNoteSchema),
 });
@@ -128,8 +134,8 @@ export interface GmMapView {
   regions: GmMapRegion[];
   places: GmMapPlace[];
   /** Все дороги; open — открыты оба конца (игрок её видит). */
-  roads: { d: string; open: boolean }[];
-  party: { mapId: MapId; x: number; y: number; visible: boolean } | null;
+  roads: { d: string; open: boolean; a: string; b: string }[];
+  party: { mapId: MapId; x: number; y: number; visible: boolean; move: PartyMove | null } | null;
   table: { mapId: MapId; focus: MapFocus | null } | null;
   tokens: GmMapToken[];
   pieces: GmMapPiece[];
@@ -277,3 +283,23 @@ export type PlaceDraft =
   | { part: 'description'; text: string }
   | { part: 'spots'; spots: { kind: SpotKind; name: string; description: string }[] }
   | { part: 'rumors'; rumors: { kind: RumorKind; text: string }[] };
+
+// ---- Путь (этап 28): предложения игроков и поход отряда ----
+
+export const ProposeSchema = z.strictObject({ placeId: z.string().min(1).max(64) });
+/** Своё предложение игрока на этой карте (чужих он не видит). */
+export const ProposalPublicSchema = z.strictObject({ placeId: z.string(), placeName: z.string(), status: z.enum(['pending', 'accepted', 'declined']), days: z.number() });
+export type ProposalPublic = z.infer<typeof ProposalPublicSchema>;
+export interface GmProposal {
+  id: string;
+  mapId: MapId;
+  placeId: string;
+  placeName: string;
+  /** кто предложил: имя игрока и его персонажа */
+  who: string;
+  days: number;
+  status: 'pending' | 'accepted' | 'declined';
+  createdAt: number;
+}
+export const ProposalDecideSchema = z.strictObject({ status: z.enum(['accepted', 'declined']) });
+export const TravelSchema = z.strictObject({ mapId: MapIdSchema, placeId: z.string().min(1).max(64) });

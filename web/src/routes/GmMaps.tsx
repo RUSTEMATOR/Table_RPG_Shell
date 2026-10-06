@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
-import { MAP_IDS, PLACE_KINDS, PLACE_KIND_LABELS, type GmMapPlace, type GmMapToken, type GmMapView, type MapId, type PlaceKind } from '@zg/shared';
+import { MAP_IDS, PLACE_KINDS, PLACE_KIND_LABELS, daysText, type GmMapPlace, type GmMapToken, type GmMapView, type GmProposal, type MapId, type PlaceKind } from '@zg/shared';
 import { api } from '../lib/api.ts';
 import { useConnection, useSocketEvent } from '../lib/socket.ts';
 import { load, save } from '../lib/storage.ts';
@@ -189,6 +189,8 @@ export function GmMaps() {
         </div>
       </Card>
 
+      <Proposals mapId={mapId} onShow={(id) => select(id)} />
+
       <div className="@container/gmmap">
         <div className="grid items-start gap-4 @4xl/gmmap:grid-cols-[minmax(0,1fr)_340px]">
           <div id="gm-map-box" className="relative overflow-hidden rounded-card border border-solid border-border">
@@ -302,7 +304,7 @@ function SidePanel({
   if (place)
     return (
       <div className="grid gap-3">
-        <PlaceEditor key={place.id} place={place} post={post} onDone={onDone} showOnTable={showOnTable} />
+        <PlaceEditor key={place.id} mapId={view.id} place={place} post={post} onDone={onDone} showOnTable={showOnTable} />
         {place.kind !== 'mark' && <GmPlaceCity placeId={place.id} />}
       </div>
     );
@@ -412,11 +414,13 @@ function Lists({ view, onSelect, onSelectToken, post }: { view: GmMapView; onSel
 }
 
 function PlaceEditor({
+  mapId,
   place,
   post,
   onDone,
   showOnTable,
 }: {
+  mapId: MapId;
   place: GmMapPlace;
   post: Post;
   onDone: () => void;
@@ -476,6 +480,13 @@ function PlaceEditor({
       <div className="flex flex-wrap gap-2 border-t border-solid border-border pt-3">
         <Button size="sm" onClick={() => showOnTable({ x: place.x, y: place.y, zoom: 3 })}>
           На стол: наехать сюда
+        </Button>
+        <Button
+          size="sm"
+          title="Отряд пойдёт сюда по открытым дорогам — у игроков и на столе знамя пройдёт путь"
+          onClick={() => void post('/api/gm/maps/party/travel', { mapId, placeId: place.id }, 'Отряд в пути')}
+        >
+          Отряд — сюда
         </Button>
         {place.kind !== 'mark' && (
           <Button
@@ -562,6 +573,52 @@ function TokenEditor({
         </Button>
       </div>
       <p className="m-0 text-[13px] text-muted">Чтобы переставить фигурку, перетащите её на карте — у игроков и на столе она дойдёт до новой точки.</p>
+    </Card>
+  );
+}
+
+/** Предложения игроков «идём туда» (этап 28): «Вести отряд» — отряд идёт по дороге, «Отклонить». */
+function Proposals({ mapId, onShow }: { mapId: MapId; onShow: (placeId: string) => void }) {
+  const [list, setList] = useState<GmProposal[]>([]);
+  const reload = useCallback(async () => {
+    const r = await api<GmProposal[]>('GET', `/api/gm/maps/${mapId}/proposals`);
+    if (r.ok) setList(r.data);
+  }, [mapId]);
+  useEffect(() => {
+    void reload();
+  }, [reload]);
+  useSocketEvent('gm:map.proposal', (e) => {
+    if (e.who && e.placeName) toast(`${e.who} предлагает идти в ${e.placeName}`);
+    if (e.mapId === mapId) void reload();
+  });
+  const decide = async (id: string, status: 'accepted' | 'declined') => {
+    const r = await api<GmProposal[]>('POST', `/api/gm/maps/proposals/${id}`, { status });
+    if (!r.ok) return toast.error('Не получилось');
+    setList(r.data);
+    toast(status === 'accepted' ? 'Отряд в пути' : 'Предложение отклонено');
+  };
+  const pending = list.filter((p) => p.status === 'pending');
+  if (!pending.length) return null;
+  return (
+    <Card className="gap-2">
+      <CardTitle>Предложения игроков</CardTitle>
+      {pending.map((p) => (
+        <div key={p.id} className="flex flex-wrap items-center gap-2 border-t border-solid border-border pt-2 first-of-type:border-0">
+          <span className="grow">
+            <b>{p.who}</b> предлагает идти в{' '}
+            <button type="button" className="cursor-pointer border-0 bg-transparent p-0 font-[inherit] text-link" onClick={() => onShow(p.placeId)}>
+              {p.placeName || 'место'}
+            </button>
+            {p.days > 0 && <span className="text-muted"> · {daysText(p.days)} пешком</span>}
+          </span>
+          <Button size="sm" variant="primary" onClick={() => void decide(p.id, 'accepted')}>
+            Вести отряд
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => void decide(p.id, 'declined')}>
+            Отклонить
+          </Button>
+        </div>
+      ))}
     </Card>
   );
 }

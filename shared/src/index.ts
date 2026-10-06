@@ -8,3 +8,4 @@ export * from './gm.ts';
 export * from './table.ts';
 export * from './maps.ts';
 export * from './figure.ts';
+export * from './travel.ts';

@@ -58,7 +58,15 @@ function TvMapBody({ id, focus, still, lite }: { id: MapId; focus: MapFocus | nu
   if (!map) return null;
   return (
     <>
-      <MapStage look={!lite && can3d() ? '3d' : '2d'} data={map} mode="table" camera={setCamera} instant={still} className="absolute inset-0 !cursor-default" />
+      <MapStage
+        look={!lite && can3d() ? '3d' : '2d'}
+        data={map}
+        mode="table"
+        camera={setCamera}
+        instant={still}
+        follow={!still && !focus?.place}
+        className="absolute inset-0 !cursor-default"
+      />
       {/* тёмная виньетка: карта на тёмном экране, текст стола читается */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 shadow-[inset_0_0_18vh_rgba(13,15,13,.85)]" />
       {focus?.place ? (

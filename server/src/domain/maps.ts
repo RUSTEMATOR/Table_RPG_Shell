@@ -6,6 +6,7 @@ import {
   FigureSchema,
   MAP_IDS,
   MapFocusSchema,
+  PartyMoveSchema,
   PlaceKindSchema,
   RegionLabelSchema,
   SideSchema,
@@ -14,6 +15,7 @@ import {
   type GmMapView,
   type MapFocus,
   type MapId,
+  type PartyMove,
 } from '@zg/shared';
 import { newId } from '../auth/tokens.ts';
 import { db, schema } from '../db/client.ts';
@@ -215,10 +217,24 @@ export function setParty(roomId: string, v: { mapId: MapId; x: number; y: number
     return;
   }
   const now = Date.now();
+  // переставили руками — похода нет (move — только у пути по дороге, setPartyMove)
   db.insert(schema.mapParty)
-    .values({ roomId, ...v, updatedAt: now })
-    .onConflictDoUpdate({ target: schema.mapParty.roomId, set: { ...v, updatedAt: now } })
+    .values({ roomId, ...v, move: null, updatedAt: now })
+    .onConflictDoUpdate({ target: schema.mapParty.roomId, set: { ...v, move: null, updatedAt: now } })
     .run();
+}
+
+/** Отряд прошёл путь: сразу в конце пути, путь — для анимации у всех. */
+export function setPartyMove(roomId: string, mapId: MapId, to: { x: number; y: number }, move: Omit<PartyMove, 'seq'>, visible: boolean): PartyMove {
+  const seq = (partyMove(getParty(roomId))?.seq ?? 0) + 1;
+  const m: PartyMove = { ...move, seq };
+  const now = Date.now();
+  const v = { mapId, x: to.x, y: to.y, visible, move: JSON.stringify(m), updatedAt: now };
+  db.insert(schema.mapParty)
+    .values({ roomId, ...v })
+    .onConflictDoUpdate({ target: schema.mapParty.roomId, set: v })
+    .run();
+  return m;
 }
 
 /** Что сейчас на столе из карт. Неверный JSON фокуса считается «вся карта». */
@@ -245,10 +261,25 @@ export function setTableMap(roomId: string, mapId: MapId | null, focus: MapFocus
     .run();
 }
 
-/** Дороги, у которых открыты оба конца (по ключам исходных мест). */
-export function roads(mapId: MapId, places: PlaceRow[]): { d: string; open: boolean }[] {
+/** Дороги между существующими местами; open — открыты оба конца. a, b — id мест (не ключи исходных данных). */
+export function roads(mapId: MapId, places: PlaceRow[]): { d: string; open: boolean; a: string; b: string }[] {
   const byKey = new Map(places.filter((p) => p.key).map((p) => [p.key!, p]));
-  return MAPS[mapId].roads.filter((r) => byKey.has(r.a) && byKey.has(r.b)).map((r) => ({ d: r.d, open: !!byKey.get(r.a)?.visible && !!byKey.get(r.b)?.visible }));
+  return MAPS[mapId].roads.flatMap((r) => {
+    const a = byKey.get(r.a),
+      b = byKey.get(r.b);
+    return a && b ? [{ d: r.d, open: a.visible && b.visible, a: a.id, b: b.id }] : [];
+  });
+}
+
+/** Последний поход отряда из базы; неверный JSON — похода нет. */
+export function partyMove(row: { move: string | null } | null): PartyMove | null {
+  if (!row?.move) return null;
+  try {
+    const m = PartyMoveSchema.safeParse(JSON.parse(row.move));
+    return m.success ? m.data : null;
+  } catch {
+    return null;
+  }
 }
 
 // ---- Фигурки на карте (этап 24) ----
@@ -388,7 +419,7 @@ export function gmMapView(roomId: string, mapId: MapId): GmMapView {
       noteGm: p.noteGm,
     })),
     roads: roads(mapId, places),
-    party: party && partyMap ? { mapId: partyMap, x: party.x, y: party.y, visible: party.visible } : null,
+    party: party && partyMap ? { mapId: partyMap, x: party.x, y: party.y, visible: party.visible, move: partyMove(party) } : null,
     table: tableMap(roomId),
     tokens: tokenRows(roomId, mapId).flatMap((t) => {
       const p = byRef.get(refOf(t));
