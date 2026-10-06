@@ -114,8 +114,18 @@ function waterMask(art: Art, gw: number, gh: number): Float32Array {
   return blur(m, gw, gh, 1, 2);
 }
 
-/** Высоты рельефа: мягкий шум, горы и холмы, русла рек. Зависит только от рисунка карты. */
+const heightsCache = new Map<string, Heights>();
+
+/** Высоты рельефа: мягкий шум, горы и холмы, русла рек. Зависит только от рисунка карты — считается раз на карту. */
 export function buildHeights(art: Art): Heights {
+  const hit = heightsCache.get(art.id);
+  if (hit) return hit;
+  const h = computeHeights(art);
+  heightsCache.set(art.id, h);
+  return h;
+}
+
+function computeHeights(art: Art): Heights {
   const gw = Math.round(MAP_W / STEP) + 1,
     gh = Math.round(MAP_H / STEP) + 1;
   const data = new Float32Array(gw * gh);
@@ -161,6 +171,18 @@ export function buildHeights(art: Art): Heights {
 }
 
 // ---- цвет ----
+
+const toneCache = new Map<string, Float32Array>();
+/** Пятнистость земли: множитель яркости для каждого пикселя малого холста. */
+function toneOf(id: string, sw: number, sh: number): Float32Array {
+  const hit = toneCache.get(id);
+  if (hit) return hit;
+  const t = new Float32Array(sw * sh);
+  const seed = hash(id + ':tone');
+  for (let y = 0; y < sh; y++) for (let x = 0; x < sw; x++) t[y * sw + x] = (noise2(x / 18, y / 18, seed, 3) - 0.5) * 0.22 + (noise2(x / 4, y / 4, seed + 3, 1) - 0.5) * 0.06;
+  toneCache.set(id, t);
+  return t;
+}
 
 const GRASS = '#93b55c';
 const SNOW = '#eef3f7';
@@ -308,15 +330,12 @@ export function paintTerrain(art: Art, regions: ViewRegion[], roads: { d: string
   }
   s.globalAlpha = 1;
 
-  // пятнистость земли — шумом по пикселям малого холста
+  // пятнистость земли — шумом по пикселям малого холста (шум — раз на карту)
   const img = s.getImageData(0, 0, sw, sh);
-  const seed = hash(art.id + ':tone');
-  for (let y = 0; y < sh; y++) {
-    for (let x = 0; x < sw; x++) {
-      const n = (noise2(x / 18, y / 18, seed, 3) - 0.5) * 0.22 + (noise2(x / 4, y / 4, seed + 3, 1) - 0.5) * 0.06;
-      const i = (y * sw + x) * 4;
-      for (let c = 0; c < 3; c++) img.data[i + c] = Math.max(0, Math.min(255, img.data[i + c]! * (1 + n)));
-    }
+  const tone = toneOf(art.id, sw, sh);
+  for (let i = 0; i < tone.length; i++) {
+    const k = 1 + tone[i]!;
+    for (let c = 0; c < 3; c++) img.data[i * 4 + c] = Math.max(0, Math.min(255, img.data[i * 4 + c]! * k));
   }
   s.putImageData(img, 0, 0);
 

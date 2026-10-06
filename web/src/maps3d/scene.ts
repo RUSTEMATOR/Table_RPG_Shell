@@ -57,6 +57,7 @@ export class MapScene {
   private clouds: THREE.Group | null = null;
   private towns: THREE.Group | null = null;
   private townsKey = '';
+  private natureKey = '';
   private paintKey = '';
   private fogKey = '';
   fog: FogMask = fogMask([], false);
@@ -155,6 +156,9 @@ export class MapScene {
   async setArt(art: Art) {
     if (this.art === art) return;
     this.art = art;
+    // дать браузеру показать «Строю мир…» до тяжёлого первого расчёта (дальше — из кэша)
+    await new Promise((r) => setTimeout(r, 0));
+    if (!this.alive || this.art !== art) return;
     this.heights = timed('рельеф', () => buildHeights(art));
     this.cam.apply();
     this.lib ??= await loadLibrary();
@@ -163,6 +167,7 @@ export class MapScene {
     this.buildTerrain();
     this.paintKey = '';
     this.townsKey = '';
+    this.natureKey = '';
     this.requestRender();
   }
 
@@ -207,10 +212,16 @@ export class MapScene {
       this.fogFade = first || this.instant ? 1 : 0;
     }
 
+    // природа — по раскладке мест (где не растут деревья), поселения — по местам; имена и видимость их не трогают
+    const natureKey = `${this.art.id}|${places.map((p) => `${p.kind}:${Math.round(p.x)},${Math.round(p.y)}`).join(';')}`;
+    if (natureKey !== this.natureKey) {
+      this.natureKey = natureKey;
+      timed('природа', () => this.buildNature(places));
+    }
     const townsKey = JSON.stringify(places.map((p) => [p.id, p.kind, Math.round(p.x), Math.round(p.y), p.ink]));
     if (townsKey !== this.townsKey) {
       this.townsKey = townsKey;
-      timed('объекты', () => this.buildObjects(places));
+      timed('поселения', () => this.buildTowns(places));
     }
     this.requestRender();
   }
@@ -310,20 +321,39 @@ export class MapScene {
     }
   }
 
-  private buildObjects(places: ViewPlace[]) {
+  private drop(g: THREE.Group | null) {
+    if (!g) return;
+    this.scene.remove(g);
+    disposeGroup(g);
+  }
+
+  /** Природа и облака-ориентиры (и облака тумана): зависят от рисунка карты и раскладки мест. */
+  private buildNature(places: ViewPlace[]) {
     const lib = this.lib!,
       mats = this.mats!,
       H = this.heights!,
       art = this.art!;
-    for (const g of [this.nature, this.towns, this.landmarks, this.clouds]) {
-      if (!g) continue;
-      this.scene.remove(g);
-      disposeGroup(g);
-    }
-    // карта мира крупнее по масштабу — поселения на ней меньше, иначе столица занимает полкоролевства
+    for (const g of [this.nature, this.landmarks, this.clouds]) this.drop(g);
     const k = SETTLEMENT_SCALE[art.id];
     const keep = places.map((p) => ({ x: p.x, y: p.y, r: radiusOf(p.kind) * k }));
     this.nature = instanceGroup(lib, natureOf(art, H, keep), mats.model, { shadows: this.shadows, depth: mats.depth });
+    this.landmarks = instanceGroup(lib, landmarkClouds(art, H), mats.tinted, { shadows: false });
+    this.scene.add(this.nature, this.landmarks);
+    if (this.mode !== 'gm') {
+      this.clouds = instanceGroup(lib, fogClouds(H), mats.cloud, { shadows: false });
+      this.scene.add(this.clouds);
+    } else this.clouds = null;
+  }
+
+  /** Поселения: по местам (вид, точка, цвет фракции). */
+  private buildTowns(places: ViewPlace[]) {
+    const lib = this.lib!,
+      mats = this.mats!,
+      H = this.heights!,
+      art = this.art!;
+    this.drop(this.towns);
+    // карта мира крупнее по масштабу — поселения на ней меньше, иначе столица занимает полкоролевства
+    const k = SETTLEMENT_SCALE[art.id];
     this.towns = instanceGroup(
       lib,
       places.flatMap((p) =>
@@ -337,12 +367,7 @@ export class MapScene {
       mats.model,
       { shadows: this.shadows, depth: mats.depth },
     );
-    this.landmarks = instanceGroup(lib, landmarkClouds(art, H), mats.tinted, { shadows: false });
-    this.scene.add(this.nature, this.towns, this.landmarks);
-    if (this.mode !== 'gm') {
-      this.clouds = instanceGroup(lib, fogClouds(H), mats.cloud, { shadows: false });
-      this.scene.add(this.clouds);
-    } else this.clouds = null;
+    this.scene.add(this.towns);
   }
 
   // ---- путь (этап 28) ----

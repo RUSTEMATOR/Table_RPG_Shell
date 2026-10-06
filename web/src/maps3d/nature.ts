@@ -19,8 +19,20 @@ function blocked(keep: Keep, x: number, y: number): boolean {
   return false;
 }
 
-/** Деревья, горы, холмы, стены. */
+const natureCache = new Map<string, Instance[]>();
+
+/** Деревья, горы, холмы, стены. Раз на карту и раскладку мест (keep): правка имён и видимости её не трогает. */
 export function natureOf(art: Art, H: Heights, keep: Keep): Instance[] {
+  const key = `${art.id}|${keep.map((k) => `${Math.round(k.x)},${Math.round(k.y)},${Math.round(k.r)}`).join(';')}`;
+  const hit = natureCache.get(key);
+  if (hit) return hit;
+  const list = computeNature(art, H, keep);
+  if (natureCache.size > 6) natureCache.clear();
+  natureCache.set(key, list);
+  return list;
+}
+
+function computeNature(art: Art, H: Heights, keep: Keep): Instance[] {
   const out: Instance[] = [];
   const r = rng(hash(art.id + ':nature'));
   const put = (model: ModelId, x: number, y: number, scale: number, sink = 0.3, rot = r() * Math.PI * 2) => {
@@ -90,9 +102,14 @@ export function natureOf(art: Art, H: Heights, keep: Keep): Instance[] {
   return out;
 }
 
-/** Облака-ориентиры: буря, мгла, сумерки, дым вулканов. Свой цвет у каждого. */
+const landmarkCache = new Map<string, Instance[]>();
+
+/** Облака-ориентиры: буря, мгла, сумерки, дым вулканов. Свой цвет у каждого. Раз на карту. */
 export function landmarkClouds(art: Art, H: Heights): Instance[] {
+  const hit = landmarkCache.get(art.id);
+  if (hit) return hit;
   const out: Instance[] = [];
+  landmarkCache.set(art.id, out);
   const r = rng(hash(art.id + ':clouds'));
   const cloud = (x: number, y: number, lift: number, scale: number, color: string, big = r() < 0.5) =>
     out.push({ model: big ? 'cloud_big' : 'cloud_small', x, y, base: Math.max(H.at(x, y), 0) + lift, rot: r() * 6.28, scale, color });
