@@ -1,4 +1,5 @@
 import { and, eq } from 'drizzle-orm';
+import { applyDevLore, placeNpcAtBridge } from './devLore.ts';
 import { DEMO_ROOM_CODE } from '@zg/shared';
 import { newId } from '../auth/tokens.ts';
 import { config } from '../config.ts';
@@ -203,4 +204,7 @@ function seedDemo(roomId: string, guest: string, nika: string) {
     at(b.id, -10, 55, true);
     at(troll.id, 120, -60, false);
   }
+  // Города (этап 27): черновики описаний, мест в городе и слухов; тролль — «кто здесь» у моста Oroak.
+  applyDevLore(roomId);
+  placeNpcAtBridge(roomId, troll.id);
 }

@@ -14,6 +14,7 @@ import { GM_MARKER } from '../visibility/guard.ts';
 import { createPlace, ensureMaps, placeRows, regionRows, setParty, updatePlace, updateRegion } from '../domain/maps.ts';
 import type { MapId } from '@zg/shared';
 import { MIGRATIONS_DIR } from '../paths.ts';
+import { applyDevLore, placeNpcAtBridge } from '../domain/devLore.ts';
 
 // npm run seed — тестовые персонажи. Повторный запуск ничего не дублирует.
 // Во всех мастерских полях — маркер СЕКРЕТ-МАСТЕРА: его появление у игрока или стола — блокирующий дефект.
@@ -38,15 +39,17 @@ const freePlayers = players.filter((p) => !ownedBy.has(p.id));
 
 const M = GM_MARKER;
 const exists = (name: string) =>
-  !!db.select().from(schema.character).where(and(eq(schema.character.roomId, room.id), eq(schema.character.name, name))).get();
+  !!db
+    .select()
+    .from(schema.character)
+    .where(and(eq(schema.character.roomId, room.id), eq(schema.character.name, name)))
+    .get();
 
 function markSecrets(doc: CharDoc) {
   doc.notes = `${M}: заметки мастера о персонаже «${doc.name}».`;
   doc.personal = {
     at: Date.now(),
-    slots: Object.fromEntries(
-      doc.slots.map((s) => [s.traitId, { signs: `${M}: признаки`, reveals: [`${M}: первое проявление`], hooks: [`${M}: крючок`] }]),
-    ),
+    slots: Object.fromEntries(doc.slots.map((s) => [s.traitId, { signs: `${M}: признаки`, reveals: [`${M}: первое проявление`], hooks: [`${M}: крючок`] }])),
   };
   doc.summary = {
     gm: { text: `${M}: сводка для мастера.`, at: Date.now(), edited: false },
@@ -116,7 +119,11 @@ if (!exists(C)) {
 }
 
 // 4. Лист «Примера»: видимые и скрытые записи. В скрытых маркер и в тексте, и в заметке мастера.
-const aRow = db.select().from(schema.character).where(and(eq(schema.character.roomId, room.id), eq(schema.character.name, A))).get();
+const aRow = db
+  .select()
+  .from(schema.character)
+  .where(and(eq(schema.character.roomId, room.id), eq(schema.character.name, A)))
+  .get();
 if (aRow && listSheet(aRow.id).length === 0) {
   createSheetEntry(aRow.id, { kind: 'item', title: 'Походный нож', text: 'Тупится о зелень.', textGm: `${M}: нож заговорён`, visible: true }, 'gm');
   createSheetEntry(aRow.id, { kind: 'item', title: `${M}: подброшенный амулет`, text: `${M}: игрок о нём не знает`, textGm: '', visible: false }, 'gm');
@@ -127,7 +134,13 @@ if (aRow && listSheet(aRow.id).length === 0) {
 
 // 5. Противник в библиотеке: заметки мастера с маркером, на стол уходят только имя и портрет.
 const N = 'Тест: Тролль';
-if (!db.select().from(schema.npc).where(and(eq(schema.npc.roomId, room.id), eq(schema.npc.name, N))).get()) {
+if (
+  !db
+    .select()
+    .from(schema.npc)
+    .where(and(eq(schema.npc.roomId, room.id), eq(schema.npc.name, N)))
+    .get()
+) {
   createNpc(room.id, { name: N, power: 400, notes: `${M}: боится огня, под мостом прячет клад.` });
   created.push(N);
 }
@@ -135,7 +148,13 @@ if (!db.select().from(schema.npc).where(and(eq(schema.npc.roomId, room.id), eq(s
 // 6. Карты: открыты Раздолье на карте мира, Западное королевство, Сумеречный лес и несколько мест.
 // Скрытое место с маркером в имени и note_gm с маркером у открытого и скрытого — у игрока и стола их быть не должно.
 const SECRET_PLACE = `${M}: тайник контрабандистов`;
-if (!db.select().from(schema.mapPlace).where(and(eq(schema.mapPlace.roomId, room.id), eq(schema.mapPlace.name, SECRET_PLACE))).get()) {
+if (
+  !db
+    .select()
+    .from(schema.mapPlace)
+    .where(and(eq(schema.mapPlace.roomId, room.id), eq(schema.mapPlace.name, SECRET_PLACE)))
+    .get()
+) {
   ensureMaps(room.id);
   const open = (mapId: MapId, keys: string[]) =>
     regionRows(room.id, mapId)
@@ -156,6 +175,16 @@ if (!db.select().from(schema.mapPlace).where(and(eq(schema.mapPlace.roomId, room
   if (mw) setParty(room.id, { mapId: 'razdolye', x: mw.x - 40, y: mw.y + 60, visible: true });
   created.push('карты: Раздолье частично открыто, партия у Marblewolf');
 }
+
+// 7. Города (этап 27): черновики описаний, мест в городе и слухов; тролль — «кто здесь» у моста Oroak.
+const lore = applyDevLore(room.id);
+const troll = db
+  .select()
+  .from(schema.npc)
+  .where(and(eq(schema.npc.roomId, room.id), eq(schema.npc.name, N)))
+  .get();
+if (troll) placeNpcAtBridge(room.id, troll.id);
+if (lore) created.push(`города: описаны ${lore} мест (новое — только там, где пусто)`);
 
 console.log(created.length ? `Созданы: ${created.join('; ')}` : 'Тестовые персонажи уже есть, ничего не создано.');
 sqlite.close();
