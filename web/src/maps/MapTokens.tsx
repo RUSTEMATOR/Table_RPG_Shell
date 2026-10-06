@@ -186,3 +186,36 @@ function Token({
     </m.div>
   );
 }
+
+/**
+ * Отряд на карте (этап 28): фигурки персонажей игроков вместо значка — ведущий впереди, остальные позади веером.
+ * Точка (0, 0) элемента — под ногами ведущего. size — сторона кадра в пикселях элемента. В походе — идут.
+ */
+export function PartyFigures({ figures, pose, dir, size = S }: { figures: { name: string; figure: ViewToken['figure'] }[]; pose: Pose; dir: Dir; size?: number }) {
+  const shown = figures.filter((f) => f.figure).slice(0, 5);
+  // позади ведущего: слева, справа, дальше слева, дальше справа (в долях кадра)
+  const place = [
+    [0, 0],
+    [-0.32, -0.12],
+    [0.32, -0.12],
+    [-0.62, -0.2],
+    [0.62, -0.2],
+  ] as const;
+  return (
+    <div className="pointer-events-none absolute top-0 left-0" aria-label={`Отряд: ${figures.map((f) => f.name).join(', ')}`}>
+      <span
+        aria-hidden="true"
+        className="zg-party-pulse absolute rounded-[50%] bg-[#1f7a4d]/30"
+        style={{ left: -size * 0.55, top: -size * 0.1, width: size * 1.1, height: size * 0.24 }}
+      />
+      {shown
+        .map((f, i) => ({ f, i, p: place[i]! }))
+        .reverse()
+        .map(({ f, i, p }) => (
+          <div key={`${f.name}-${i}`} className="absolute" style={{ left: p[0] * size - size / 2, top: p[1] * size - size * FEET, width: size, height: size }}>
+            <FigureSprite figure={f.figure!} pose={pose} dir={dir} size={size} className="absolute inset-0" />
+          </div>
+        ))}
+    </div>
+  );
+}

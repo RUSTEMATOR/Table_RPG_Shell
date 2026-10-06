@@ -1,6 +1,6 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, type MouseEvent as RMouseEvent, type PointerEvent as RPointerEvent, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type MouseEvent as RMouseEvent, type PointerEvent as RPointerEvent, type ReactNode } from 'react';
 import { m } from 'motion/react';
-import { PLACE_KIND_LABELS, type MapId, type MapNote, type MapPlacePublic, type MapRegionPublic, type PartyMove, type PlaceKind } from '@zg/shared';
+import { PLACE_KIND_LABELS, type MapId, type MapNote, type MapPlacePublic, type MapRegionPublic, type PartyFigure, type PartyMove, type PlaceKind } from '@zg/shared';
 import { ArtBase, ArtDefs, ArtPaper, ArtRelief, ArtTop, PaperDefs, useArt } from './MapArt.tsx';
 import { useCamera, type MapCamera } from './camera.ts';
 import { ensureMapFonts } from './fonts.ts';
@@ -10,6 +10,7 @@ import { usePartyWalk } from './walk.ts';
 
 // Фигурки — отдельный чанк (каталог деталей LPC, сборка листов): грузится, только когда на карте есть фигурки.
 const MapTokens = lazy(() => import('./MapTokens.tsx').then((m) => ({ default: m.MapTokens })));
+const PartyFigures = lazy(() => import('./MapTokens.tsx').then((m) => ({ default: m.PartyFigures })));
 
 // Карта: рельеф (MapArt), регионы, дороги, туман, места, маркер партии, фигурки, заметки. Одна и та же для мастера, игрока и стола:
 // разница — в данных (игрок и стол получают только открытое) и в режиме (мастер видит скрытое заштрихованным, без тумана).
@@ -21,7 +22,7 @@ export type MapViewData = {
   regions: ViewRegion[];
   places: ViewPlace[];
   roads: { d: string; open?: boolean; a?: string; b?: string }[];
-  party: { x: number; y: number; move?: PartyMove | null } | null;
+  party: { x: number; y: number; move?: PartyMove | null; figures?: PartyFigure[] } | null;
   tokens?: ViewToken[];
   notes: MapNote[];
 };
@@ -229,11 +230,28 @@ export function MapView({
   };
 
   // поход отряда (этап 28): маркер идёт по дороге
+  // отряд — фигурки персонажей игроков (если собраны), иначе значок; в походе фигурки идут
   const partyG = useRef<SVGGElement>(null);
+  const partyBox = useRef<HTMLDivElement>(null);
+  const [partyPose, setPartyPose] = useState<'idle' | 'walk'>('idle');
+  const [partyDir, setPartyDir] = useState<'up' | 'left' | 'down' | 'right'>('down');
+  const partyFigures = (data.party?.figures ?? []).filter((f) => f.figure);
+  const putParty = (x: number, y: number) => {
+    partyG.current?.setAttribute('transform', `translate(${x} ${y})`);
+    if (partyBox.current) partyBox.current.style.transform = `translate(${x}px, ${y}px)`;
+  };
   usePartyWalk(data.party, {
     instant: !!(reduced || instant),
-    onStep: (q) => partyG.current?.setAttribute('transform', `translate(${q.x} ${q.y})`),
-    onEnd: () => data.party && partyG.current?.setAttribute('transform', `translate(${data.party.x} ${data.party.y})`),
+    onStart: () => setPartyPose('walk'),
+    onStep: (q) => {
+      putParty(q.x, q.y);
+      if (q.dx || q.dy) setPartyDir(Math.abs(q.dx) > Math.abs(q.dy) ? (q.dx > 0 ? 'right' : 'left') : q.dy > 0 ? 'down' : 'up');
+    },
+    onEnd: () => {
+      setPartyPose('idle');
+      setPartyDir('down');
+      if (data.party) putParty(data.party.x, data.party.y);
+    },
   });
 
   const pick = (e: RMouseEvent) => {
@@ -451,7 +469,7 @@ export function MapView({
 
             {/* маркер партии */}
             {data.party && (
-              <g ref={partyG} transform={`translate(${data.party.x} ${data.party.y})`} pointerEvents="none" aria-label="Партия здесь">
+              <g ref={partyG} transform={`translate(${data.party.x} ${data.party.y})`} pointerEvents="none" aria-label="Партия здесь" opacity={partyFigures.length ? 0 : 1}>
                 <circle r={22} fill="#1f7a4d" opacity={0.18} className="zg-party-pulse" />
                 <path d="M0 -13 L12 9 H-12Z" fill="#1f7a4d" stroke="#f3ecd9" strokeWidth={2.2} strokeLinejoin="round" />
               </g>
@@ -478,6 +496,17 @@ export function MapView({
           </svg>
         ) : (
           <div className="grid size-full place-items-center font-ui text-[#6b5d48]">Рисую карту…</div>
+        )}
+        {art && data.party && partyFigures.length > 0 && (
+          <div
+            ref={partyBox}
+            className="pointer-events-none absolute top-0 left-0"
+            style={{ transform: `translate(${data.party.x}px, ${data.party.y}px)`, zIndex: Math.round(data.party.y) }}
+          >
+            <Suspense fallback={null}>
+              <PartyFigures figures={partyFigures} pose={partyPose} dir={partyDir} />
+            </Suspense>
+          </div>
         )}
         {art && tokens.length > 0 && (
           <Suspense fallback={null}>

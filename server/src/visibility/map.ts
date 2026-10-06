@@ -12,7 +12,7 @@ import {
   type PlaceDetailPublic,
 } from '@zg/shared';
 import { db, schema } from '../db/client.ts';
-import { MAPS, ensureMaps, getParty, getPlace, partyMove, pieceKey, pieces, placeRows, refOf, regionRows, roads, tokenRows } from '../domain/maps.ts';
+import { MAPS, ensureMaps, getParty, getPlace, partyFigures, partyMove, pieceKey, pieces, placeRows, refOf, regionRows, roads, tokenRows } from '../domain/maps.ts';
 import { imageUrl } from '../domain/media.ts';
 import { npcFigure } from '../domain/npc.ts';
 import { presenceRows, rumorRows, spotRows } from '../domain/places.ts';
@@ -21,7 +21,8 @@ import { presenceRows, rumorRows, spotRows } from '../domain/places.ts';
 // Уходят только открытые регионы (контур, имя, подпись) и открытые места, без note_gm и без ключей исходных данных.
 // Скрытые регионы не оставляют ни контура, ни счётчика: закрытое на клиенте — общий туман.
 // Дорога — только если открыты оба её конца (с id этих мест — для маршрута). Маркер партии — если он на этой карте
-// и не спрятан; с последним походом: путь проложен только по открытым дорогам и местам (domain/travel.ts).
+// и не спрятан; с последним походом (путь только по открытым дорогам и местам, domain/travel.ts) и фигурками персонажей
+// игроков (имя и внешность, без id).
 // Фигурки — только видимые: имя и внешность (FigureSchema), без id персонажа или противника, без силы и заметок.
 // На выходе — MapPublicSchema.parse (strictObject на всех уровнях): лишнее поле — исключение.
 
@@ -70,7 +71,7 @@ export function projectMapPublic(roomId: string, mapId: MapId, memberId?: string
     roads: roads(mapId, places)
       .filter((r) => r.open)
       .map((r) => ({ d: r.d, a: r.a, b: r.b })),
-    party: party && party.visible && party.mapId === mapId ? { x: party.x, y: party.y, move: partyMove(party) } : null,
+    party: party && party.visible && party.mapId === mapId ? { x: party.x, y: party.y, move: partyMove(party), figures: partyFigures(pieces(roomId)) } : null,
     tokens: tokens.flatMap((t) => {
       const p = byRef.get(refOf(t));
       return p ? [{ id: t.id, kind: p.kind, name: p.name, figure: p.figure, x: t.x, y: t.y, mine: !!memberId && p.owner === memberId }] : [];

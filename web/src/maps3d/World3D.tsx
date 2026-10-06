@@ -422,13 +422,21 @@ function PartyBanner({ scene, party, instant, follow }: { scene: MapScene; party
   }, [party.x, party.y, scene]);
   // поход по дороге (этап 28): знамя идёт по пути; на столе камера следует за ним
   const release = useRef<(() => void) | null>(null);
+  const [pose, setPose] = useState<Pose>('idle');
+  const [dir, setDir] = useState<Dir>('down');
+  const figures = (party.figures ?? []).filter((f) => f.figure);
   usePartyWalk(party, {
     instant,
     onStart: () => {
       walking.current = true;
       release.current = scene.hold();
+      setPose('walk');
     },
     onStep: (q) => {
+      // направление — по экрану (камера могла повернуть карту)
+      const a = scene.project(at.current.x, at.current.y),
+        b = scene.project(q.x, q.y);
+      if (Math.hypot(b.x - a.x, b.y - a.y) > 0.5) setDir(dirOf(b.x - a.x, b.y - a.y));
       at.current = { x: q.x, y: q.y };
       if (follow) {
         scene.cam.x = q.x;
@@ -438,6 +446,8 @@ function PartyBanner({ scene, party, instant, follow }: { scene: MapScene; party
     },
     onEnd: () => {
       walking.current = false;
+      setPose('idle');
+      setDir('down');
       at.current = { x: party.x, y: party.y };
       release.current?.();
       release.current = null;
@@ -445,14 +455,37 @@ function PartyBanner({ scene, party, instant, follow }: { scene: MapScene; party
   });
   return (
     <Anchored scene={scene} pos={() => ({ x: at.current.x, y: at.current.y, lift: 0 })} size={34} min={0.55} max={1.4}>
-      <div aria-label="Отряд здесь" className="absolute bottom-0 left-0 h-[86px] w-[60px] -translate-x-[8px]">
-        <span aria-hidden="true" className="zg-party-pulse absolute bottom-[-10px] left-[-12px] h-[20px] w-[40px] rounded-[50%] bg-[#1f7a4d]/30" />
-        <svg viewBox="0 0 60 86" width={60} height={86} className="absolute inset-0 drop-shadow-[0_4px_6px_rgba(20,16,10,.45)]">
+      <div aria-label={figures.length ? `Отряд: ${figures.map((f) => f.name).join(', ')}` : 'Отряд здесь'} className="absolute bottom-0 left-0">
+        <span aria-hidden="true" className="zg-party-pulse absolute bottom-[-10px] left-[-40px] h-[20px] w-[80px] rounded-[50%] bg-[#1f7a4d]/30" />
+        {/* знамя отряда — за фигурками */}
+        <svg
+          viewBox="0 0 60 86"
+          width={60}
+          height={86}
+          className="absolute bottom-0 left-[-8px] drop-shadow-[0_4px_6px_rgba(20,16,10,.45)]"
+          style={{ opacity: figures.length ? 0.9 : 1 }}
+        >
           <path d="M8 86 V4" stroke="#3a2c1c" strokeWidth={3.5} strokeLinecap="round" />
           <circle cx={8} cy={4} r={3.5} fill="#c9971f" />
           <path d="M10 8 H54 L46 22 L54 36 H10Z" fill="#1f7a4d" stroke="#f3ecd9" strokeWidth={2} strokeLinejoin="round" />
           <path d="M22 16 l6 6 l10 -10" fill="none" stroke="#f3ecd9" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" opacity={0.85} />
         </svg>
+        {figures.slice(0, 5).map((f, i) => {
+          const off = (
+            [
+              [0, 0],
+              [-30, -10],
+              [30, -10],
+              [-58, -18],
+              [58, -18],
+            ] as const
+          )[i]!;
+          return (
+            <div key={`${f.name}-${i}`} className="absolute" style={{ left: off[0] - 40, bottom: -off[1] - 4, width: 80, height: 80, zIndex: 10 - i }}>
+              <FigureSprite figure={f.figure!} pose={pose} dir={dir} size={80} className="pointer-events-none absolute inset-0" />
+            </div>
+          );
+        })}
       </div>
     </Anchored>
   );

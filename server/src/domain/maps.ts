@@ -15,6 +15,7 @@ import {
   type GmMapView,
   type MapFocus,
   type MapId,
+  type PartyFigure,
   type PartyMove,
 } from '@zg/shared';
 import { newId } from '../auth/tokens.ts';
@@ -271,6 +272,11 @@ export function roads(mapId: MapId, places: PlaceRow[]): { d: string; open: bool
   });
 }
 
+/** Отряд на карте — фигурки персонажей игроков (у кого собрана фигурка): имя и внешность, по алфавиту. */
+export function partyFigures(all: Piece[]): PartyFigure[] {
+  return all.flatMap((p) => (p.kind === 'pc' && p.owner && p.figure ? [{ name: p.name, figure: p.figure }] : [])).slice(0, 12);
+}
+
 /** Последний поход отряда из базы; неверный JSON — похода нет. */
 export function partyMove(row: { move: string | null } | null): PartyMove | null {
   if (!row?.move) return null;
@@ -419,7 +425,7 @@ export function gmMapView(roomId: string, mapId: MapId): GmMapView {
       noteGm: p.noteGm,
     })),
     roads: roads(mapId, places),
-    party: party && partyMap ? { mapId: partyMap, x: party.x, y: party.y, visible: party.visible, move: partyMove(party) } : null,
+    party: party && partyMap ? { mapId: partyMap, x: party.x, y: party.y, visible: party.visible, move: partyMove(party), figures: partyFigures(all) } : null,
     table: tableMap(roomId),
     tokens: tokenRows(roomId, mapId).flatMap((t) => {
       const p = byRef.get(refOf(t));

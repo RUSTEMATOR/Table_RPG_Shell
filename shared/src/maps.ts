@@ -77,6 +77,10 @@ export type MapTokenPublic = z.infer<typeof MapTokenPublicSchema>;
 export const PartyMoveSchema = z.strictObject({ path: z.array(Pt).max(2000), ms: z.number().int().min(0).max(30000), seq: z.number().int() });
 export type PartyMove = z.infer<typeof PartyMoveSchema>;
 
+/** Фигурка в отряде на карте: персонаж игрока — имя и внешность (как у фигурок на карте), без id. */
+export const PartyFigureSchema = z.strictObject({ name: z.string(), figure: FigureSchema });
+export type PartyFigure = z.infer<typeof PartyFigureSchema>;
+
 /** Карта для игрока и стола: только открытое. notes — личные заметки игрока (столу — пусто). */
 export const MapPublicSchema = z.strictObject({
   id: MapIdSchema,
@@ -87,7 +91,7 @@ export const MapPublicSchema = z.strictObject({
   /** открытые дороги: путь и концы (id открытых мест) — для маршрута (этап 28) */
   roads: z.array(z.strictObject({ d: z.string(), a: z.string(), b: z.string() })),
   /** отряд; move — последний поход по дороге (этап 28): путь, длительность анимации, отметка похода (не время) */
-  party: z.strictObject({ x: Num, y: Num, move: PartyMoveSchema.nullable() }).nullable(),
+  party: z.strictObject({ x: Num, y: Num, move: PartyMoveSchema.nullable(), figures: z.array(PartyFigureSchema).max(12) }).nullable(),
   tokens: z.array(MapTokenPublicSchema),
   notes: z.array(MapNoteSchema),
 });
@@ -135,7 +139,7 @@ export interface GmMapView {
   places: GmMapPlace[];
   /** Все дороги; open — открыты оба конца (игрок её видит). */
   roads: { d: string; open: boolean; a: string; b: string }[];
-  party: { mapId: MapId; x: number; y: number; visible: boolean; move: PartyMove | null } | null;
+  party: { mapId: MapId; x: number; y: number; visible: boolean; move: PartyMove | null; figures: PartyFigure[] } | null;
   table: { mapId: MapId; focus: MapFocus | null } | null;
   tokens: GmMapToken[];
   pieces: GmMapPiece[];
