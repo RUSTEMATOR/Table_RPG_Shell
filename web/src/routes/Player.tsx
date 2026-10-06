@@ -145,6 +145,13 @@ function PlayerTabs() {
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
+  // Карта на телефоне — на весь экран: шапка прячется, в альбомной ориентации вкладки уходят в узкую колонку слева.
+  const phone = usePhoneLayout();
+  const mapFull = tab === 'map' && phone;
+  useEffect(() => {
+    document.documentElement.toggleAttribute('data-map-full', mapFull);
+    return () => document.documentElement.removeAttribute('data-map-full');
+  }, [mapFull]);
   const unread = useUnread();
   // Тема экрана: выбор игрока на этом устройстве, иначе тема персонажа; «День» / «Ночь» — её вариант.
   const { me } = useMe();
@@ -178,7 +185,7 @@ function PlayerTabs() {
     <>
       <div
         ref={pager}
-        className="-mx-4 flex min-h-0 flex-1 snap-x snap-mandatory overflow-x-auto overflow-y-hidden overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="zg-pager -mx-4 flex min-h-0 flex-1 snap-x snap-mandatory overflow-x-auto overflow-y-hidden overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {pane(
           'rolls',
@@ -198,7 +205,7 @@ function PlayerTabs() {
         {pane(
           'map',
           <Suspense fallback={<p className="muted">Загрузка карты…</p>}>
-            <PlayerMap active={tab === 'map'} />
+            <PlayerMap active={tab === 'map'} full={mapFull} />
           </Suspense>,
         )}
       </div>
@@ -262,4 +269,18 @@ function usePlayerSkin(): string {
   }, [take]);
   useSocketEvent('character:updated', ({ character }) => take(character));
   return skin;
+}
+
+/** Телефонная раскладка: палец вместо мыши или узкое окно (в т. ч. телефон в альбомной ориентации — по высоте). */
+function usePhoneLayout(): boolean {
+  const q = '(pointer: coarse), (max-width: 760px), (max-height: 520px)';
+  const [on, setOn] = useState(() => typeof window !== 'undefined' && !!window.matchMedia?.(q).matches);
+  useEffect(() => {
+    const m = window.matchMedia?.(q);
+    if (!m) return;
+    const upd = () => setOn(m.matches);
+    m.addEventListener('change', upd);
+    return () => m.removeEventListener('change', upd);
+  }, []);
+  return on;
 }

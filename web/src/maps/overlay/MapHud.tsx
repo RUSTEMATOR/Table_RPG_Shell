@@ -21,6 +21,7 @@ export function MapHud({
   party,
   onPlace,
   minimap = true,
+  full = false,
   className,
 }: {
   camera: MapCamera | null;
@@ -30,18 +31,32 @@ export function MapHud({
   /** выбор места из поиска (карточка); перелёт камеры — здесь */
   onPlace?: (id: string) => void;
   minimap?: boolean;
+  /** телефон, карта на весь экран: одна колонка справа (поиск сверху), без «+»/«−» (масштаб — пальцами), с учётом выреза */
+  full?: boolean;
   className?: string;
 }) {
   return (
     <>
-      <Search camera={camera} places={places} {...(onPlace ? { onPlace } : {})} />
-      <div className={cn('absolute top-4 right-4 flex flex-col gap-2', className)} {...stop}>
-        <button type="button" aria-label="Приблизить" title="Приблизить (+)" className={btn} onClick={() => camera?.zoomBy(1.5)}>
-          +
-        </button>
-        <button type="button" aria-label="Отдалить" title="Отдалить (−)" className={btn} onClick={() => camera?.zoomBy(1 / 1.5)}>
-          −
-        </button>
+      {!full && <Search camera={camera} places={places} {...(onPlace ? { onPlace } : {})} />}
+      <div
+        className={cn(
+          'absolute flex flex-col gap-2',
+          full ? 'top-[max(10px,env(safe-area-inset-top))] right-[max(10px,env(safe-area-inset-right))] z-[2]' : 'top-4 right-4',
+          className,
+        )}
+        {...stop}
+      >
+        {full && <Search camera={camera} places={places} inColumn {...(onPlace ? { onPlace } : {})} />}
+        {!full && (
+          <>
+            <button type="button" aria-label="Приблизить" title="Приблизить (+)" className={btn} onClick={() => camera?.zoomBy(1.5)}>
+              +
+            </button>
+            <button type="button" aria-label="Отдалить" title="Отдалить (−)" className={btn} onClick={() => camera?.zoomBy(1 / 1.5)}>
+              −
+            </button>
+          </>
+        )}
         {camera?.north && <Compass camera={camera} />}
         {party && (
           <button type="button" aria-label="К отряду" title="К отряду (пробел)" className={btn} onClick={() => camera?.flyTo(party.x, party.y, 3.2, { duration: 0.9 })}>
@@ -57,7 +72,7 @@ export function MapHud({
           </svg>
         </button>
       </div>
-      {minimap && <MiniMap camera={camera} places={places} regions={regions} party={party} />}
+      {minimap && <MiniMap camera={camera} places={places} regions={regions} party={party} full={full} />}
       {perfOn() && <PerfOverlay />}
     </>
   );
@@ -86,7 +101,7 @@ function Compass({ camera }: { camera: MapCamera }) {
   );
 }
 
-function Search({ camera, places, onPlace }: { camera: MapCamera | null; places: HudPlace[]; onPlace?: (id: string) => void }) {
+function Search({ camera, places, onPlace, inColumn }: { camera: MapCamera | null; places: HudPlace[]; onPlace?: (id: string) => void; inColumn?: boolean }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
   const [active, setActive] = useState(0);
@@ -107,9 +122,14 @@ function Search({ camera, places, onPlace }: { camera: MapCamera | null; places:
   };
   if (!places.some((p) => p.name)) return null;
   return (
-    <div className="absolute top-4 left-4 z-[1] w-[min(300px,calc(100%-88px))]" {...stop}>
+    <div className={inColumn ? 'relative' : 'absolute top-4 left-4 z-[1] w-[min(300px,calc(100%-88px))]'} {...stop}>
       {open ? (
-        <div className="overflow-hidden rounded-[12px] border border-solid border-[rgba(74,59,38,.22)] bg-[rgba(250,247,238,.97)] shadow-[0_10px_30px_rgba(40,30,15,.22)]">
+        <div
+          className={cn(
+            'overflow-hidden rounded-[12px] border border-solid border-[rgba(74,59,38,.22)] bg-[rgba(250,247,238,.97)] shadow-[0_10px_30px_rgba(40,30,15,.22)]',
+            inColumn && 'absolute top-0 right-0 z-[3] w-[min(340px,calc(100vw-96px))]',
+          )}
+        >
           <input
             ref={input}
             autoFocus
@@ -154,12 +174,18 @@ function Search({ camera, places, onPlace }: { camera: MapCamera | null; places:
           )}
         </div>
       ) : (
-        <button type="button" className={cn(btn, 'w-auto gap-2 px-3 text-[15px]')} style={{ display: 'flex' }} onClick={() => setOpen(true)} aria-label="Найти место">
+        <button
+          type="button"
+          className={cn(btn, !inColumn && 'w-auto gap-2 px-3 text-[15px]')}
+          style={inColumn ? undefined : { display: 'flex' }}
+          onClick={() => setOpen(true)}
+          aria-label="Найти место"
+        >
           <svg viewBox="0 0 24 24" width={18} height={18} aria-hidden="true" fill="none" stroke="#2e2416" strokeWidth={2} strokeLinecap="round">
             <circle cx={10.5} cy={10.5} r={6.5} />
             <path d="M15.5 15.5 L21 21" />
           </svg>
-          <span className="hidden sm:inline">Найти</span>
+          {!inColumn && <span className="hidden sm:inline">Найти</span>}
         </button>
       )}
     </div>
@@ -169,7 +195,19 @@ function Search({ camera, places, onPlace }: { camera: MapCamera | null; places:
 const MW = 176,
   MH = Math.round((MW * MAP_H) / MAP_W);
 
-function MiniMap({ camera, places, regions, party }: { camera: MapCamera | null; places: HudPlace[]; regions: HudRegion[]; party: { x: number; y: number } | null }) {
+function MiniMap({
+  camera,
+  places,
+  regions,
+  party,
+  full,
+}: {
+  camera: MapCamera | null;
+  places: HudPlace[];
+  regions: HudRegion[];
+  party: { x: number; y: number } | null;
+  full?: boolean;
+}) {
   const [open, setOpen] = useState(() => typeof window !== 'undefined' && window.matchMedia?.('(min-width: 900px)').matches);
   const base = useRef<HTMLCanvasElement | null>(null);
   const ref = useRef<HTMLCanvasElement>(null);
@@ -252,7 +290,7 @@ function MiniMap({ camera, places, regions, party }: { camera: MapCamera | null;
   }, [camera, open, places, regions, party?.x, party?.y]);
 
   return (
-    <div className="absolute right-4 bottom-4" {...stop}>
+    <div className={full ? 'absolute right-[max(10px,env(safe-area-inset-right))] bottom-[max(10px,env(safe-area-inset-bottom))] z-[2]' : 'absolute right-4 bottom-4'} {...stop}>
       {open ? (
         <div className="relative overflow-hidden rounded-[10px] border-2 border-solid border-[rgba(250,247,238,.9)] shadow-[0_8px_24px_rgba(40,30,15,.3)]">
           <canvas

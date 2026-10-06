@@ -115,7 +115,7 @@ export function PlaceCard({
   }, [gone]); // onClose — колбэк экрана
   return (
     <div
-      className="absolute inset-x-2 bottom-2 z-[2] grid max-h-[62%] gap-3 overflow-y-auto overscroll-contain rounded-[14px] border border-solid border-[rgba(243,236,217,.25)] bg-[rgba(32,26,18,.92)] p-4 text-[#f3ecd9] shadow-[0_14px_40px_rgba(10,8,4,.45)] backdrop-blur-sm sm:top-3 sm:right-3 sm:bottom-auto sm:left-auto sm:max-h-[calc(100%-24px)] sm:w-[360px]"
+      className="absolute inset-x-2 bottom-2 z-[2] grid max-h-[62%] gap-3 overflow-y-auto overscroll-contain rounded-[14px] border border-solid border-[rgba(243,236,217,.25)] bg-[rgba(32,26,18,.92)] p-4 text-[#f3ecd9] shadow-[0_14px_40px_rgba(10,8,4,.45)] backdrop-blur-sm sm:top-[max(12px,env(safe-area-inset-top))] sm:right-[max(12px,env(safe-area-inset-right))] sm:bottom-auto sm:left-auto sm:max-h-[calc(100%-24px)] sm:w-[360px]"
       onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
       role="dialog"
@@ -253,7 +253,7 @@ export function CityScreen({ d, onClose, table }: { d: PlaceDetailPublic; onClos
 
   return (
     <div
-      className="absolute inset-0 z-[3] grid grid-rows-[auto_minmax(0,1fr)] gap-3 p-3 text-[#f3ecd9] sm:grid-cols-[230px_minmax(0,1fr)] sm:grid-rows-1 sm:p-4"
+      className="absolute inset-0 z-[3] grid grid-rows-[auto_minmax(0,1fr)] gap-3 p-3 pt-[max(12px,env(safe-area-inset-top))] pr-[max(12px,env(safe-area-inset-right))] text-[#f3ecd9] sm:grid-cols-[230px_minmax(0,1fr)] sm:grid-rows-1 sm:p-4 sm:pt-[max(16px,env(safe-area-inset-top))] sm:pr-[max(16px,env(safe-area-inset-right))]"
       onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
       role="dialog"

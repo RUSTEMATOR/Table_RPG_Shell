@@ -20,7 +20,7 @@ export function TabBar<V extends string>({ value, onChange, items, controls }: {
   return (
     <nav
       aria-label="Разделы"
-      className="-mx-4 grid shrink-0 grid-flow-col auto-cols-fr border-t border-solid border-border bg-surface px-2 pt-1.5 pb-[max(6px,env(safe-area-inset-bottom))]"
+      className="zg-tabbar -mx-4 grid shrink-0 grid-flow-col auto-cols-fr border-t border-solid border-border bg-surface px-2 pt-1.5 pb-[max(6px,env(safe-area-inset-bottom))]"
     >
       {items.map((t) => {
         const on = t.value === value;
@@ -55,7 +55,7 @@ export function TabBar<V extends string>({ value, onChange, items, controls }: {
                 )}
               </AnimatePresence>
             </span>
-            {t.label}
+            <span className="zg-tabbar-label">{t.label}</span>
           </button>
         );
       })}

@@ -17,7 +17,11 @@ const TITLES: Record<MapId, string> = { world: 'Мир', razdolye: 'Раздол
  * Карта у игрока: только открытое (остальное в тумане), маркер партии вживую, свои заметки.
  * Открытый регион со ссылкой ведёт на свою карту; «Мир» в пути — обратно. Заметки видит только сам игрок.
  */
-export function PlayerMap({ active }: { active: boolean }) {
+/**
+ * full — телефон: карта на весь экран (шапку и поля прячет экран игрока), название, «‹ Мир», земли и кнопки — поверх
+ * карты, навигация — колонкой справа; в альбомной ориентации вкладки уходят в колонку слева.
+ */
+export function PlayerMap({ active, full = false }: { active: boolean; full?: boolean }) {
   const [mapId, setMapId] = useState<MapId>(() => {
     const v = load('zg:player:map');
     return MAP_IDS.find((m) => m === v) ?? 'world';
@@ -90,13 +94,23 @@ export function PlayerMap({ active }: { active: boolean }) {
   }, [conn, reload]);
 
   // Переход мир ⇄ регион (наезд, затемнение, отъезд) и первый показ карты: к маркеру партии, иначе — вся карта.
-  const nav = useMapNav(mapId, setMapId, camera, map?.id === mapId ? map.regions : []);
+  // на весь экран — карта заполняет экран (без полос по краям), иначе — вся карта целиком
+  const boxRef = useRef<HTMLDivElement>(null);
+  const home = useCallback(() => {
+    const el = boxRef.current;
+    if (!full || !el || !el.clientHeight) return 1;
+    const a = el.clientWidth / el.clientHeight,
+      m = 1600 / 1100;
+    return Math.min(2.4, Math.max(a / m, m / a));
+  }, [full]);
+  const nav = useMapNav(mapId, setMapId, camera, map?.id === mapId ? map.regions : [], home);
   const centered = useRef<string | null>(null);
   useEffect(() => {
     if (!camera || !map || map.id !== mapId || !active || centered.current === map.id) return;
     centered.current = map.id;
     if (nav.arrived(map)) return;
     if (map.party) camera.flyTo(map.party.x, map.party.y, 2.6, { instant: true });
+    else if (full) camera.flyTo(800, 550, home(), { instant: true });
   }, [camera, map, active, mapId]);
   // на карте мира: нажатие внутри земли со своей картой — крупная кнопка «открыть карту»
   const [regionHint, setRegionHint] = useState<{ name: string; link: MapId } | null>(null);
@@ -122,47 +136,71 @@ export function PlayerMap({ active }: { active: boolean }) {
     setEdit(null);
   };
 
-  return (
-    <div className="flex min-h-0 flex-1 flex-col gap-2">
-      <div className="flex items-center gap-2">
+  // кнопки над картой: на весь экран — тёмные «пилюли» поверх карты, иначе — обычные над ней
+  const pill = full
+    ? 'inline-flex h-10 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-solid border-[rgba(243,236,217,.28)] bg-[rgba(32,26,18,.84)] px-3.5 font-ui text-[15px] font-semibold whitespace-nowrap text-[#f3ecd9] shadow-[0_4px_14px_rgba(10,8,4,.35)] backdrop-blur-sm'
+    : 'inline-flex h-10 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-solid border-border bg-surface-2 px-4 font-ui text-[15px] font-semibold whitespace-nowrap text-text';
+  const bar = (
+    <div
+      className={cn(
+        'grid gap-2',
+        full && 'pointer-events-none absolute top-0 right-[64px] left-0 z-[3] pt-[max(10px,env(safe-area-inset-top))] pl-[max(10px,env(safe-area-inset-left))]',
+      )}
+    >
+      <div className={cn('flex items-center gap-2', full && 'flex-wrap [&>*]:pointer-events-auto')}>
         {mapId !== 'world' && (
-          <button
-            type="button"
-            onClick={() => void nav.go('world')}
-            aria-label="Назад, к карте мира"
-            className="inline-flex h-10 shrink-0 cursor-pointer items-center gap-1 rounded-control border border-solid border-border bg-surface-2 px-3 font-ui text-[15px] font-semibold text-text"
-          >
+          <button type="button" onClick={() => void nav.go('world')} aria-label="Назад, к карте мира" className={cn(pill, !full && 'rounded-control px-3')}>
             <span aria-hidden="true" className="text-[20px] leading-none">
               ‹
             </span>
             Мир
           </button>
         )}
-        <strong className="min-w-0 grow truncate font-['Cormorant_SC',Georgia,serif] text-xl font-bold text-text">{TITLES[mapId]}</strong>
-        {can3d && <MapLookToggle look={look} onChange={setLook} />}
-        <Button size="sm" variant={noteMode ? 'primary' : 'default'} aria-pressed={noteMode} onClick={() => setNoteMode((v) => !v)}>
-          {noteMode ? 'Нажми на карту' : '+ Заметка'}
-        </Button>
+        <strong
+          className={cn(
+            "font-['Cormorant_SC',Georgia,serif] text-xl font-bold",
+            full ? 'rounded-full bg-[rgba(32,26,18,.84)] px-3.5 py-1 text-[#f3ecd9] shadow-[0_4px_14px_rgba(10,8,4,.35)]' : 'min-w-0 grow truncate text-text',
+          )}
+        >
+          {TITLES[mapId]}
+        </strong>
+        {can3d && (
+          <MapLookToggle
+            look={look}
+            onChange={setLook}
+            {...(full ? { className: 'h-10 rounded-full border-[rgba(243,236,217,.28)] bg-[rgba(32,26,18,.84)] text-[#f3ecd9] backdrop-blur-sm' } : {})}
+          />
+        )}
+        {full ? (
+          <button type="button" aria-pressed={noteMode} onClick={() => setNoteMode((v) => !v)} className={cn(pill, noteMode && 'border-[#c9971f] bg-[#c9971f] text-[#201a12]')}>
+            {noteMode ? 'Нажми на карту' : '+ Заметка'}
+          </button>
+        ) : (
+          <Button size="sm" variant={noteMode ? 'primary' : 'default'} aria-pressed={noteMode} onClick={() => setNoteMode((v) => !v)}>
+            {noteMode ? 'Нажми на карту' : '+ Заметка'}
+          </Button>
+        )}
       </div>
       {links.length > 0 && (
-        <nav aria-label="Земли со своей картой" className="-mt-0.5 flex gap-2 overflow-x-auto pb-0.5 [scrollbar-width:none]">
+        <nav aria-label="Земли со своей картой" className={cn('-mt-0.5 flex gap-2 overflow-x-auto pb-0.5 [scrollbar-width:none]', full && 'pointer-events-auto')}>
           {links.map((r) => (
-            <button
-              key={r.id}
-              type="button"
-              onClick={() => r.link && void nav.go(r.link)}
-              className="inline-flex h-10 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-solid border-border bg-surface-2 px-4 font-ui text-[15px] font-semibold whitespace-nowrap text-text"
-            >
+            <button key={r.id} type="button" onClick={() => r.link && void nav.go(r.link)} className={pill}>
               <span aria-hidden="true" className="size-3 rounded-full" style={{ background: r.fill ?? r.edge }} />
               {r.name}
-              <span aria-hidden="true" className="text-[18px] leading-none text-muted">
+              <span aria-hidden="true" className={cn('text-[18px] leading-none', full ? 'opacity-70' : 'text-muted')}>
                 ›
               </span>
             </button>
           ))}
         </nav>
       )}
-      <div className="relative min-h-[320px] flex-1 overflow-hidden rounded-card border border-solid border-border">
+    </div>
+  );
+
+  return (
+    <div className={full ? 'relative min-h-0 flex-1' : 'flex min-h-0 flex-1 flex-col gap-2'}>
+      {!full && bar}
+      <div ref={boxRef} className={full ? 'absolute inset-0 overflow-hidden' : 'relative min-h-[320px] flex-1 overflow-hidden rounded-card border border-solid border-border'}>
         {map ? (
           <MapStage
             key={look}
@@ -190,7 +228,7 @@ export function PlayerMap({ active }: { active: boolean }) {
             onNote={(n) => setEdit({ note: n, x: n.x, y: n.y })}
             className={cn('absolute inset-0', noteMode && 'cursor-crosshair')}
           >
-            <MapHud camera={camera} places={map.places} regions={map.regions} party={map.party} onPlace={openPlace} />
+            <MapHud camera={camera} places={map.places} regions={map.regions} party={map.party} onPlace={openPlace} full={full} />
           </MapStage>
         ) : (
           <div className="grid h-full place-items-center text-muted">Загрузка…</div>
@@ -252,7 +290,17 @@ export function PlayerMap({ active }: { active: boolean }) {
           />
         )}
       </div>
-      {map && map.regions.length === 0 && map.places.length === 0 && <p className="m-0 text-[13.6px] text-muted">Здесь пока туман: мастер откроет земли по ходу игры.</p>}
+      {full && !inCity && bar}
+      {map && map.regions.length === 0 && map.places.length === 0 && (
+        <p
+          className={cn(
+            'm-0 text-[13.6px]',
+            full ? 'pointer-events-none absolute inset-x-0 bottom-4 z-[2] mx-auto w-fit rounded-full bg-[rgba(32,26,18,.84)] px-4 py-2 text-[#f3ecd9]' : 'text-muted',
+          )}
+        >
+          Здесь пока туман: мастер откроет земли по ходу игры.
+        </p>
+      )}
       <NoteSheet edit={edit} onClose={() => setEdit(null)} onSave={saveNote} onRemove={removeNote} />
     </div>
   );

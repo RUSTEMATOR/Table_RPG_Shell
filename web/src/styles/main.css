@@ -128,3 +128,26 @@
     animation: none;
   }
 }
+
+/* Карта на телефоне — на весь экран (data-map-full ставит экран игрока на вкладке «Карта»): без шапки и полей,
+   карта от края до края; в альбомной ориентации панель вкладок — узкая колонка слева, карта занимает остальное. */
+html[data-map-full] .screen { max-width: none; padding: 0; }
+html[data-map-full] .topbar { display: none; }
+html[data-map-full] .screen > main { gap: 0; }
+html[data-map-full] .zg-pager { margin-inline: 0; }
+html[data-map-full] #pane-map { padding: 0; gap: 0; }
+html[data-map-full] .zg-tabbar { margin-inline: 0; padding-inline: max(8px, env(safe-area-inset-left)) max(8px, env(safe-area-inset-right)); }
+@media (orientation: landscape) and (max-height: 520px) {
+  html[data-map-full] .screen > main { flex-direction: row-reverse; }
+  html[data-map-full] .zg-tabbar {
+    grid-auto-flow: row;
+    grid-auto-rows: 1fr;
+    grid-auto-columns: auto;
+    width: calc(60px + env(safe-area-inset-left));
+    padding: max(6px, env(safe-area-inset-top)) 4px max(6px, env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left));
+    border-top: 0;
+    border-right: 1px solid var(--color-border);
+  }
+  html[data-map-full] .zg-tabbar button { min-height: 0; }
+  html[data-map-full] .zg-tabbar-label { display: none; }
+}

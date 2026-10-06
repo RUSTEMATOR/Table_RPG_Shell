@@ -61,6 +61,8 @@ export function useCamera(box: RefObject<HTMLElement | null>, opts: { reducedMot
   const size = useRef({ w: 1, h: 1 });
   const fitRef = useRef(0.25);
   const ready = useRef(false);
+  // вид, заказанный до того, как стал известен размер окна карты: применяется при первом измерении
+  const pendingView = useRef<{ x: number; y: number; zoom: number } | null>(null);
 
   const clamp = useCallback((nk: number, nx: number, ny: number) => {
     const { w, h } = size.current;
@@ -95,7 +97,12 @@ export function useCamera(box: RefObject<HTMLElement | null>, opts: { reducedMot
       setFit(fitRef.current);
       if (!ready.current) {
         ready.current = true;
-        set(fitRef.current, 0, 0);
+        const v = pendingView.current;
+        pendingView.current = null;
+        if (v) {
+          const nk = fitRef.current * Math.max(1, Math.min(MAX_ZOOM, v.zoom));
+          set(nk, w / 2 - v.x * nk, h / 2 - v.y * nk);
+        } else set(fitRef.current, 0, 0);
       } else set((k.get() / prevFit) * fitRef.current, x.get(), y.get());
     });
     ro.observe(el);
@@ -118,6 +125,10 @@ export function useCamera(box: RefObject<HTMLElement | null>, opts: { reducedMot
   const flyTo = useCallback(
     (mx: number, my: number, zoom: number, o: { duration?: number; instant?: boolean } = {}) => {
       stopFlight();
+      if (!ready.current) {
+        pendingView.current = { x: mx, y: my, zoom };
+        return;
+      }
       const { w, h } = size.current;
       const nk = fitRef.current * Math.max(1, Math.min(MAX_ZOOM, zoom));
       const t = clamp(nk, w / 2 - mx * nk, h / 2 - my * nk);

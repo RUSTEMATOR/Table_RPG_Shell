@@ -35,7 +35,8 @@ export function inRegion(shape: Shape, x: number, y: number): boolean {
   return inside;
 }
 
-export function useMapNav(mapId: MapId, setMapId: (m: MapId) => void, camera: MapCamera | null, regions: LinkRegion[]) {
+/** home — масштаб «всей карты» после перехода (на телефоне — чтобы карта заполняла экран, без полос). */
+export function useMapNav(mapId: MapId, setMapId: (m: MapId) => void, camera: MapCamera | null, regions: LinkRegion[], home: () => number = () => 1) {
   const [fading, setFading] = useState(false);
   const pending = useRef<{ from: MapId; to: MapId } | null>(null);
   const busy = useRef(false);
@@ -79,12 +80,13 @@ export function useMapNav(mapId: MapId, setMapId: (m: MapId) => void, camera: Ma
         const c = centerOf(back.shape);
         camera.flyTo(c.x, c.y, 2.6, { instant: true });
       } else camera.flyTo(MAP_W / 2, MAP_H / 2, 2, { instant: true });
-      if (!calm) window.setTimeout(() => camera.flyTo(MAP_W / 2, MAP_H / 2, 1, { duration: 0.8 }), 60);
-      else camera.flyTo(MAP_W / 2, MAP_H / 2, 1, { instant: true });
+      const z = home();
+      if (!calm) window.setTimeout(() => camera.flyTo(MAP_W / 2, MAP_H / 2, z, { duration: 0.8 }), 60);
+      else camera.flyTo(MAP_W / 2, MAP_H / 2, z, { instant: true });
       window.setTimeout(() => setFading(false), 40);
       return true;
     },
-    [camera],
+    [camera, home],
   );
 
   // смена карты снаружи (сохранённая карта, другая вкладка) — без затемнения
