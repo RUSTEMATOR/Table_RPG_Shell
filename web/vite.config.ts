@@ -36,12 +36,18 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/api\//, /^\/socket\.io\//],
         // Физика кубиков (Rapier, WebAssembly внутри, ~4 МБ) не входит в предкэш: качается при первом броске
         // и дальше берётся из кэша, в том числе без сети.
-        globIgnores: ['**/physics.worker-*.js'],
+        // Листы фигурок LPC (~2,5 МБ, сотни файлов) — тоже вне предкэша: качаются по мере надобности, дальше из кэша.
+        globIgnores: ['**/physics.worker-*.js', 'lpc/**'],
         runtimeCaching: [
           {
             urlPattern: ({ url }) => /\/assets\/physics\.worker-[\w-]+\.js$/.test(url.pathname),
             handler: 'CacheFirst',
             options: { cacheName: 'zg-dice-physics', expiration: { maxEntries: 2 } },
+          },
+          {
+            urlPattern: ({ url }) => url.pathname.startsWith('/lpc/'),
+            handler: 'CacheFirst',
+            options: { cacheName: 'zg-figures', expiration: { maxEntries: 1200 } },
           },
         ],
         cleanupOutdatedCaches: true,
