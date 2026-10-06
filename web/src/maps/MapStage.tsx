@@ -4,25 +4,26 @@ import { load, save } from '../lib/storage.ts';
 import { cn } from '../lib/cn.ts';
 import { MapView, type MapViewProps } from './MapView.tsx';
 
-// Какой картой рисовать: 3D (этап 26) или пергамент. 3D — если есть WebGL2, не облегчённый режим и зритель не выбрал
-// пергамент (выбор запоминается на устройстве). 3D — отдельный ленивый чанк (three.js + сцена), модели — отдельным файлом.
+// Какой картой рисовать: пергамент или 3D (этап 26). 3D — по выбору зрителя, если есть WebGL2 и не облегчённый режим.
+// 3D — отдельный ленивый чанк (three.js + сцена), модели — отдельным файлом.
 
 const World3D = lazy(() => import('../maps3d/World3D.tsx').then((m) => ({ default: m.World3D })));
 
 export type MapLook = '3d' | '2d';
-const KEY = 'zg:map:look';
+// Пергамент — по умолчанию (решение Рустема: он красивее); 3D — по выбору, запоминается на устройстве.
+const KEY = 'zg:map:3d';
 
 /** Можно ли показать 3D на этом устройстве. */
 export function can3d(): boolean {
   return capabilities.webgl2() && !capabilities.lite();
 }
 
-/** Выбор вида карты на устройстве (3D по умолчанию, если можно). */
+/** Выбор вида карты на устройстве: пергамент, пока зритель сам не выбрал 3D. */
 export function useMapLook(): [MapLook, (v: MapLook) => void, boolean] {
   const able = can3d();
-  const [look, setLook] = useState<MapLook>(() => (able && load(KEY) !== '2d' ? '3d' : '2d'));
+  const [look, setLook] = useState<MapLook>(() => (able && load(KEY) === '1' ? '3d' : '2d'));
   useEffect(() => {
-    if (able) save(KEY, look);
+    if (able) save(KEY, look === '3d' ? '1' : '0');
   }, [look, able]);
   return [able ? look : '2d', setLook, able];
 }
@@ -49,7 +50,7 @@ export function MapLookToggle({ look, onChange, className }: { look: MapLook; on
         className,
       )}
     >
-      {look === '3d' ? 'Пергамент' : '3D'}
+      {look === '3d' ? 'Пергамент' : '3D (проба)'}
     </button>
   );
 }

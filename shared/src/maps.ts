@@ -93,8 +93,8 @@ export const MapPublicSchema = z.strictObject({
 });
 export type MapPublic = z.infer<typeof MapPublicSchema>;
 
-/** Наезд камеры на столе: точка и масштаб (1 — вся карта); place — показать на столе экран этого города (этап 27). */
-export const MapFocusSchema = z.strictObject({ x: Num, y: Num, zoom: z.number().min(1).max(6), place: z.string().min(1).max(64).optional() });
+/** Наезд камеры на столе: точка и масштаб (1 — вся карта); place — экран этого города (этап 27); look — 3D на столе (как у мастера). */
+export const MapFocusSchema = z.strictObject({ x: Num, y: Num, zoom: z.number().min(1).max(6), place: z.string().min(1).max(64).optional(), look: z.enum(['3d']).optional() });
 export type MapFocus = z.infer<typeof MapFocusSchema>;
 
 // ---- Мастеру: всё, включая скрытое и заметки ----

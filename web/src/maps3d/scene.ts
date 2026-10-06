@@ -16,7 +16,19 @@ import { buildHeights, fogMask, paintTerrain, WATER, type FogMask, type Heights 
 
 export type Mode = 'gm' | 'player' | 'table';
 export type Projected = { x: number; y: number; px: number; depth: number; visible: boolean };
-type Anchor = { el: HTMLElement; pos: () => { x: number; y: number; lift: number } | null; size?: number; min?: number; max?: number; fade?: (zoom: number) => number };
+type Anchor = {
+  el: HTMLElement;
+  pos: () => { x: number; y: number; lift: number } | null;
+  size?: number;
+  min?: number;
+  max?: number;
+  fade?: (zoom: number) => number;
+  /** подписи: не налезают друг на друга — важнее (больше) остаётся, остальные прячутся до приближения */
+  priority?: () => number;
+  far?: boolean;
+};
+/** Масштаб, ниже которого подписи короткие (без подзаголовка, мельче) — атрибут data-far у элемента. */
+const FAR_ZOOM = 1.8;
 
 const SKY = '#c9d6dc';
 
@@ -451,23 +463,44 @@ export class MapScene {
 
   private placeAnchors() {
     const zoom = this.cam.view().zoom;
+    const far = zoom < FAR_ZOOM;
+    type Item = { a: Anchor; x: number; y: number; s: number; fade: number; pri: number };
+    const shown: Item[] = [];
     for (const a of this.anchors) {
-      const pos = a.pos();
-      if (!pos) {
-        a.el.style.visibility = 'hidden';
-        continue;
+      if (a.priority && a.far !== far) {
+        a.far = far;
+        a.el.toggleAttribute('data-far', far);
       }
-      const p = this.project(pos.x, pos.y, pos.lift);
+      const pos = a.pos();
+      const p = pos ? this.project(pos.x, pos.y, pos.lift) : null;
       const fade = a.fade ? a.fade(zoom) : 1;
-      if (!p.visible || fade <= 0) {
+      if (!p || !p.visible || fade <= 0) {
         a.el.style.visibility = 'hidden';
         continue;
       }
       const s = a.size ? Math.min(a.max ?? 4, Math.max(a.min ?? 0.2, (p.px * a.size) / 100)) : 1;
+      shown.push({ a, x: p.x, y: p.y, s, fade, pri: a.priority?.() ?? Infinity });
+    }
+    // подписи: по важности, каждая — только если не налезает на уже поставленные (элемент стоит над точкой, по центру)
+    const boxes: [number, number, number, number][] = [];
+    shown.sort((p, q) => q.pri - p.pri);
+    for (const it of shown) {
+      if (it.a.priority) {
+        const c = it.a.el.firstElementChild as HTMLElement | null;
+        const w = c?.offsetWidth ?? 0,
+          h = c?.offsetHeight ?? 0;
+        const box: [number, number, number, number] = [it.x - w / 2 - 3, it.y - h - 2, it.x + w / 2 + 3, it.y + 2];
+        if (boxes.some((b) => box[0] < b[2] && box[2] > b[0] && box[1] < b[3] && box[3] > b[1])) {
+          it.a.el.style.visibility = 'hidden';
+          continue;
+        }
+        boxes.push(box);
+      }
+      const a = it.a;
       a.el.style.visibility = 'visible';
-      a.el.style.opacity = fade >= 1 ? '' : String(fade);
-      a.el.style.transform = `translate3d(${p.x.toFixed(1)}px, ${p.y.toFixed(1)}px, 0) scale(${s.toFixed(3)})`;
-      a.el.style.zIndex = String(Math.round(p.y));
+      a.el.style.opacity = it.fade >= 1 ? '' : String(it.fade);
+      a.el.style.transform = `translate3d(${it.x.toFixed(1)}px, ${it.y.toFixed(1)}px, 0) scale(${it.s.toFixed(3)})`;
+      a.el.style.zIndex = String(Math.round(it.y));
     }
   }
 

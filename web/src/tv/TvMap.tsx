@@ -12,7 +12,7 @@ const TITLES: Record<MapId, string> = { world: 'Карта мира', razdolye: 
 /**
  * Карта на столе: только открытое, туман над остальным. Мастер показал место — камера медленно наезжает на него;
  * открыл регион — туман над ним расходится. Без движения («Анимация выкл.») камера встаёт сразу.
- * 3D — если стол не в облегчённом режиме, иначе пергамент. «На стол: город» — экран города поверх (камера кружит над ним).
+ * 3D — если мастер показал карту из 3D и стол не в облегчённом режиме, иначе пергамент. «На стол: город» — экран города поверх (камера кружит над ним).
  */
 export function TvMap({ show, still, lite }: { show: { id: MapId; focus: MapFocus | null } | null; still: boolean; lite: boolean }) {
   return (
@@ -59,7 +59,7 @@ function TvMapBody({ id, focus, still, lite }: { id: MapId; focus: MapFocus | nu
   return (
     <>
       <MapStage
-        look={!lite && can3d() ? '3d' : '2d'}
+        look={focus?.look === '3d' && !lite && can3d() ? '3d' : '2d'}
         data={map}
         mode="table"
         camera={setCamera}

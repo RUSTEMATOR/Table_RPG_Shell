@@ -125,8 +125,10 @@ export function GmMaps() {
     }
   };
 
-  const showOnTable = async (focus: { x: number; y: number; zoom: number; place?: string } | null) => {
-    await post('/api/gm/table/map', { mapId, focus }, focus?.place ? 'На столе — экран города' : focus ? 'Стол наезжает на это место' : 'Карта на столе');
+  const showOnTable = async (f: { x: number; y: number; zoom: number; place?: string } | null) => {
+    // стол показывает тот же вид, что у мастера: 3D — только если мастер сам в 3D
+    const focus = look === '3d' ? { ...(f ?? { x: 800, y: 550, zoom: 1 }), look: '3d' as const } : f;
+    await post('/api/gm/table/map', { mapId, focus }, f?.place ? 'На столе — экран города' : f ? 'Стол наезжает на это место' : 'Карта на столе');
     void reload();
   };
   const currentFocus = () => {

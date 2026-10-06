@@ -12,7 +12,7 @@ export type View = { x: number; y: number; zoom: number };
 const FOV = 40;
 const MIN_DIST = 70;
 const PITCH_NEAR = 0.6; // ~34°
-const PITCH_FAR = 1.13; // ~65°
+const PITCH_FAR = 1.22; // ~70°: издали почти как пергамент
 const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
 
 export class StrategyCamera {
@@ -80,11 +80,40 @@ export class StrategyCamera {
     this.w = Math.max(1, w);
     this.h = Math.max(1, h);
     this.camera.aspect = this.w / this.h;
-    const t = Math.tan(((FOV / 2) * Math.PI) / 180);
-    // вся карта: по высоте с учётом наклона и по ширине
-    this.maxDist = Math.max((MAP_H * 0.55) / t, (MAP_W * 0.5) / (t * this.camera.aspect)) * 1.02;
+    this.maxDist = this.fitDist();
     this.dist = first ? this.maxDist : Math.max(MIN_DIST, this.maxDist / zoom);
     this.apply();
+  }
+
+  /** Расстояние, с которого вся доска карты (с наклоном PITCH_FAR, север вверху) целиком и плотно входит в кадр. */
+  private fitDist(): number {
+    const cam = new THREE.PerspectiveCamera(FOV, this.camera.aspect, 1, 100000);
+    const corners = [
+      [0, 0],
+      [MAP_W, 0],
+      [0, MAP_H],
+      [MAP_W, MAP_H],
+    ].map(([x, z]) => new THREE.Vector3(x, 0, z));
+    const v = new THREE.Vector3();
+    const fits = (d: number) => {
+      const hor = d * Math.cos(PITCH_FAR),
+        ver = d * Math.sin(PITCH_FAR);
+      cam.position.set(MAP_W / 2, ver, MAP_H / 2 + hor);
+      cam.lookAt(MAP_W / 2, 0, MAP_H / 2);
+      cam.updateMatrixWorld();
+      return corners.every((c) => {
+        v.copy(c).project(cam);
+        return Math.abs(v.x) <= 0.97 && Math.abs(v.y) <= 0.97 && v.z < 1;
+      });
+    };
+    let lo = 100,
+      hi = 20000;
+    for (let i = 0; i < 40; i++) {
+      const mid = (lo + hi) / 2;
+      if (fits(mid)) hi = mid;
+      else lo = mid;
+    }
+    return hi;
   }
 
   /** Наклон: издали почти сверху, вблизи ниже. */

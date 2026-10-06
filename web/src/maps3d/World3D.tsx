@@ -22,13 +22,24 @@ const SPEED = 260;
 const dirOf = (dx: number, dy: number): Dir => (Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : dy > 0 ? 'down' : 'up');
 const ramp = (z: number, a: number, b: number) => Math.min(1, Math.max(0, (z - a) / (b - a)));
 
-/** Когда подпись места видна (по масштабу): крупные — всегда, деревни — вблизи. */
-function fadeOf(kind: PlaceKind, gm: boolean, named: boolean): (zoom: number) => number {
-  if (kind === 'capital' || kind === 'bigtown') return () => 1;
-  if (kind === 'city' || kind === 'college' || kind === 'storm') return (z) => ramp(z, 1.05, 1.25);
-  if (kind === 'village' || !named) return (z) => ramp(z, gm ? 1.5 : 2, gm ? 1.8 : 2.4);
-  return (z) => ramp(z, 1.3, 1.6);
-}
+/** Важность подписи места: при наложении остаётся важнейшая. */
+const PRIORITY: Record<PlaceKind, number> = {
+  capital: 60,
+  bigtown: 50,
+  city: 40,
+  college: 40,
+  elven: 40,
+  storm: 35,
+  town: 30,
+  church: 25,
+  camp: 22,
+  crypt: 22,
+  cult: 22,
+  vampire: 20,
+  lake: 20,
+  village: 10,
+  mark: 15,
+};
 
 export function World3D({
   data,
@@ -203,6 +214,7 @@ function Anchored({
   min,
   max,
   fade,
+  priority,
   className,
   children,
 }: {
@@ -212,6 +224,8 @@ function Anchored({
   min?: number;
   max?: number;
   fade?: (zoom: number) => number;
+  /** подпись: участвует в раскладке без наложений, больше — важнее */
+  priority?: number;
   className?: string;
   children: ReactNode;
 }) {
@@ -220,6 +234,8 @@ function Anchored({
   posRef.current = pos;
   const fadeRef = useRef(fade);
   fadeRef.current = fade;
+  const priRef = useRef(priority);
+  priRef.current = priority;
   useEffect(
     () =>
       scene.anchor({
@@ -229,12 +245,13 @@ function Anchored({
         ...(min ? { min } : {}),
         ...(max ? { max } : {}),
         ...(fade ? { fade: (z: number) => fadeRef.current?.(z) ?? 1 } : {}),
+        ...(priority !== undefined ? { priority: () => priRef.current ?? 0 } : {}),
       }),
-    [scene, size, min, max, !!fade],
+    [scene, size, min, max, !!fade, priority !== undefined],
   );
   useEffect(() => scene.requestRender());
   return (
-    <div ref={el} className={cn('absolute top-0 left-0 size-0', className)} style={{ visibility: 'hidden', transformOrigin: '0 0' }}>
+    <div ref={el} className={cn('group absolute top-0 left-0 size-0', className)} style={{ visibility: 'hidden', transformOrigin: '0 0' }}>
       {children}
     </div>
   );
@@ -266,7 +283,9 @@ function PlaceLabel({
   const big = p.kind === 'capital' || p.kind === 'bigtown';
   const team = TEAM_COLOR[teamOf(p.ink, p.kind)];
   const named = !!p.name;
-  const fade = useMemo(() => fadeOf(p.kind, gm, named), [p.kind, gm, named]);
+  // безымянные деревни — точкой, только вблизи; остальные подписи видны всегда, наложения убирает сцена
+  const fade = useMemo(() => (named ? undefined : (z: number) => ramp(z, gm ? 1.5 : 2, gm ? 1.8 : 2.4)), [named, gm]);
+  const priority = PRIORITY[p.kind] + (selected ? 1000 : 0) + (named ? 0 : -5);
   const hidden = gm && p.visible === false;
 
   const down = (e: RPointerEvent) => {
@@ -293,7 +312,7 @@ function PlaceLabel({
   };
 
   return (
-    <Anchored scene={scene} pos={() => ({ x: at.current.x, y: at.current.y, lift: liftOf(p.kind) })} fade={fade}>
+    <Anchored scene={scene} pos={() => ({ x: at.current.x, y: at.current.y, lift: liftOf(p.kind) })} {...(fade ? { fade } : {})} priority={priority}>
       <div
         className={cn(
           'absolute bottom-0 left-0 flex -translate-x-1/2 flex-col items-center pb-0.5',
@@ -311,29 +330,31 @@ function PlaceLabel({
         {named ? (
           <span
             className={cn(
-              'flex items-center gap-1.5 rounded-md border border-solid py-0.5 pr-2.5 pl-1 whitespace-nowrap shadow-[0_4px_12px_rgba(20,16,10,.35)] transition-[outline-color]',
+              'flex items-center gap-1.5 rounded-md border border-solid py-0.5 pr-2.5 pl-1 whitespace-nowrap group-data-[far]:gap-1 group-data-[far]:pr-1.5 shadow-[0_4px_12px_rgba(20,16,10,.35)] transition-[outline-color]',
               hidden && 'border-dashed',
               selected ? 'outline-[2.5px] outline-offset-2 outline-[#e0b23a] outline-solid' : 'outline-transparent',
             )}
             style={{ background: 'rgba(32,26,18,.78)', borderColor: 'rgba(243,236,217,.35)', borderLeft: `4px solid ${team}` }}
           >
-            <svg viewBox="-17 -17 34 34" width={big ? 22 : 17} height={big ? 22 : 17} aria-hidden="true" className="shrink-0">
+            <svg
+              viewBox="-17 -17 34 34"
+              aria-hidden="true"
+              className={cn('shrink-0', big ? 'size-[22px] group-data-[far]:size-[17px]' : 'size-[17px] group-data-[far]:size-[13px]')}
+            >
               <PlaceIcon kind={p.kind} ink={p.ink} />
             </svg>
             <span className="grid leading-[1.05]">
               <span
-                className="text-[#f3ecd9]"
-                style={{
-                  fontFamily: "'Cormorant Garamond', Georgia, serif",
-                  fontWeight: 700,
-                  fontSize: big ? 19 : p.kind === 'village' ? 14 : 16,
-                  fontStyle: p.kind === 'village' ? 'italic' : undefined,
-                }}
+                className={cn(
+                  'text-[#f3ecd9]',
+                  big ? 'text-[19px] group-data-[far]:text-[16px]' : p.kind === 'village' ? 'text-[14px] group-data-[far]:text-[12px]' : 'text-[16px] group-data-[far]:text-[13px]',
+                )}
+                style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 700, fontStyle: p.kind === 'village' ? 'italic' : undefined }}
               >
                 {p.name}
               </span>
               {p.subtitle && (
-                <span className="text-[#d6c9a8]" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontStyle: 'italic', fontSize: 12.5 }}>
+                <span className="text-[#d6c9a8] group-data-[far]:hidden" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontStyle: 'italic', fontSize: 12.5 }}>
                   {p.subtitle}
                 </span>
               )}
@@ -365,7 +386,7 @@ function RegionLabel({ scene, r, gm, onRegion }: { scene: MapScene; r: ViewRegio
   const linked = !!r.link && !!onRegion;
   const dim = gm && r.visible === false;
   return (
-    <Anchored scene={scene} pos={() => ({ x: at.x, y: at.y, lift: 30 })} fade={(z) => (1 - ramp(z, 1.8, 2.6)) * (dim ? 0.5 : 1)}>
+    <Anchored scene={scene} pos={() => ({ x: at.x, y: at.y, lift: 30 })} fade={(z) => (1 - ramp(z, 1.8, 2.6)) * (dim ? 0.5 : 1)} priority={1}>
       <button
         type="button"
         tabIndex={linked ? 0 : -1}
