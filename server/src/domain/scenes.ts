@@ -4,6 +4,8 @@ import { newId } from '../auth/tokens.ts';
 import { db, schema } from '../db/client.ts';
 import { imageUrl, removeImage, storeImage } from './media.ts';
 import { tableMap } from './maps.ts';
+import { npcFigure } from './npc.ts';
+import { activeSession } from './session.ts';
 
 export type SceneRow = typeof schema.scene.$inferSelect;
 
@@ -61,7 +63,7 @@ export function projectForTable(roomId: string): TableState {
   const r = shown?.sceneId ? getScene(roomId, shown.sceneId) : undefined;
   const n = shown?.npcId
     ? db
-        .select({ name: schema.npc.name, imageFile: schema.npc.imageFile, imageW: schema.npc.imageW, imageH: schema.npc.imageH })
+        .select({ name: schema.npc.name, imageFile: schema.npc.imageFile, imageW: schema.npc.imageW, imageH: schema.npc.imageH, figure: schema.npc.figure })
         .from(schema.npc)
         .where(and(eq(schema.npc.roomId, roomId), eq(schema.npc.id, shown.npcId)))
         .get()
@@ -70,7 +72,12 @@ export function projectForTable(roomId: string): TableState {
   return TableStateSchema.parse({
     map: map ? { id: map.mapId, focus: map.focus } : null,
     npc: n
-      ? { name: n.name, ...(n.imageFile ? { image: { url: imageUrl(n.imageFile), w: n.imageW ?? 0, h: n.imageH ?? 0 } } : {}) }
+      ? {
+          name: n.name,
+          ...(n.imageFile ? { image: { url: imageUrl(n.imageFile), w: n.imageW ?? 0, h: n.imageH ?? 0 } } : {}),
+          figure: npcFigure(n),
+          opponent: activeSession(roomId).opponentNpcId === shown?.npcId,
+        }
       : null,
     scene: r
       ? {
@@ -92,7 +99,10 @@ export function createScene(roomId: string, w: { title: string; textPublic: stri
 
 export function updateScene(r: SceneRow, patch: Partial<Pick<SceneRow, 'title' | 'textPublic' | 'textGm'>>): SceneRow {
   const next = { ...r, ...patch, updatedAt: Date.now() };
-  db.update(schema.scene).set({ ...patch, updatedAt: next.updatedAt }).where(eq(schema.scene.id, r.id)).run();
+  db.update(schema.scene)
+    .set({ ...patch, updatedAt: next.updatedAt })
+    .where(eq(schema.scene.id, r.id))
+    .run();
   return next;
 }
 

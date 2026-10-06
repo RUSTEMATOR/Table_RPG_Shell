@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { MapFocusSchema, MapIdSchema } from './maps.ts';
-import type { Figure } from './figure.ts';
+import { FigureSchema, type Figure } from './figure.ts';
 
 // ---- Общий экран: что видит стол (белый список, strictObject) ----
 
@@ -12,10 +12,15 @@ export const TableSceneSchema = z.strictObject({
 });
 export type TableScene = z.infer<typeof TableSceneSchema>;
 
-/** Противник на столе: только имя и портрет. Сила и заметки мастера сюда не попадают. */
+/**
+ * Противник на столе: имя, портрет, фигурка. Сила и заметки мастера сюда не попадают.
+ * opponent — он же противник сессии: тогда публичные броски игроков с фигурками стол играет как удары по нему (этап 25).
+ */
 export const TableNpcSchema = z.strictObject({
   name: z.string(),
   image: z.strictObject({ url: z.string(), w: z.number(), h: z.number() }).optional(),
+  figure: FigureSchema.nullable(),
+  opponent: z.boolean(),
 });
 export type TableNpc = z.infer<typeof TableNpcSchema>;
 

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { EFFECTS, type Effect } from './constants.ts';
+import { FigureSchema } from './figure.ts';
 
 // ---- Броски и лента ----
 
@@ -32,6 +33,8 @@ export const RollPublicSchema = z.strictObject({
   label: z.string().optional(),
   private: z.boolean(),
   corrected: z.boolean(),
+  /** Фигурка персонажа на момент броска (этап 25, бой на столе) — у публичных бросков игроков, у которых она есть. */
+  figure: FigureSchema.optional(),
 });
 export type RollPublic = z.infer<typeof RollPublicSchema>;
 

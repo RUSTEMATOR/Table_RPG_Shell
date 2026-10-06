@@ -4,6 +4,7 @@ import { requireGm } from '../auth/requireGm.ts';
 import { getNpc } from '../domain/npc.ts';
 import { activeSession, sessionView, setOpponent, startNewSession } from '../domain/session.ts';
 import { publish } from '../realtime/publish.ts';
+import { pushTable } from './scenes.ts';
 
 export async function gmSessionRoutes(app: FastifyInstance) {
   app.addHook('onRequest', requireGm);
@@ -23,6 +24,7 @@ export async function gmSessionRoutes(app: FastifyInstance) {
     } else s = setOpponent(roomId, b.data.name, b.data.power);
     publish(roomId, { kind: 'gm' }, 'gm:session.changed');
     publish(roomId, { kind: 'gm' }, 'gm:npcs.changed');
+    pushTable(roomId); // показанный противник мог стать (или перестать быть) противником сессии — бой на столе
     return sessionView(s);
   });
 
@@ -31,6 +33,7 @@ export async function gmSessionRoutes(app: FastifyInstance) {
     const s = startNewSession(roomId);
     publish(roomId, { kind: 'gm' }, 'gm:session.changed');
     publish(roomId, { kind: 'gm' }, 'gm:npcs.changed');
+    pushTable(roomId);
     return sessionView(s);
   });
 }

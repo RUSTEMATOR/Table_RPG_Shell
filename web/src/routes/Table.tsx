@@ -121,7 +121,7 @@ function TableScreen({ room, demo }: { room: string; demo: boolean }) {
         </header>
 
         <TvNpc npc={state.npc} />
-        <TvBigRoll filter={isTableRoll} three={!still && !lite} onFlying={setFlying} />
+        <TvBigRoll filter={isTableRoll} three={!still && !lite} npc={state.npc} onFlying={setFlying} />
 
         <aside
           aria-label="Последние броски"

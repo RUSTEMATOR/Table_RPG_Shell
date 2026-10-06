@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, m } from 'motion/react';
-import { EFFECT_LABELS } from '@zg/shared';
+import { EFFECT_LABELS, type Figure, type TableNpc } from '@zg/shared';
 import { onLiveRoll, type FeedRoll } from '../lib/feed.ts';
 import { capabilities } from '../lib/capabilities.ts';
 import { simulateThrow, warmPhysics } from '../dice/physics.ts';
@@ -10,22 +10,55 @@ import { cn } from '../lib/cn.ts';
 import { effectColor } from './palette.ts';
 
 const DiceStage = lazy(() => import('../dice/DiceStage.tsx'));
+// Бой фигурок (этап 25) — свой чанк: каталог деталей и сборка листов нужны, только когда есть кого показать.
+const TvBattle = lazy(() => import('./TvBattle.tsx').then((m) => ({ default: m.TvBattle })));
+const loadBattle = () => import('./TvBattle.tsx');
 
 /** Грани кубика на столе — цвета макета, не темы. */
 const TV_DIE: DieColors = { body: '#2f8f63', ink: '#0b140e', edge: 'rgba(0,0,0,.3)', font: "'IBM Plex Mono', ui-monospace, monospace" };
 const PLATE_MS = 2200;
 const GAP_MS = 700;
 
-type Phase = { roll: FeedRoll; step: 'rolling' | 'plate' } | null;
+type Phase = { roll: FeedRoll; step: 'rolling' | 'battle' | 'plate'; battle?: Battle } | null;
+type Battle = { hero: Figure; foe: Figure; foeName: string };
+
+/**
+ * Бой вместо кубика: публичный бросок игрока с фигуркой, на столе показан противник сессии с фигуркой,
+ * исход — удар (не бросок удачи). Мастер раскрывает противника столу сам — кнопкой «Показать на столе».
+ */
+async function battleFor(r: FeedRoll, npc: TableNpc | null): Promise<Battle | null> {
+  if ('memberId' in r || !r.figure || !npc?.opponent || !npc.figure) return null;
+  const { battleOutcome } = await loadBattle();
+  return battleOutcome(r.effect) ? { hero: r.figure, foe: npc.figure, foeName: npc.name } : null;
+}
 
 /**
  * Большой бросок на столе: публичные броски вживую (filter — тот же, что у колонки), по одному.
  * Кубик катится над сценой (0,75 скорости, до 2,5 с), после посадки — плашка с числом и исходом, затем число
  * перелетает в колонку (layoutId `tv-roll-<id>`). Пока бросок идёт, onFlying сообщает его id: колонка прячет у этой
  * строки число. Без 3D (облегчённый режим, «Анимация выкл.», нет WebGL2) — сразу плашка.
+ * Если идёт бой (battleFor) — вместо кубика сцена боя фигурок; в облегчённом режиме и с «Анимация выкл.» её нет.
  */
-export function TvBigRoll({ filter, three, onFlying }: { filter: (r: FeedRoll) => boolean; three: boolean; onFlying: (id: string | null) => void }) {
+export function TvBigRoll({
+  filter,
+  three,
+  npc,
+  onFlying,
+}: {
+  filter: (r: FeedRoll) => boolean;
+  /** можно двигаться: не облегчённый режим и не «Анимация выкл.» */
+  three: boolean;
+  /** противник на столе — для боя */
+  npc: TableNpc | null;
+  onFlying: (id: string | null) => void;
+}) {
   const can3d = three && capabilities.webgl2();
+  const npcRef = useRef(npc);
+  npcRef.current = npc;
+  // фигурки противника — заранее, пока никто не бросил
+  useEffect(() => {
+    if (three && npc?.opponent && npc.figure) void loadBattle();
+  }, [three, npc?.opponent, npc?.figure]);
   const queue = useRef<FeedRoll[]>([]);
   const busy = useRef(false);
   const [phase, setPhase] = useState<Phase>(null);
@@ -43,7 +76,7 @@ export function TvBigRoll({ filter, three, onFlying }: { filter: (r: FeedRoll) =
   const finish = (r: FeedRoll) => {
     if (current.current?.roll.id !== r.id || current.current.landed) return;
     current.current.landed = true;
-    setPhase((p) => (p?.roll.id === r.id ? { roll: r, step: 'plate' } : p));
+    setPhase((p) => (p?.roll.id === r.id ? { ...p, step: 'plate' } : p));
     later(() => {
       // одним обновлением: плашка уходит, число в колонке появляется — Motion переносит его по layoutId
       setPhase(null);
@@ -62,6 +95,12 @@ export function TvBigRoll({ filter, three, onFlying }: { filter: (r: FeedRoll) =
     busy.current = true;
     current.current = { roll: r, landed: false };
     onFlying(r.id);
+    const battle = three ? await battleFor(r, npcRef.current).catch(() => null) : null;
+    if (battle) {
+      // сцена сама зовёт finish по окончании (и у неё своя страховка по времени)
+      setPhase({ roll: r, step: 'battle', battle });
+      return;
+    }
     setPhase({ roll: r, step: 'rolling' });
     if (!can3d) return finish(r);
     setStage({ key: r.id, kind: r.kind, traj: null, value: r.value });
@@ -79,16 +118,35 @@ export function TvBigRoll({ filter, three, onFlying }: { filter: (r: FeedRoll) =
         queue.current = [...queue.current, r].slice(-3);
         if (!busy.current) void next();
       }),
-    [can3d], // next и filter читают только ref и стабильные функции
+    [can3d, three], // next и filter читают только ref и стабильные функции
   );
 
   const rolling = phase?.step === 'rolling' && !!stage.key;
+  const battle = phase?.battle;
+  // место плашки — по последнему броску: уходящая плашка не прыгает, когда фаза уже сброшена
+  const lastBattle = useRef(false);
+  if (phase) lastBattle.current = !!battle;
   return (
     <>
+      <AnimatePresence>
+        {battle && phase && (
+          <Suspense key={phase.roll.id} fallback={null}>
+            <TvBattle
+              hero={battle.hero}
+              heroName={phase.roll.character ?? phase.roll.who}
+              foe={battle.foe}
+              foeName={battle.foeName}
+              effect={phase.roll.effect}
+              value={phase.roll.value}
+              onDone={() => finish(phase.roll)}
+            />
+          </Suspense>
+        )}
+      </AnimatePresence>
       {can3d && (
         <div
           aria-hidden="true"
-          className={cn('pointer-events-none absolute inset-0 transition-opacity duration-500', rolling || phase?.step === 'plate' ? 'opacity-100' : 'opacity-0')}
+          className={cn('pointer-events-none absolute inset-0 transition-opacity duration-500', rolling || (phase?.step === 'plate' && !battle) ? 'opacity-100' : 'opacity-0')}
         >
           <Suspense fallback={null}>
             <DiceStage
@@ -104,7 +162,7 @@ export function TvBigRoll({ filter, three, onFlying }: { filter: (r: FeedRoll) =
           </Suspense>
         </div>
       )}
-      <div className="pointer-events-none absolute inset-x-0 top-[66%] flex justify-center" aria-live="polite">
+      <div className={cn('pointer-events-none absolute inset-x-0 flex justify-center', lastBattle.current ? 'top-[79%]' : 'top-[66%]')} aria-live="polite">
         <AnimatePresence>
           {phase?.step === 'plate' && (
             <m.div
