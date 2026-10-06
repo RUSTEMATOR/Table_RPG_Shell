@@ -315,10 +315,88 @@ export const mapPlace = sqliteTable(
     ink: text('ink'),
     visible: integer('visible', { mode: 'boolean' }).notNull().default(false),
     noteGm: text('note_gm').notNull().default(''),
+    // карточка места (этап 27): видят игроки и стол, когда место открыто
+    description: text('description').notNull().default(''),
+    ruler: text('ruler').notNull().default(''),
+    faction: text('faction').notNull().default(''),
+    population: text('population').notNull().default(''),
+    imageFile: text('image_file'),
+    imageW: integer('image_w'),
+    imageH: integer('image_h'),
+    imageBytes: integer('image_bytes'),
     createdAt: integer('created_at').notNull(),
     updatedAt: integer('updated_at').notNull(),
   },
   (t) => [index('map_place_map_idx').on(t.roomId, t.mapId), uniqueIndex('map_place_key_idx').on(t.roomId, t.mapId, t.key)],
+);
+
+// ---- Города (этап 27) ----
+// Места внутри города: таверна, рынок, замок… Игроку и столу — только видимые, note_gm — только мастеру.
+export const mapSpot = sqliteTable(
+  'map_spot',
+  {
+    id: text('id').primaryKey(),
+    roomId: text('room_id')
+      .notNull()
+      .references(() => room.id, { onDelete: 'cascade' }),
+    placeId: text('place_id')
+      .notNull()
+      .references(() => mapPlace.id, { onDelete: 'cascade' }),
+    kind: text('kind').notNull(),
+    name: text('name').notNull().default(''),
+    description: text('description').notNull().default(''),
+    visible: integer('visible', { mode: 'boolean' }).notNull().default(true),
+    noteGm: text('note_gm').notNull().default(''),
+    sort: integer('sort').notNull().default(0),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  (t) => [index('map_spot_place_idx').on(t.placeId)],
+);
+
+// Слухи и задания города. Мастер открывает по одному: revealed_at — порядок у игроков (сами времена не уходят).
+export const mapRumor = sqliteTable(
+  'map_rumor',
+  {
+    id: text('id').primaryKey(),
+    roomId: text('room_id')
+      .notNull()
+      .references(() => room.id, { onDelete: 'cascade' }),
+    placeId: text('place_id')
+      .notNull()
+      .references(() => mapPlace.id, { onDelete: 'cascade' }),
+    kind: text('kind', { enum: ['rumor', 'quest'] }).notNull(),
+    text: text('text').notNull().default(''),
+    visible: integer('visible', { mode: 'boolean' }).notNull().default(false),
+    revealedAt: integer('revealed_at'),
+    noteGm: text('note_gm').notNull().default(''),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  (t) => [index('map_rumor_place_idx').on(t.placeId)],
+);
+
+// Кто здесь: противник из библиотеки в городе (или в месте города). Игроку и столу — имя, фигурка и роль, без id противника.
+export const mapPresence = sqliteTable(
+  'map_presence',
+  {
+    id: text('id').primaryKey(),
+    roomId: text('room_id')
+      .notNull()
+      .references(() => room.id, { onDelete: 'cascade' }),
+    placeId: text('place_id')
+      .notNull()
+      .references(() => mapPlace.id, { onDelete: 'cascade' }),
+    spotId: text('spot_id').references(() => mapSpot.id, { onDelete: 'set null' }),
+    npcId: text('npc_id')
+      .notNull()
+      .references(() => npc.id, { onDelete: 'cascade' }),
+    label: text('label').notNull().default(''),
+    visible: integer('visible', { mode: 'boolean' }).notNull().default(false),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  (t) => [index('map_presence_place_idx').on(t.placeId), index('map_presence_npc_idx').on(t.npcId)],
 );
 
 // Маркер партии: один на комнату, на одной из карт.

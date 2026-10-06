@@ -67,6 +67,24 @@ export const PLACE_KIND_LABELS: Record<PlaceKind, string> = {
   storm: 'Буря',
   mark: 'Отметка',
 };
+/** Места внутри города (этап 27): экран города как в Mount & Blade. */
+export const SPOT_KINDS = ['keep', 'tavern', 'market', 'smithy', 'temple', 'guild', 'square', 'gate', 'port', 'other'] as const;
+export type SpotKind = (typeof SPOT_KINDS)[number];
+export const SPOT_KIND_LABELS: Record<SpotKind, string> = {
+  keep: 'Замок',
+  tavern: 'Таверна',
+  market: 'Рынок',
+  smithy: 'Кузница',
+  temple: 'Храм',
+  guild: 'Гильдия',
+  square: 'Площадь',
+  gate: 'Ворота',
+  port: 'Пристань',
+  other: 'Другое',
+};
+export const RUMOR_KINDS = ['rumor', 'quest'] as const;
+export type RumorKind = (typeof RUMOR_KINDS)[number];
+export const RUMOR_KIND_LABELS: Record<RumorKind, string> = { rumor: 'Слух', quest: 'Задание' };
 
 // ---- Демо-комната для гостей (только в разработке, server/src/domain/demo.ts) ----
 export const DEMO_ROOM_CODE = 'DEMO26';

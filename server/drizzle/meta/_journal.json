@@ -71,6 +71,13 @@
       "when": 1791247675735,
       "tag": "0009_map_tokens",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1791293808715,
+      "tag": "0010_places",
+      "breakpoints": true
     }
   ]
 }

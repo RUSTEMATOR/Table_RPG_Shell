@@ -6,7 +6,7 @@ import { newId } from '../auth/tokens.ts';
 import { config } from '../config.ts';
 import { db, schema } from '../db/client.ts';
 
-// Картинки сцен и портреты противников: один конвейер, один каталог data/media.
+// Картинки сцен, портреты противников и картинки мест: один конвейер, один каталог data/media.
 
 const MAX_SIDE = 1920;
 mkdirSync(config.MEDIA_DIR, { recursive: true });
@@ -44,10 +44,17 @@ export function removeImage(file: string | null): void {
 }
 
 /**
- * Кому можно отдать файл. Мастеру комнаты — любую картинку её сцен и противников.
- * Столу — только картинку показанной сейчас сцены и портрет показанного противника. Игрокам — ничего.
+ * Кому можно отдать файл. Мастеру комнаты — любую картинку её сцен, противников и мест.
+ * Столу — только картинку показанной сейчас сцены и портрет показанного противника. Картинку места (этап 27) — игрокам
+ * и столу, пока место открыто. Остальное игрокам — ничего.
  */
 export function mediaAllowed(roomId: string, role: string, file: string): boolean {
+  const placeRow = db
+    .select({ visible: schema.mapPlace.visible, kind: schema.mapPlace.kind })
+    .from(schema.mapPlace)
+    .where(and(eq(schema.mapPlace.roomId, roomId), eq(schema.mapPlace.imageFile, file)))
+    .get();
+  if (placeRow) return role === 'gm' || ((role === 'player' || role === 'table') && placeRow.visible && placeRow.kind !== 'deleted');
   if (role !== 'gm' && role !== 'table') return false;
   const sceneRow = db
     .select({ id: schema.scene.id })

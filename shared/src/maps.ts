@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { MAP_H, MAP_IDS, MAP_W, PLACE_KINDS, type MapId } from './constants.ts';
+import { MAP_H, MAP_IDS, MAP_W, PLACE_KINDS, RUMOR_KINDS, SPOT_KINDS, type MapId, type RumorKind, type SpotKind } from './constants.ts';
 import { FigureSchema, type Figure } from './figure.ts';
 
 // ---- Карты мира (этап 21) ----
@@ -87,8 +87,8 @@ export const MapPublicSchema = z.strictObject({
 });
 export type MapPublic = z.infer<typeof MapPublicSchema>;
 
-/** Наезд камеры на столе: точка и масштаб (1 — вся карта). */
-export const MapFocusSchema = z.strictObject({ x: Num, y: Num, zoom: z.number().min(1).max(6) });
+/** Наезд камеры на столе: точка и масштаб (1 — вся карта); place — показать на столе экран этого города (этап 27). */
+export const MapFocusSchema = z.strictObject({ x: Num, y: Num, zoom: z.number().min(1).max(6), place: z.string().min(1).max(64).optional() });
 export type MapFocus = z.infer<typeof MapFocusSchema>;
 
 // ---- Мастеру: всё, включая скрытое и заметки ----
@@ -139,6 +139,10 @@ export interface GmMapView {
 
 export const PlaceWriteSchema = z.strictObject({
   name: z.string().trim().max(120).optional(),
+  description: z.string().max(4000).optional(),
+  ruler: z.string().trim().max(120).optional(),
+  faction: z.string().trim().max(120).optional(),
+  population: z.string().trim().max(60).optional(),
   kind: PlaceKindSchema.optional(),
   x: z.number().min(0).max(MAP_W).optional(),
   y: z.number().min(0).max(MAP_H).optional(),
@@ -159,3 +163,117 @@ export const TokenWriteSchema = z.strictObject({ x: X.optional(), y: Y.optional(
 // ---- Запросы игрока ----
 
 export const NoteWriteSchema = z.strictObject({ x: z.number().min(0).max(MAP_W), y: z.number().min(0).max(MAP_H), text: z.string().trim().min(1).max(1000) });
+
+// ---- Города (этап 27): карточка места, места в городе, слухи и задания, кто здесь ----
+
+export const SpotKindSchema = z.enum(SPOT_KINDS);
+export const RumorKindSchema = z.enum(RUMOR_KINDS);
+const ImageSchema = z.strictObject({ url: z.string(), w: z.number(), h: z.number() });
+
+/** Кто здесь: противник из библиотеки — только имя, внешность и роль, которую написал мастер («трактирщик»). Без id противника. */
+export const PresencePublicSchema = z.strictObject({ id: z.string(), name: z.string(), label: z.string(), figure: FigureSchema.nullable() });
+export type PresencePublic = z.infer<typeof PresencePublicSchema>;
+
+/**
+ * Место для игрока и стола: карточка и экран города. Только видимое: скрытые места в городе, слухи и «кто здесь»
+ * не уходят вовсе, без счётчиков. Слухи — в порядке, в каком мастер их открыл (сами времена не уходят).
+ */
+export const PlaceDetailPublicSchema = z.strictObject({
+  id: z.string(),
+  mapId: MapIdSchema,
+  name: z.string(),
+  kind: PlaceKindSchema,
+  subtitle: z.string(),
+  ink: z.string().nullable(),
+  description: z.string(),
+  ruler: z.string(),
+  faction: z.string(),
+  population: z.string(),
+  image: ImageSchema.nullable(),
+  spots: z.array(z.strictObject({ id: z.string(), kind: SpotKindSchema, name: z.string(), description: z.string(), here: z.array(PresencePublicSchema) })),
+  rumors: z.array(z.strictObject({ id: z.string(), kind: RumorKindSchema, text: z.string() })),
+  here: z.array(PresencePublicSchema),
+});
+export type PlaceDetailPublic = z.infer<typeof PlaceDetailPublicSchema>;
+
+export interface GmSpot {
+  id: string;
+  kind: SpotKind;
+  name: string;
+  description: string;
+  visible: boolean;
+  noteGm: string;
+  sort: number;
+}
+export interface GmRumor {
+  id: string;
+  kind: RumorKind;
+  text: string;
+  visible: boolean;
+  /** когда открыт игрокам (порядок у игроков), null — ещё не открыт */
+  revealedAt: number | null;
+  noteGm: string;
+}
+export interface GmPresence {
+  id: string;
+  npcId: string;
+  name: string;
+  figure: Figure | null;
+  spotId: string | null;
+  label: string;
+  visible: boolean;
+}
+/** Мастеру — карточка места целиком. */
+export interface GmPlaceDetail {
+  id: string;
+  mapId: MapId;
+  name: string;
+  kind: z.infer<typeof PlaceKindSchema>;
+  subtitle: string;
+  visible: boolean;
+  description: string;
+  ruler: string;
+  faction: string;
+  population: string;
+  noteGm: string;
+  image: { url: string; w: number; h: number } | null;
+  spots: GmSpot[];
+  rumors: GmRumor[];
+  presence: GmPresence[];
+  /** противники библиотеки — кого можно добавить в «Кто здесь» */
+  npcs: { id: string; name: string }[];
+  /** ключ Claude API задан и это не демо-комната */
+  drafts: boolean;
+}
+
+export const SpotWriteSchema = z.strictObject({
+  kind: SpotKindSchema.optional(),
+  name: z.string().trim().max(120).optional(),
+  description: z.string().max(4000).optional(),
+  visible: z.boolean().optional(),
+  noteGm: z.string().max(4000).optional(),
+  sort: z.number().int().min(0).max(1000).optional(),
+});
+export const RumorWriteSchema = z.strictObject({
+  kind: RumorKindSchema.optional(),
+  text: z.string().trim().max(1000).optional(),
+  visible: z.boolean().optional(),
+  noteGm: z.string().max(4000).optional(),
+});
+export const PresenceAddSchema = z.strictObject({
+  npcId: z.string().min(1).max(64),
+  spotId: z.string().min(1).max(64).nullable().default(null),
+  label: z.string().trim().max(120).default(''),
+});
+export const PresenceWriteSchema = z.strictObject({
+  spotId: z.string().min(1).max(64).nullable().optional(),
+  label: z.string().trim().max(120).optional(),
+  visible: z.boolean().optional(),
+});
+
+/** Черновик Claude для места: описание, места в городе или слухи. Сохраняет человек. */
+export const PlaceDraftSchema = z.strictObject({ part: z.enum(['description', 'spots', 'rumors']) });
+export type PlaceDraft =
+  | { part: 'description'; text: string }
+  | { part: 'spots'; spots: { kind: SpotKind; name: string; description: string }[] }
+  | { part: 'rumors'; rumors: { kind: RumorKind; text: string }[] };

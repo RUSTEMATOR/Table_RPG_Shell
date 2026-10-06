@@ -16,6 +16,7 @@ import { gmSceneRoutes, tableRoutes } from './routes/scenes.ts';
 import { summaryRoutes } from './routes/summaries.ts';
 import { statusRoutes } from './routes/status.ts';
 import { gmMapRoutes, playerMapRoutes, tableMapRoutes } from './routes/maps.ts';
+import { gmPlaceRoutes, publicPlaceRoutes } from './routes/places.ts';
 import { findGmLeak } from './visibility/guard.ts';
 
 declare module 'fastify' {
@@ -70,6 +71,8 @@ export async function buildApp() {
   await app.register(gmMapRoutes);
   await app.register(playerMapRoutes);
   await app.register(tableMapRoutes);
+  await app.register(gmPlaceRoutes);
+  await app.register(publicPlaceRoutes);
 
   return app;
 }

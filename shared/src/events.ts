@@ -50,6 +50,10 @@ export interface ServerToClientEvents {
   'map:notes.changed': (payload: { mapId: MapId }) => void;
   /** Мастеру: карта изменилась, перечитать. */
   'gm:map.changed': (payload: { mapId: MapId }) => void;
+  /** Игрокам и столу: открытая карточка места изменилась (только если действительно изменилась). Перечитать. */
+  'map:place.changed': (payload: { mapId: MapId; placeId: string }) => void;
+  /** Мастеру: карточка места изменилась (другое устройство). */
+  'gm:place.changed': (payload: { placeId: string }) => void;
   /** Мастеру: список сцен или показанная сцена изменились. */
   'gm:scenes.changed': () => void;
   /** Мастеру: библиотека противников изменилась. */

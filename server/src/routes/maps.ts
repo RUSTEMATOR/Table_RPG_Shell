@@ -21,7 +21,7 @@ import {
   updateRegion,
   updateToken,
 } from '../domain/maps.ts';
-import { notifyMapChanged } from '../realtime/maps.ts';
+import { notifyMapChanged, notifyPlaceChanged } from '../realtime/maps.ts';
 import { publish } from '../realtime/publish.ts';
 import { projectMapForPlayer, projectMapForTable } from '../visibility/map.ts';
 import { pushTable } from './scenes.ts';
@@ -88,12 +88,13 @@ export async function gmMapRoutes(app: FastifyInstance) {
     const p = getPlace(roomId, request.params.id);
     if (!p || p.kind === 'deleted') return reply.code(404).send({ error: 'not_found' });
     const patch: Parameters<typeof updatePlace>[1] = {};
-    for (const k of ['name', 'kind', 'x', 'y', 'side', 'subtitle', 'visible', 'noteGm'] as const) {
+    for (const k of ['name', 'kind', 'x', 'y', 'side', 'subtitle', 'visible', 'noteGm', 'description', 'ruler', 'faction', 'population'] as const) {
       if (b.data[k] !== undefined) Object.assign(patch, { [k]: b.data[k] });
     }
     updatePlace(p, patch);
     const mapId = MapIdSchema.parse(p.mapId);
     notifyMapChanged(roomId, mapId);
+    notifyPlaceChanged(roomId, p.id);
     return gmMapView(roomId, mapId);
   });
 
@@ -104,6 +105,7 @@ export async function gmMapRoutes(app: FastifyInstance) {
     deletePlace(p);
     const mapId = MapIdSchema.parse(p.mapId);
     notifyMapChanged(roomId, mapId);
+    notifyPlaceChanged(roomId, p.id);
     return gmMapView(roomId, mapId);
   });
 

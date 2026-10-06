@@ -167,12 +167,32 @@ export function createPlace(
   p: { name: string; kind: string; x: number; y: number; side: 'l' | 'r' | 'b'; subtitle: string; visible: boolean; noteGm: string },
 ): PlaceRow {
   const now = Date.now();
-  const row: PlaceRow = { id: newId(), roomId, mapId, key: null, ink: null, createdAt: now, updatedAt: now, ...p };
+  const row: PlaceRow = {
+    id: newId(),
+    roomId,
+    mapId,
+    key: null,
+    ink: null,
+    description: '',
+    ruler: '',
+    faction: '',
+    population: '',
+    imageFile: null,
+    imageW: null,
+    imageH: null,
+    imageBytes: null,
+    createdAt: now,
+    updatedAt: now,
+    ...p,
+  };
   db.insert(schema.mapPlace).values(row).run();
   return row;
 }
 
-export function updatePlace(p: PlaceRow, patch: Partial<Pick<PlaceRow, 'name' | 'kind' | 'x' | 'y' | 'side' | 'subtitle' | 'visible' | 'noteGm'>>): void {
+export function updatePlace(
+  p: PlaceRow,
+  patch: Partial<Pick<PlaceRow, 'name' | 'kind' | 'x' | 'y' | 'side' | 'subtitle' | 'visible' | 'noteGm' | 'description' | 'ruler' | 'faction' | 'population'>>,
+): void {
   db.update(schema.mapPlace)
     .set({ ...patch, updatedAt: Date.now() })
     .where(eq(schema.mapPlace.id, p.id))

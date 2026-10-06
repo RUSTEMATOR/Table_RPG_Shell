@@ -8,6 +8,7 @@ import { setShownNpc, shownNpcId } from '../domain/scenes.ts';
 import { activeSession, setOpponent } from '../domain/session.ts';
 import { mapsWithPiece } from '../domain/maps.ts';
 import { notifyPieceMaps } from '../realtime/maps.ts';
+import { placesWithNpc } from '../domain/places.ts';
 import { publish } from '../realtime/publish.ts';
 import { pushTable } from './scenes.ts';
 
@@ -95,8 +96,9 @@ export async function gmNpcRoutes(app: FastifyInstance) {
     // Имя и сила в сессии остаются (ручной противник), ссылка на библиотеку обнуляется внешним ключом.
     // Его фигурки с карт уходят вместе с ним (внешний ключ) — карты узнают об этом.
     const maps = mapsWithPiece(roomId, { npcId: r.id });
+    const places = placesWithNpc(roomId, r.id);
     deleteNpc(r);
-    notifyPieceMaps(roomId, { npcId: r.id }, maps);
+    notifyPieceMaps(roomId, { npcId: r.id }, maps, places);
     if (wasOpponent) publish(roomId, { kind: 'gm' }, 'gm:session.changed');
     if (wasShown) pushTable(roomId);
     else publish(roomId, { kind: 'gm' }, 'gm:npcs.changed');

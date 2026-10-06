@@ -1,7 +1,21 @@
 import { and, eq } from 'drizzle-orm';
-import { MapPublicSchema, PlaceKindSchema, type MapId, type MapNote, type MapPublic } from '@zg/shared';
+import {
+  MapIdSchema,
+  MapPublicSchema,
+  PlaceDetailPublicSchema,
+  PlaceKindSchema,
+  RumorKindSchema,
+  SpotKindSchema,
+  type MapId,
+  type MapNote,
+  type MapPublic,
+  type PlaceDetailPublic,
+} from '@zg/shared';
 import { db, schema } from '../db/client.ts';
-import { MAPS, ensureMaps, getParty, pieceKey, pieces, placeRows, refOf, regionRows, roads, tokenRows } from '../domain/maps.ts';
+import { MAPS, ensureMaps, getParty, getPlace, pieceKey, pieces, placeRows, refOf, regionRows, roads, tokenRows } from '../domain/maps.ts';
+import { imageUrl } from '../domain/media.ts';
+import { npcFigure } from '../domain/npc.ts';
+import { presenceRows, rumorRows, spotRows } from '../domain/places.ts';
 
 // Единственное место, где карта превращается в то, что видят игрок и стол.
 // Уходят только открытые регионы (контур, имя, подпись) и открытые места, без note_gm и без ключей исходных данных.
@@ -81,4 +95,45 @@ export function projectMapForPlayer(roomId: string, memberId: string, mapId: Map
 
 export function projectMapForTable(roomId: string, mapId: MapId): MapPublic {
   return projectMapPublic(roomId, mapId);
+}
+
+/**
+ * Место для игрока и стола (этап 27): карточка и экран города. null — места нет или оно скрыто (тогда — 404).
+ * Уходят только видимые места в городе, открытые слухи (в порядке открытия, без времён) и открытые «кто здесь»
+ * (имя и фигурка противника из библиотеки, роль от мастера; без id противника, силы, заметок, портрета).
+ * Скрытое не оставляет ни следа, ни счётчика; note_gm не читается. На выходе — PlaceDetailPublicSchema.parse.
+ */
+export function projectPlaceDetail(roomId: string, placeId: string): PlaceDetailPublic | null {
+  const p = getPlace(roomId, placeId);
+  if (!p || !p.visible || p.kind === 'deleted') return null;
+  const spots = spotRows(p.id).filter((s) => s.visible);
+  const spotIds = new Set(spots.map((s) => s.id));
+  const here = presenceRows(p.id)
+    .filter(({ p: x }) => x.visible)
+    .map(({ p: x, name, figure }) => ({ spotId: x.spotId && spotIds.has(x.spotId) ? x.spotId : null, v: { id: x.id, name, label: x.label, figure: npcFigure({ figure }) } }));
+  return PlaceDetailPublicSchema.parse({
+    id: p.id,
+    mapId: MapIdSchema.parse(p.mapId),
+    name: p.name,
+    kind: PlaceKindSchema.catch('mark').parse(p.kind),
+    subtitle: p.subtitle,
+    ink: p.ink,
+    description: p.description,
+    ruler: p.ruler,
+    faction: p.faction,
+    population: p.population,
+    image: p.imageFile ? { url: imageUrl(p.imageFile), w: p.imageW ?? 0, h: p.imageH ?? 0 } : null,
+    spots: spots.map((s) => ({
+      id: s.id,
+      kind: SpotKindSchema.catch('other').parse(s.kind),
+      name: s.name,
+      description: s.description,
+      here: here.filter((h) => h.spotId === s.id).map((h) => h.v),
+    })),
+    rumors: rumorRows(p.id)
+      .filter((r) => r.visible)
+      .sort((a, b) => (a.revealedAt ?? 0) - (b.revealedAt ?? 0))
+      .map((r) => ({ id: r.id, kind: RumorKindSchema.catch('rumor').parse(r.kind), text: r.text })),
+    here: here.filter((h) => h.spotId === null).map((h) => h.v),
+  });
 }
