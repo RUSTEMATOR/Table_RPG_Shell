@@ -2,10 +2,24 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { MAP_IDS, MapFocusSchema, PlaceKindSchema, RegionLabelSchema, SideSchema, type GmMapView, type MapFocus, type MapId } from '@zg/shared';
+import {
+  FigureSchema,
+  MAP_IDS,
+  MapFocusSchema,
+  PlaceKindSchema,
+  RegionLabelSchema,
+  SideSchema,
+  type Figure,
+  type GmMapPiece,
+  type GmMapView,
+  type MapFocus,
+  type MapId,
+} from '@zg/shared';
 import { newId } from '../auth/tokens.ts';
 import { db, schema } from '../db/client.ts';
 import { SERVER_ROOT } from '../paths.ts';
+import { listNpcs, npcFigure } from './npc.ts';
+import { listCharacters } from './repo.ts';
 
 // Карты мира. Неизменная часть (контуры, имена, подписи регионов, исходные места и дороги) — из server/src/maps/json
 // (tools/extract-maps). В базе — что открыто, места (их можно править), заметки мастера, маркер партии, заметки игроков.
@@ -69,11 +83,7 @@ export function ensureMaps(roomId: string): number {
     for (const id of MAP_IDS) {
       const src = MAPS[id];
       for (const r of src.regions) {
-        const res = tx
-          .insert(schema.mapRegion)
-          .values({ id: newId(), roomId, mapId: id, key: r.key, visible: false, noteGm: '', updatedAt: now })
-          .onConflictDoNothing()
-          .run();
+        const res = tx.insert(schema.mapRegion).values({ id: newId(), roomId, mapId: id, key: r.key, visible: false, noteGm: '', updatedAt: now }).onConflictDoNothing().run();
         added += res.changes;
       }
       for (const p of src.places) {
@@ -151,7 +161,11 @@ export function updateRegion(r: RegionRow, patch: { visible?: boolean; noteGm?: 
     .run();
 }
 
-export function createPlace(roomId: string, mapId: MapId, p: { name: string; kind: string; x: number; y: number; side: 'l' | 'r' | 'b'; subtitle: string; visible: boolean; noteGm: string }): PlaceRow {
+export function createPlace(
+  roomId: string,
+  mapId: MapId,
+  p: { name: string; kind: string; x: number; y: number; side: 'l' | 'r' | 'b'; subtitle: string; visible: boolean; noteGm: string },
+): PlaceRow {
   const now = Date.now();
   const row: PlaceRow = { id: newId(), roomId, mapId, key: null, ink: null, createdAt: now, updatedAt: now, ...p };
   db.insert(schema.mapPlace).values(row).run();
@@ -214,9 +228,94 @@ export function setTableMap(roomId: string, mapId: MapId | null, focus: MapFocus
 /** Дороги, у которых открыты оба конца (по ключам исходных мест). */
 export function roads(mapId: MapId, places: PlaceRow[]): { d: string; open: boolean }[] {
   const byKey = new Map(places.filter((p) => p.key).map((p) => [p.key!, p]));
-  return MAPS[mapId].roads
-    .filter((r) => byKey.has(r.a) && byKey.has(r.b))
-    .map((r) => ({ d: r.d, open: !!byKey.get(r.a)?.visible && !!byKey.get(r.b)?.visible }));
+  return MAPS[mapId].roads.filter((r) => byKey.has(r.a) && byKey.has(r.b)).map((r) => ({ d: r.d, open: !!byKey.get(r.a)?.visible && !!byKey.get(r.b)?.visible }));
+}
+
+// ---- Фигурки на карте (этап 24) ----
+
+export type TokenRow = typeof schema.mapToken.$inferSelect;
+
+/** Фигурки карты сверху вниз: порядок не выдаёт ни возраст, ни число скрытых. */
+export function tokenRows(roomId: string, mapId: MapId): TokenRow[] {
+  return db
+    .select()
+    .from(schema.mapToken)
+    .where(and(eq(schema.mapToken.roomId, roomId), eq(schema.mapToken.mapId, mapId)))
+    .all()
+    .sort((a, b) => a.y - b.y || a.x - b.x);
+}
+
+export function getToken(roomId: string, id: string): TokenRow | undefined {
+  return db
+    .select()
+    .from(schema.mapToken)
+    .where(and(eq(schema.mapToken.roomId, roomId), eq(schema.mapToken.id, id)))
+    .get();
+}
+
+/** Персонаж или противник, которого можно поставить на карту. owner — только для сервера (чья фигурка у игрока «своя»). */
+export type Piece = GmMapPiece & { owner: string | null };
+const figureOf = (v: unknown): Figure | null => {
+  const f = FigureSchema.safeParse(v);
+  return f.success ? f.data : null;
+};
+export function pieces(roomId: string): Piece[] {
+  return [
+    ...listCharacters(roomId)
+      .sort((a, b) => a.row.name.localeCompare(b.row.name, 'ru'))
+      .map((c) => ({ kind: 'pc' as const, refId: c.row.id, name: c.row.name, figure: figureOf(c.doc.figure), owner: c.row.ownerMemberId })),
+    ...listNpcs(roomId).map((n) => ({ kind: 'npc' as const, refId: n.id, name: n.name, figure: npcFigure(n), owner: null })),
+  ];
+}
+export const refOf = (t: Pick<TokenRow, 'characterId' | 'npcId'>) => (t.characterId ? `pc:${t.characterId}` : `npc:${t.npcId}`);
+export const pieceKey = (p: Pick<Piece, 'kind' | 'refId'>) => `${p.kind}:${p.refId}`;
+
+export function addToken(roomId: string, mapId: MapId, piece: Piece, x: number, y: number, visible: boolean): TokenRow {
+  const now = Date.now();
+  // персонаж — одна фигурка на карте: повторная постановка переносит её
+  if (piece.kind === 'pc') {
+    const had = tokenRows(roomId, mapId).find((t) => t.characterId === piece.refId);
+    if (had) {
+      db.update(schema.mapToken).set({ x, y, visible, updatedAt: now }).where(eq(schema.mapToken.id, had.id)).run();
+      return { ...had, x, y, visible, updatedAt: now };
+    }
+  }
+  const row: TokenRow = {
+    id: newId(),
+    roomId,
+    mapId,
+    characterId: piece.kind === 'pc' ? piece.refId : null,
+    npcId: piece.kind === 'npc' ? piece.refId : null,
+    x,
+    y,
+    visible,
+    createdAt: now,
+    updatedAt: now,
+  };
+  db.insert(schema.mapToken).values(row).run();
+  return row;
+}
+
+export function updateToken(t: TokenRow, patch: { x?: number; y?: number; visible?: boolean }): void {
+  db.update(schema.mapToken)
+    .set({ ...patch, updatedAt: Date.now() })
+    .where(eq(schema.mapToken.id, t.id))
+    .run();
+}
+
+export function deleteToken(t: TokenRow): void {
+  db.delete(schema.mapToken).where(eq(schema.mapToken.id, t.id)).run();
+}
+
+/** Карты, где стоит фигурка этого персонажа или противника (чтобы сообщить об их смене имени или внешности). */
+export function mapsWithPiece(roomId: string, ref: { characterId: string } | { npcId: string }): MapId[] {
+  const col = 'characterId' in ref ? eq(schema.mapToken.characterId, ref.characterId) : eq(schema.mapToken.npcId, ref.npcId);
+  const ids = db
+    .select({ mapId: schema.mapToken.mapId })
+    .from(schema.mapToken)
+    .where(and(eq(schema.mapToken.roomId, roomId), col))
+    .all();
+  return MAP_IDS.filter((m) => ids.some((r) => r.mapId === m));
 }
 
 const label = (r: SourceRegion) => r.label;
@@ -229,6 +328,8 @@ export function gmMapView(roomId: string, mapId: MapId): GmMapView {
   const places = placeRows(roomId, mapId);
   const party = getParty(roomId);
   const partyMap = MAP_IDS.find((m) => m === party?.mapId);
+  const all = pieces(roomId);
+  const byRef = new Map(all.map((p) => [pieceKey(p), p]));
   return {
     id: mapId,
     title: src.title,
@@ -269,5 +370,10 @@ export function gmMapView(roomId: string, mapId: MapId): GmMapView {
     roads: roads(mapId, places),
     party: party && partyMap ? { mapId: partyMap, x: party.x, y: party.y, visible: party.visible } : null,
     table: tableMap(roomId),
+    tokens: tokenRows(roomId, mapId).flatMap((t) => {
+      const p = byRef.get(refOf(t));
+      return p ? [{ id: t.id, kind: p.kind, refId: p.refId, name: p.name, figure: p.figure, x: t.x, y: t.y, visible: t.visible }] : [];
+    }),
+    pieces: all.map(({ owner: _owner, ...p }) => p),
   };
 }

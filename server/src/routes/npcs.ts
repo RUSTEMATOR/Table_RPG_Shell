@@ -6,6 +6,8 @@ import { IMAGE_BODY_LIMIT, IMAGE_TYPES } from '../domain/media.ts';
 import { createNpc, deleteNpc, getNpc, gmNpc, listNpcs, setNpcFigure, setNpcImage, updateNpc, type NpcRow } from '../domain/npc.ts';
 import { setShownNpc, shownNpcId } from '../domain/scenes.ts';
 import { activeSession, setOpponent } from '../domain/session.ts';
+import { mapsWithPiece } from '../domain/maps.ts';
+import { notifyPieceMaps } from '../realtime/maps.ts';
 import { publish } from '../realtime/publish.ts';
 import { pushTable } from './scenes.ts';
 
@@ -26,6 +28,7 @@ export async function gmNpcRoutes(app: FastifyInstance) {
     }
     if (shownNpcId(roomId) === r.id) pushTable(roomId);
     else publish(roomId, { kind: 'gm' }, 'gm:npcs.changed');
+    notifyPieceMaps(roomId, { npcId: r.id });
   };
 
   app.get('/api/gm/npcs', async (request) => {
@@ -90,7 +93,10 @@ export async function gmNpcRoutes(app: FastifyInstance) {
     const wasShown = shownNpcId(roomId) === r.id;
     const wasOpponent = activeSession(roomId).opponentNpcId === r.id;
     // Имя и сила в сессии остаются (ручной противник), ссылка на библиотеку обнуляется внешним ключом.
+    // Его фигурки с карт уходят вместе с ним (внешний ключ) — карты узнают об этом.
+    const maps = mapsWithPiece(roomId, { npcId: r.id });
     deleteNpc(r);
+    notifyPieceMaps(roomId, { npcId: r.id }, maps);
     if (wasOpponent) publish(roomId, { kind: 'gm' }, 'gm:session.changed');
     if (wasShown) pushTable(roomId);
     else publish(roomId, { kind: 'gm' }, 'gm:npcs.changed');

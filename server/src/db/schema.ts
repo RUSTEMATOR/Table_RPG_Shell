@@ -333,6 +333,27 @@ export const mapParty = sqliteTable('map_party', {
   updatedAt: integer('updated_at').notNull(),
 });
 
+// Фигурки на карте (этап 24): персонаж или противник из библиотеки (ровно одно из двух). Игрок и стол видят только visible.
+// Персонаж — не больше одной фигурки на карте (проверяет сервер); противник — сколько угодно (стая волков).
+export const mapToken = sqliteTable(
+  'map_token',
+  {
+    id: text('id').primaryKey(),
+    roomId: text('room_id')
+      .notNull()
+      .references(() => room.id, { onDelete: 'cascade' }),
+    mapId: text('map_id').notNull(),
+    characterId: text('character_id').references(() => character.id, { onDelete: 'cascade' }),
+    npcId: text('npc_id').references(() => npc.id, { onDelete: 'cascade' }),
+    x: real('x').notNull(),
+    y: real('y').notNull(),
+    visible: integer('visible', { mode: 'boolean' }).notNull().default(true),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  (t) => [index('map_token_map_idx').on(t.roomId, t.mapId)],
+);
+
 // Личные заметки игрока на карте. Видит только автор; мастеру и столу не уходят.
 export const mapPlayerNote = sqliteTable(
   'map_player_note',

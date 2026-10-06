@@ -1,15 +1,16 @@
 import { and, eq } from 'drizzle-orm';
 import { MapPublicSchema, PlaceKindSchema, type MapId, type MapNote, type MapPublic } from '@zg/shared';
 import { db, schema } from '../db/client.ts';
-import { MAPS, ensureMaps, getParty, placeRows, regionRows, roads } from '../domain/maps.ts';
+import { MAPS, ensureMaps, getParty, pieceKey, pieces, placeRows, refOf, regionRows, roads, tokenRows } from '../domain/maps.ts';
 
 // Единственное место, где карта превращается в то, что видят игрок и стол.
 // Уходят только открытые регионы (контур, имя, подпись) и открытые места, без note_gm и без ключей исходных данных.
 // Скрытые регионы не оставляют ни контура, ни счётчика: закрытое на клиенте — общий туман.
 // Дорога — только если открыты оба её конца. Маркер партии — если он на этой карте и не спрятан.
+// Фигурки — только видимые: имя и внешность (FigureSchema), без id персонажа или противника, без силы и заметок.
 // На выходе — MapPublicSchema.parse (strictObject на всех уровнях): лишнее поле — исключение.
 
-export function projectMapPublic(roomId: string, mapId: MapId): MapPublic {
+export function projectMapPublic(roomId: string, mapId: MapId, memberId?: string): MapPublic {
   ensureMaps(roomId);
   const src = MAPS[mapId];
   const open = new Set(
@@ -20,6 +21,8 @@ export function projectMapPublic(roomId: string, mapId: MapId): MapPublic {
   const ids = new Map(regionRows(roomId, mapId).map((r) => [r.key, r.id]));
   const places = placeRows(roomId, mapId);
   const party = getParty(roomId);
+  const tokens = tokenRows(roomId, mapId).filter((t) => t.visible);
+  const byRef = tokens.length ? new Map(pieces(roomId).map((p) => [pieceKey(p), p])) : new Map();
   return MapPublicSchema.parse({
     id: mapId,
     title: src.title,
@@ -53,6 +56,10 @@ export function projectMapPublic(roomId: string, mapId: MapId): MapPublic {
       .filter((r) => r.open)
       .map((r) => ({ d: r.d })),
     party: party && party.visible && party.mapId === mapId ? { x: party.x, y: party.y } : null,
+    tokens: tokens.flatMap((t) => {
+      const p = byRef.get(refOf(t));
+      return p ? [{ id: t.id, kind: p.kind, name: p.name, figure: p.figure, x: t.x, y: t.y, mine: !!memberId && p.owner === memberId }] : [];
+    }),
     notes: [],
   });
 }
@@ -69,7 +76,7 @@ export function playerNotes(roomId: string, memberId: string, mapId: MapId): Map
 }
 
 export function projectMapForPlayer(roomId: string, memberId: string, mapId: MapId): MapPublic {
-  return MapPublicSchema.parse({ ...projectMapPublic(roomId, mapId), notes: playerNotes(roomId, memberId, mapId) });
+  return MapPublicSchema.parse({ ...projectMapPublic(roomId, mapId, memberId), notes: playerNotes(roomId, memberId, mapId) });
 }
 
 export function projectMapForTable(roomId: string, mapId: MapId): MapPublic {

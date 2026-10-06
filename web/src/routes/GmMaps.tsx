@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { MAP_IDS, PLACE_KINDS, PLACE_KIND_LABELS, type GmMapPlace, type GmMapView, type MapId, type PlaceKind } from '@zg/shared';
+import { Link } from 'react-router';
+import { MAP_IDS, PLACE_KINDS, PLACE_KIND_LABELS, type GmMapPlace, type GmMapToken, type GmMapView, type MapId, type PlaceKind } from '@zg/shared';
 import { api } from '../lib/api.ts';
 import { useConnection, useSocketEvent } from '../lib/socket.ts';
 import { load, save } from '../lib/storage.ts';
@@ -10,11 +11,13 @@ import { preloadArt } from '../maps/MapArt.tsx';
 import { Badge, Button, Card, CardTitle, Field, Input, Segmented, Select, Sheet, Switch, Textarea, toast } from '../ui/index.ts';
 
 const TITLES: Record<MapId, string> = { world: 'Мир', razdolye: 'Раздолье', frozen: 'Замёрзшие земли' };
-type Tool = 'select' | 'place' | 'party';
+type Tool = 'select' | 'place' | 'party' | 'token';
+const pieceValue = (p: { kind: string; refId: string }) => `${p.kind}:${p.refId}`;
 
 /**
  * Карты у мастера: видно всё — скрытое заштриховано и бледнее. Открыть/закрыть регион и место, редактор мест
- * (нажать «Новое место» и точку на карте; перетащить — переставить), маркер партии, показ на столе с наездом камеры.
+ * (нажать «Новое место» и точку на карте; перетащить — переставить), маркер партии, фигурки персонажей и противников
+ * («Фигурка» → кого → точка на карте; перетащить — переставить, у всех она идёт к новой точке), показ на столе с наездом камеры.
  */
 export function GmMaps() {
   const [mapId, setMapId] = useState<MapId>(() => {
@@ -27,6 +30,8 @@ export function GmMaps() {
   const [view, setView] = useState<GmMapView | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [tool, setTool] = useState<Tool>('select');
+  const [piece, setPiece] = useState('');
+  const [token, setToken] = useState<string | null>(null);
   const [camera, setCamera] = useState<Camera | null>(null);
   const [panel, setPanel] = useState(false);
   // Лист — только когда боковой панели нет на экране (узкое окно).
@@ -42,6 +47,7 @@ export function GmMaps() {
   useEffect(() => {
     setView(null);
     setSelected(null);
+    setToken(null);
     void reload();
   }, [reload]);
   useSocketEvent('gm:map.changed', (e) => e.mapId === mapId && void reload());
@@ -58,11 +64,19 @@ export function GmMaps() {
         places: view.places,
         roads: view.roads,
         party: view.party && view.party.mapId === view.id ? view.party : null,
+        tokens: view.tokens,
         notes: [],
       },
     [view],
   );
   const place = view?.places.find((p) => p.id === selected) ?? null;
+  const tok = view?.tokens.find((t) => t.id === token) ?? null;
+  const pieceOptions = (view?.pieces ?? []).map((p) => ({
+    value: pieceValue(p),
+    label: p.name || (p.kind === 'npc' ? 'Противник без имени' : 'Персонаж без имени'),
+    group: p.kind === 'npc' ? 'Противники' : 'Персонажи',
+  }));
+  const pieceName = pieceOptions.find((o) => o.value === piece)?.label;
 
   const post = async (path: string, body: unknown, ok?: string) => {
     const r = await api<GmMapView | { id: string; map: GmMapView } | { ok: true }>('POST', path, body);
@@ -84,11 +98,27 @@ export function GmMaps() {
         openPanel();
       }
       setTool('select');
+    } else if (tool === 'token') {
+      const p = view?.pieces.find((x) => pieceValue(x) === piece);
+      if (!p) return toast.error('Сначала выберите, кого поставить');
+      // противник встаёт скрытым: мастер откроет его, когда партия его заметит
+      const res = await post(
+        `/api/gm/maps/${mapId}/tokens`,
+        { kind: p.kind, refId: p.refId, x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, visible: p.kind === 'pc' },
+        p.kind === 'npc' ? `«${p.name}» на карте — пока скрыт` : `«${p.name}» на карте`,
+      );
+      if (res && 'id' in res) {
+        setSelected(null);
+        setToken(res.id);
+      }
     } else if (tool === 'party') {
       await post('/api/gm/maps/party', { mapId, x, y, visible: true }, 'Партия здесь');
       void reload();
       setTool('select');
-    } else setSelected(null);
+    } else {
+      setSelected(null);
+      setToken(null);
+    }
   };
 
   const showOnTable = async (focus: { x: number; y: number; zoom: number } | null) => {
@@ -121,10 +151,22 @@ export function GmMaps() {
               { value: 'select', label: 'Выбор' },
               { value: 'place', label: 'Новое место' },
               { value: 'party', label: 'Партия' },
+              { value: 'token', label: 'Фигурка' },
             ]}
           />
+          {tool === 'token' && (
+            <Select aria-label="Кого поставить" value={piece} onValueChange={setPiece} options={pieceOptions} placeholder="Кого поставить" className="min-w-[200px]" />
+          )}
           <span className="text-[13.6px] text-muted">
-            {tool === 'place' ? 'Нажмите на карту, где поставить место.' : tool === 'party' ? 'Нажмите на карту, где сейчас партия.' : 'Место можно перетащить.'}
+            {tool === 'place'
+              ? 'Нажмите на карту, где поставить место.'
+              : tool === 'party'
+                ? 'Нажмите на карту, где сейчас партия.'
+                : tool === 'token'
+                  ? pieceName
+                    ? `Нажмите на карту, куда поставить «${pieceName}».`
+                    : 'Выберите персонажа или противника.'
+                  : 'Место и фигурку можно перетащить.'}
           </span>
           <span className="grow" />
           {onTable && <Badge tone="ok">На столе</Badge>}
@@ -155,8 +197,16 @@ export function GmMaps() {
                 selected={selected}
                 onPlace={(id) => {
                   setSelected(id);
+                  setToken(null);
                   openPanel();
                 }}
+                selectedToken={token}
+                onToken={(id) => {
+                  setToken(id);
+                  setSelected(null);
+                  openPanel();
+                }}
+                onTokenMove={(id, x, y) => void post(`/api/gm/maps/tokens/${id}`, { x, y })}
                 onPlaceMove={(id, x, y) => void post(`/api/gm/maps/places/${id}`, { x, y })}
                 onPick={pick}
                 onRegion={(r) => r.link && setMapId(r.link)}
@@ -170,19 +220,36 @@ export function GmMaps() {
             )}
           </div>
           <aside aria-label="Регионы и места" className="sticky top-[76px] hidden max-h-[calc(100dvh-92px)] overflow-y-auto overscroll-contain @4xl/gmmap:block">
-            {view && <SidePanel view={view} place={place} onSelect={(id) => select(id)} post={post} onDone={() => setSelected(null)} showOnTable={showOnTable} />}
+            {view && (
+              <SidePanel
+                view={view}
+                place={place}
+                token={tok}
+                onSelect={(id) => select(id)}
+                onSelectToken={selectToken}
+                post={post}
+                onDone={() => {
+                  setSelected(null);
+                  setToken(null);
+                }}
+                showOnTable={showOnTable}
+              />
+            )}
           </aside>
         </div>
       </div>
-      <Sheet open={panel} onOpenChange={setPanel} title={place ? place.name || PLACE_KIND_LABELS[place.kind] : 'Регионы и места'}>
+      <Sheet open={panel} onOpenChange={setPanel} title={place ? place.name || PLACE_KIND_LABELS[place.kind] : tok ? tok.name || 'Фигурка' : 'Регионы и места'}>
         {view && (
           <SidePanel
             view={view}
             place={place}
+            token={tok}
             onSelect={(id) => select(id)}
+            onSelectToken={selectToken}
             post={post}
             onDone={() => {
               setSelected(null);
+              setToken(null);
               setPanel(false);
             }}
             showOnTable={showOnTable}
@@ -192,8 +259,16 @@ export function GmMaps() {
     </div>
   );
 
+  function selectToken(id: string) {
+    setToken(id);
+    setSelected(null);
+    const t = view?.tokens.find((x) => x.id === id);
+    if (t) camera?.flyTo(t.x, t.y, 2.5, { duration: 0.8 });
+  }
+
   function select(id: string) {
     setSelected(id);
+    setToken(null);
     const p = view?.places.find((x) => x.id === id);
     if (p) camera?.flyTo(p.x, p.y, 2.5, { duration: 0.8 });
   }
@@ -204,23 +279,28 @@ type Post = (path: string, body: unknown, ok?: string) => Promise<unknown>;
 function SidePanel({
   view,
   place,
+  token,
   onSelect,
+  onSelectToken,
   post,
   onDone,
   showOnTable,
 }: {
   view: GmMapView;
   place: GmMapPlace | null;
+  token: GmMapToken | null;
   onSelect: (id: string) => void;
+  onSelectToken: (id: string) => void;
   post: Post;
   onDone: () => void;
   showOnTable: (f: { x: number; y: number; zoom: number } | null) => void;
 }) {
   if (place) return <PlaceEditor key={place.id} place={place} post={post} onDone={onDone} showOnTable={showOnTable} />;
-  return <Lists view={view} onSelect={onSelect} post={post} />;
+  if (token) return <TokenEditor key={token.id} token={token} post={post} onDone={onDone} showOnTable={showOnTable} />;
+  return <Lists view={view} onSelect={onSelect} onSelectToken={onSelectToken} post={post} />;
 }
 
-function Lists({ view, onSelect, post }: { view: GmMapView; onSelect: (id: string) => void; post: Post }) {
+function Lists({ view, onSelect, onSelectToken, post }: { view: GmMapView; onSelect: (id: string) => void; onSelectToken: (id: string) => void; post: Post }) {
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState<'all' | 'open' | 'hidden'>('all');
   const places = view.places.filter(
@@ -256,6 +336,29 @@ function Lists({ view, onSelect, post }: { view: GmMapView; onSelect: (id: strin
               label="видна"
             />
           </div>
+        )}
+      </Card>
+      <Card className="gap-2">
+        <h3 className="m-0">Фигурки</h3>
+        {view.tokens.length === 0 ? (
+          <p className="m-0 text-[13.6px] text-muted">На этой карте фигурок нет. Инструмент «Фигурка» → кого → точка на карте.</p>
+        ) : (
+          <ul className="m-0 grid list-none p-0">
+            {view.tokens.map((t) => (
+              <li key={t.id} className="flex items-center gap-2 border-b border-solid border-border py-1.5 last:border-0">
+                <span aria-hidden="true" className={cn('size-2.5 shrink-0 rounded-full', t.kind === 'npc' ? 'bg-[#8a1c1c]' : 'bg-[#1f7a4d]')} />
+                <button
+                  type="button"
+                  onClick={() => onSelectToken(t.id)}
+                  className={cn('grow cursor-pointer border-0 bg-transparent p-0 text-left font-ui text-[15px]', !t.visible && 'text-muted')}
+                >
+                  {t.name || <i>без имени</i>}
+                  {!t.figure && <span className="ml-1 text-xs text-muted">· без фигурки</span>}
+                </button>
+                <Switch checked={t.visible} onCheckedChange={(v) => void post(`/api/gm/maps/tokens/${t.id}`, { visible: v })} label={`${t.name}: видна игрокам`} hideLabel />
+              </li>
+            ))}
+          </ul>
         )}
       </Card>
       <Card className="gap-2">
@@ -379,6 +482,66 @@ function PlaceEditor({
         </Button>
       </div>
       <p className="m-0 text-[13px] text-muted">Чтобы переставить место, перетащите его на карте.</p>
+    </Card>
+  );
+}
+
+function TokenEditor({
+  token,
+  post,
+  onDone,
+  showOnTable,
+}: {
+  token: GmMapToken;
+  post: Post;
+  onDone: () => void;
+  showOnTable: (f: { x: number; y: number; zoom: number } | null) => void;
+}) {
+  const [confirmDel, setConfirmDel] = useState(false);
+  const url = `/api/gm/maps/tokens/${token.id}`;
+  const link = token.kind === 'pc' ? `/gm/char/${encodeURIComponent(token.refId)}` : '/gm/npcs';
+  return (
+    <Card className="gap-3">
+      <div className="flex items-center gap-2">
+        <h3 className="m-0 grow">{token.name || 'Фигурка'}</h3>
+        <Button variant="ghost" size="sm" onClick={onDone}>
+          К списку
+        </Button>
+      </div>
+      <p className="m-0 text-[13.6px] text-muted">{token.kind === 'pc' ? 'Персонаж' : 'Противник'}. Игроки и стол видят имя и фигурку — без силы и заметок.</p>
+      <Switch
+        checked={token.visible}
+        onCheckedChange={(v) => void post(url, { visible: v }, v ? 'Фигурка видна игрокам и столу' : 'Фигурка скрыта')}
+        label="Видна игрокам и столу"
+      />
+      {!token.figure && (
+        <p className="m-0 text-[13.6px] text-muted">
+          Фигурки нет — на карте жетон с буквой. Собрать:{' '}
+          <Link to={link} viewTransition className="text-link">
+            {token.kind === 'pc' ? 'страница персонажа → «Фигурка»' : '«Противники» → «+ Фигурка»'}
+          </Link>
+          .
+        </p>
+      )}
+      <div className="flex flex-wrap gap-2 border-t border-solid border-border pt-3">
+        <Button size="sm" onClick={() => showOnTable({ x: token.x, y: token.y, zoom: 3 })}>
+          На стол: наехать сюда
+        </Button>
+        <Button
+          size="sm"
+          variant={confirmDel ? 'danger' : 'ghost'}
+          className="ml-auto"
+          onBlur={() => setConfirmDel(false)}
+          onClick={async () => {
+            if (!confirmDel) return setConfirmDel(true);
+            await post(`${url}/delete`, {}, 'Фигурка убрана с карты');
+            onDone();
+          }}
+        >
+          {confirmDel ? 'Точно убрать?' : 'Убрать с карты'}
+        </Button>
+      </div>
+      <p className="m-0 text-[13px] text-muted">Чтобы переставить фигурку, перетащите её на карте — у игроков и на столе она дойдёт до новой точки.</p>
     </Card>
   );
 }

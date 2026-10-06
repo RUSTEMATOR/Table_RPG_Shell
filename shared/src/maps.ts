@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { MAP_H, MAP_IDS, MAP_W, PLACE_KINDS, type MapId } from './constants.ts';
+import { FigureSchema, type Figure } from './figure.ts';
 
 // ---- Карты мира (этап 21) ----
 // Координаты — в единицах карты 1600×1100 (как в макетах). Рельеф — в клиенте (web/src/maps/art), всё остальное — отсюда.
@@ -56,6 +57,22 @@ export type MapPlacePublic = z.infer<typeof MapPlacePublicSchema>;
 export const MapNoteSchema = z.strictObject({ id: z.string(), x: Num, y: Num, text: z.string(), updatedAt: z.number() });
 export type MapNote = z.infer<typeof MapNoteSchema>;
 
+/**
+ * Фигурка на карте (этап 24): имя и внешность персонажа или противника, без ссылок на них.
+ * mine — фигурка персонажа этого игрока (у стола всегда false). figure null — фигурки нет, рисуется жетон с буквой.
+ */
+export const TokenKindSchema = z.enum(['pc', 'npc']);
+export const MapTokenPublicSchema = z.strictObject({
+  id: z.string(),
+  kind: TokenKindSchema,
+  name: z.string(),
+  figure: FigureSchema.nullable(),
+  x: Num,
+  y: Num,
+  mine: z.boolean(),
+});
+export type MapTokenPublic = z.infer<typeof MapTokenPublicSchema>;
+
 /** Карта для игрока и стола: только открытое. notes — личные заметки игрока (столу — пусто). */
 export const MapPublicSchema = z.strictObject({
   id: MapIdSchema,
@@ -65,6 +82,7 @@ export const MapPublicSchema = z.strictObject({
   places: z.array(MapPlacePublicSchema),
   roads: z.array(z.strictObject({ d: z.string() })),
   party: z.strictObject({ x: Num, y: Num }).nullable(),
+  tokens: z.array(MapTokenPublicSchema),
   notes: z.array(MapNoteSchema),
 });
 export type MapPublic = z.infer<typeof MapPublicSchema>;
@@ -85,6 +103,24 @@ export interface GmMapPlace extends MapPlacePublic {
   visible: boolean;
   noteGm: string;
 }
+export interface GmMapToken {
+  id: string;
+  kind: 'pc' | 'npc';
+  /** id персонажа или противника */
+  refId: string;
+  name: string;
+  figure: Figure | null;
+  x: number;
+  y: number;
+  visible: boolean;
+}
+/** Кого можно поставить на карту: все персонажи и противники комнаты. */
+export interface GmMapPiece {
+  kind: 'pc' | 'npc';
+  refId: string;
+  name: string;
+  figure: Figure | null;
+}
 export interface GmMapView {
   id: MapId;
   title: string;
@@ -95,6 +131,8 @@ export interface GmMapView {
   roads: { d: string; open: boolean }[];
   party: { mapId: MapId; x: number; y: number; visible: boolean } | null;
   table: { mapId: MapId; focus: MapFocus | null } | null;
+  tokens: GmMapToken[];
+  pieces: GmMapPiece[];
 }
 
 // ---- Запросы мастера ----
@@ -112,6 +150,11 @@ export const PlaceWriteSchema = z.strictObject({
 export const RegionWriteSchema = z.strictObject({ visible: z.boolean().optional(), noteGm: z.string().max(4000).optional() });
 export const PartyWriteSchema = z.strictObject({ mapId: MapIdSchema, x: z.number().min(0).max(MAP_W), y: z.number().min(0).max(MAP_H), visible: z.boolean() }).nullable();
 export const TableMapWriteSchema = z.strictObject({ mapId: MapIdSchema.nullable(), focus: MapFocusSchema.nullable().default(null) });
+
+const X = z.number().min(0).max(MAP_W);
+const Y = z.number().min(0).max(MAP_H);
+export const TokenAddSchema = z.strictObject({ kind: TokenKindSchema, refId: z.string().min(1).max(64), x: X, y: Y, visible: z.boolean().optional() });
+export const TokenWriteSchema = z.strictObject({ x: X.optional(), y: Y.optional(), visible: z.boolean().optional() });
 
 // ---- Запросы игрока ----
 

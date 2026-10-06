@@ -1,30 +1,32 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { and, eq } from 'drizzle-orm';
-import { MapIdSchema, NoteWriteSchema, PartyWriteSchema, PlaceWriteSchema, RegionWriteSchema, TableMapWriteSchema, type MapId } from '@zg/shared';
+import { MapIdSchema, NoteWriteSchema, PartyWriteSchema, PlaceWriteSchema, RegionWriteSchema, TableMapWriteSchema, TokenAddSchema, TokenWriteSchema, type MapId } from '@zg/shared';
 import { requireGm } from '../auth/requireGm.ts';
 import { newId } from '../auth/tokens.ts';
 import { db, schema } from '../db/client.ts';
-import { createPlace, deletePlace, getPlace, getRegion, gmMapView, setParty, setTableMap, updatePlace, updateRegion } from '../domain/maps.ts';
+import {
+  addToken,
+  createPlace,
+  deletePlace,
+  deleteToken,
+  getPlace,
+  getRegion,
+  getToken,
+  gmMapView,
+  pieceKey,
+  pieces,
+  setParty,
+  setTableMap,
+  updatePlace,
+  updateRegion,
+  updateToken,
+} from '../domain/maps.ts';
+import { notifyMapChanged } from '../realtime/maps.ts';
 import { publish } from '../realtime/publish.ts';
-import { projectMapForPlayer, projectMapForTable, projectMapPublic } from '../visibility/map.ts';
+import { projectMapForPlayer, projectMapForTable } from '../visibility/map.ts';
 import { pushTable } from './scenes.ts';
 
 // Карты: мастеру — всё и правка; игроку — открытое и свои заметки; столу — открытое.
-
-const lastSent = new Map<string, string>();
-
-/**
- * Карта изменилась: мастеру — сигнал перечитать; игрокам и столу — только если их проекция действительно изменилась.
- * Иначе само событие подсказывало бы, что мастер трогал скрытое. После перезапуска кэш пуст — первое изменение уйдёт.
- */
-export function notifyMapChanged(roomId: string, mapId: MapId): void {
-  publish(roomId, { kind: 'gm' }, 'gm:map.changed', { mapId });
-  const json = JSON.stringify(projectMapPublic(roomId, mapId));
-  const key = `${roomId}:${mapId}`;
-  if (lastSent.get(key) === json) return;
-  lastSent.set(key, json);
-  publish(roomId, { kind: 'public' }, 'map:changed', { mapId });
-}
 
 function mapParam(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply): MapId | null {
   const id = MapIdSchema.safeParse(request.params.id);
@@ -115,6 +117,46 @@ export async function gmMapRoutes(app: FastifyInstance) {
     const touched = new Set([before?.mapId, b.data?.mapId].filter((m): m is MapId => MapIdSchema.safeParse(m).success));
     touched.forEach((m) => notifyMapChanged(roomId, m));
     return { ok: true };
+  });
+
+  // Фигурки (этап 24). Персонаж на карте один: повторная постановка переносит его фигурку.
+  app.post<{ Params: { id: string } }>('/api/gm/maps/:id/tokens', async (request, reply) => {
+    const mapId = mapParam(request, reply);
+    if (!mapId) return;
+    const b = TokenAddSchema.safeParse(request.body);
+    if (!b.success) return reply.code(400).send({ error: 'bad_request' });
+    const roomId = request.auth!.room.id;
+    const piece = pieces(roomId).find((p) => pieceKey(p) === pieceKey(b.data));
+    if (!piece) return reply.code(404).send({ error: 'not_found' });
+    const t = addToken(roomId, mapId, piece, b.data.x, b.data.y, b.data.visible ?? true);
+    notifyMapChanged(roomId, mapId);
+    return { id: t.id, map: gmMapView(roomId, mapId) };
+  });
+
+  app.post<{ Params: { id: string } }>('/api/gm/maps/tokens/:id', async (request, reply) => {
+    const b = TokenWriteSchema.safeParse(request.body);
+    if (!b.success) return reply.code(400).send({ error: 'bad_request' });
+    const roomId = request.auth!.room.id;
+    const t = getToken(roomId, request.params.id);
+    if (!t) return reply.code(404).send({ error: 'not_found' });
+    const patch: { x?: number; y?: number; visible?: boolean } = {};
+    if (b.data.x !== undefined) patch.x = b.data.x;
+    if (b.data.y !== undefined) patch.y = b.data.y;
+    if (b.data.visible !== undefined) patch.visible = b.data.visible;
+    updateToken(t, patch);
+    const mapId = MapIdSchema.parse(t.mapId);
+    notifyMapChanged(roomId, mapId);
+    return gmMapView(roomId, mapId);
+  });
+
+  app.post<{ Params: { id: string } }>('/api/gm/maps/tokens/:id/delete', async (request, reply) => {
+    const roomId = request.auth!.room.id;
+    const t = getToken(roomId, request.params.id);
+    if (!t) return reply.code(404).send({ error: 'not_found' });
+    deleteToken(t);
+    const mapId = MapIdSchema.parse(t.mapId);
+    notifyMapChanged(roomId, mapId);
+    return gmMapView(roomId, mapId);
   });
 
   // Карта на столе (вместо сцены) и наезд камеры. mapId null — убрать карту со стола.

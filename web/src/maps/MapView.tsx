@@ -1,12 +1,16 @@
-import { useEffect, useMemo, useRef, type MouseEvent as RMouseEvent, type PointerEvent as RPointerEvent, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, type MouseEvent as RMouseEvent, type PointerEvent as RPointerEvent, type ReactNode } from 'react';
 import { m } from 'motion/react';
 import type { MapId, MapNote, MapPlacePublic, MapRegionPublic, PlaceKind } from '@zg/shared';
 import { ArtBase, ArtDefs, ArtPaper, ArtRelief, ArtTop, PaperDefs, useArt } from './MapArt.tsx';
 import { useCamera, type Camera } from './camera.ts';
 import { ensureMapFonts } from './fonts.ts';
 import { cn } from '../lib/cn.ts';
+import type { ViewToken } from './MapTokens.tsx';
 
-// Карта: рельеф (MapArt), регионы, дороги, туман, места, маркер партии, заметки. Одна и та же для мастера, игрока и стола:
+// Фигурки — отдельный чанк (каталог деталей LPC, сборка листов): грузится, только когда на карте есть фигурки.
+const MapTokens = lazy(() => import('./MapTokens.tsx').then((m) => ({ default: m.MapTokens })));
+
+// Карта: рельеф (MapArt), регионы, дороги, туман, места, маркер партии, фигурки, заметки. Одна и та же для мастера, игрока и стола:
 // разница — в данных (игрок и стол получают только открытое) и в режиме (мастер видит скрытое заштрихованным, без тумана).
 
 export type ViewRegion = MapRegionPublic & { visible?: boolean };
@@ -17,6 +21,7 @@ export type MapViewData = {
   places: ViewPlace[];
   roads: { d: string; open?: boolean }[];
   party: { x: number; y: number } | null;
+  tokens?: ViewToken[];
   notes: MapNote[];
 };
 
@@ -127,6 +132,9 @@ export function MapView({
   onPick,
   onRegion,
   onNote,
+  selectedToken,
+  onToken,
+  onTokenMove,
   camera: external,
   instant,
   className,
@@ -143,6 +151,11 @@ export function MapView({
   /** нажатие по открытому региону со ссылкой на другую карту */
   onRegion?: (r: ViewRegion) => void;
   onNote?: (n: MapNote) => void;
+  selectedToken?: string | null;
+  /** мастер нажал фигурку */
+  onToken?: (id: string) => void;
+  /** мастер перетащил фигурку (координаты карты) */
+  onTokenMove?: (id: string, x: number, y: number) => void;
   camera?: (c: Camera) => void;
   /** без полётов камеры (стол с «Анимация выкл.») */
   instant?: boolean;
@@ -174,6 +187,7 @@ export function MapView({
   const places = gm ? data.places : data.places.filter((x) => x.visible !== false);
   const roads = gm ? data.roads : data.roads.filter((r) => r.open !== false);
   const fogRegions = data.regions.filter((r) => r.visible !== false);
+  const tokens = gm ? (data.tokens ?? []) : (data.tokens ?? []).filter((t) => t.visible !== false);
 
   // Перетаскивание места мастером.
   const drag = useRef<{ id: string; moved: boolean } | null>(null);
@@ -421,6 +435,19 @@ export function MapView({
           </svg>
         ) : (
           <div className="grid size-full place-items-center font-ui text-[#6b5d48]">Рисую карту…</div>
+        )}
+        {art && tokens.length > 0 && (
+          <Suspense fallback={null}>
+            <MapTokens
+              tokens={tokens}
+              editable={gm && !!onTokenMove}
+              selected={selectedToken ?? null}
+              instant={!!(reduced || instant)}
+              toMap={cam.toMap}
+              {...(onToken ? { onToken } : {})}
+              {...(onTokenMove ? { onTokenMove } : {})}
+            />
+          </Suspense>
         )}
       </m.div>
       {children}

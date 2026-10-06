@@ -57,12 +57,20 @@ export function FigureEditor({
   const setPart = (s: FigureSlot, p: FigurePart | undefined) => setDraft((f) => ({ ...f, parts: { ...f.parts, [s]: p } }));
   const choose = (it: Item | null) => {
     if (!it) return setPart(slot, undefined);
+    // голова не-человека (орк, волк, скелет) — кожа её родного цвета, чтобы тело совпало с головой
+    const skin = ownSkin(it);
+    if (skin) {
+      return setDraft((f) => ({ ...f, skin, parts: { ...f.parts, head: { id: it.id } } }));
+    }
     const keep = current?.color && colorChoices(slot, it).includes(current.color) ? current.color : undefined;
     const first = colorChoices(slot, it)[0];
     setPart(slot, { id: it.id, ...(keep ? { color: keep } : it.colors?.kind === 'variants' && first ? { color: first } : {}) });
   };
+  const ownSkin = (it: Item | null) =>
+    slot === 'head' && it && !it.id.startsWith('human_') && it.colors?.kind === 'palette' && it.colors.material === 'body' ? it.colors.base : null;
   const withItem = (it: Item | null): Figure => ({
     ...draft,
+    skin: ownSkin(it) ?? draft.skin,
     parts: { ...draft.parts, [slot]: it ? { id: it.id, ...(current?.color ? { color: current.color } : {}) } : undefined },
   });
 

@@ -7,11 +7,11 @@ import { setReveal, setStage } from './cards.ts';
 import type { CharDoc } from './character.ts';
 import { draftToChar } from './charDoc.ts';
 import { roll, rollExtra } from './randomizer.ts';
-import { createNpc } from './npc.ts';
+import { createNpc, setNpcFigure } from './npc.ts';
 import { insertCharacter } from './repo.ts';
 import { createSheetEntry } from './sheet.ts';
 import { createScene, setShown } from './scenes.ts';
-import { ensureMaps, placeRows, regionRows, setParty, updatePlace, updateRegion } from './maps.ts';
+import { addToken, ensureMaps, pieces, placeRows, regionRows, setParty, updatePlace, updateRegion } from './maps.ts';
 import { GM_MARKER } from '../visibility/guard.ts';
 
 // Демо-комната для гостей: посмотреть интерфейс мастера, игрока и стола без приглашений и PIN.
@@ -93,6 +93,21 @@ function seedDemo(roomId: string, guest: string, nika: string) {
     setReveal(a.slots[2], { trait: true, stages: 1, price: true });
   }
   if (a.slots[3]) setReveal(a.slots[3], { hint: 'Иногда вещи рядом с тобой ведут себя странно.' });
+  a.figure = {
+    v: 1,
+    body: 'female',
+    skin: 'light',
+    parts: {
+      body: { id: 'human' },
+      head: { id: 'human_female' },
+      hair: { id: 'long', color: 'chestnut' },
+      torso: { id: 'longsleeve', color: 'forest' },
+      armour: { id: 'leather', color: 'brown' },
+      legs: { id: 'pants', color: 'walnut' },
+      feet: { id: 'boots', color: 'leather' },
+      weapon: { id: 'longsword' },
+    },
+  };
   insertCharacter({ id: a.id, roomId, ownerMemberId: guest, kind: 'popadanets', name: a.name, publicBio: '' }, a);
   createSheetEntry(a.id, { kind: 'item', title: 'Походный нож', text: 'Тупится о зелень.', textGm: `${M}: нож заговорён`, visible: true }, 'gm');
   createSheetEntry(a.id, { kind: 'relation', title: 'Травница', text: 'Приютила на первую ночь.', textGm: `${M}: следит по просьбе старосты`, visible: true }, 'gm');
@@ -105,6 +120,21 @@ function seedDemo(roomId: string, guest: string, nika: string) {
     newId(),
   );
   markSecrets(b);
+  b.figure = {
+    v: 1,
+    body: 'female',
+    skin: 'olive',
+    parts: {
+      body: { id: 'human' },
+      head: { id: 'human_female' },
+      hair: { id: 'long', color: 'platinum' },
+      torso: { id: 'longsleeve', color: 'charcoal' },
+      cape: { id: 'solid', color: 'black' },
+      legs: { id: 'pants', color: 'black' },
+      feet: { id: 'boots', color: 'black' },
+      weapon: { id: 'bow', color: 'dark' },
+    },
+  };
   insertCharacter({ id: b.id, roomId, ownerMemberId: nika, kind: 'popadanets', name: b.name, publicBio: '' }, b);
 
   const local: CharDoc = {
@@ -125,7 +155,13 @@ function seedDemo(roomId: string, guest: string, nika: string) {
   };
   insertCharacter({ id: local.id, roomId, ownerMemberId: null, kind: 'local', name: local.name, publicBio: 'Травница из деревни у края леса.' }, local);
 
-  createNpc(roomId, { name: 'Тролль Каменного брода', power: 400, notes: `${M}: боится огня.` });
+  const troll = createNpc(roomId, { name: 'Тролль Каменного брода', power: 400, notes: `${M}: боится огня.` });
+  setNpcFigure(troll, {
+    v: 1,
+    body: 'male',
+    skin: 'green',
+    parts: { body: { id: 'human' }, head: { id: 'troll' }, legs: { id: 'pants', color: 'brown' }, weapon: { id: 'mace' } },
+  });
   const scene = createScene(roomId, { title: 'Мост через Зелёный ручей', textPublic: 'Туман стелется над водой. На том берегу кто-то ждёт.', textGm: `${M}: под мостом тролль` });
   setShown(roomId, scene.id);
 
@@ -156,4 +192,15 @@ function seedDemo(roomId: string, guest: string, nika: string) {
   for (const p of places) if (['Marblewolf', 'Oroak', 'Eriflower', 'Magewald', 'Castlefair'].includes(p.name)) updatePlace(p, { visible: true, noteGm: `${M}: кто здесь правит` });
   const mw = places.find((p) => p.name === 'Marblewolf');
   if (mw) setParty(roomId, { mapId: 'razdolye', x: mw.x - 40, y: mw.y + 60, visible: true });
+  // Фигурки: двое персонажей у столицы, тролль у брода — пока скрыт.
+  if (mw) {
+    const all = pieces(roomId);
+    const at = (refId: string, dx: number, dy: number, visible: boolean) => {
+      const p = all.find((x) => x.refId === refId);
+      if (p) addToken(roomId, 'razdolye', p, mw.x + dx, mw.y + dy, visible);
+    };
+    at(a.id, -70, 40, true);
+    at(b.id, -10, 55, true);
+    at(troll.id, 120, -60, false);
+  }
 }
