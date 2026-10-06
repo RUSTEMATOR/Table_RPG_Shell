@@ -55,8 +55,8 @@ float zgFbm(vec2 p) {
   return s;
 }
 float zgFogAt(vec2 xz) {
-  vec2 uv = xz / vec2(${MAP_W}.0, ${MAP_H}.0);
-  return uFogOn * mix(texture(uFogA, uv).r, texture(uFogB, uv).r, uFogT);
+  vec2 zgUv = xz / vec2(${MAP_W}.0, ${MAP_H}.0);
+  return uFogOn * mix(texture(uFogA, zgUv).r, texture(uFogB, zgUv).r, uFogT);
 }
 `;
 
