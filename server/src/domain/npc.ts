@@ -1,5 +1,5 @@
 import { and, asc, eq } from 'drizzle-orm';
-import type { GmNpc } from '@zg/shared';
+import { FigureSchema, type Figure, type GmNpc } from '@zg/shared';
 import { newId } from '../auth/tokens.ts';
 import { db, schema } from '../db/client.ts';
 import { powerBand } from './cards.ts';
@@ -17,10 +17,28 @@ export function gmNpc(r: NpcRow, shownId: string | null, opponentId: string | nu
     band: r.power ? powerBand(r.power).label : '',
     notes: r.notesGm,
     image: r.imageFile ? { url: imageUrl(r.imageFile), w: r.imageW ?? 0, h: r.imageH ?? 0, bytes: r.imageBytes ?? 0 } : null,
+    figure: npcFigure(r),
     shown: r.id === shownId,
     opponent: r.id === opponentId,
     updatedAt: r.updatedAt,
   };
+}
+
+/** Фигурка противника: битый или устаревший JSON — как будто фигурки нет. */
+export function npcFigure(r: Pick<NpcRow, 'figure'>): Figure | null {
+  if (!r.figure) return null;
+  try {
+    const f = FigureSchema.safeParse(JSON.parse(r.figure));
+    return f.success ? f.data : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setNpcFigure(r: NpcRow, f: Figure | null): NpcRow {
+  const patch = { figure: f ? JSON.stringify(f) : null, updatedAt: Date.now() };
+  db.update(schema.npc).set(patch).where(eq(schema.npc.id, r.id)).run();
+  return { ...r, ...patch };
 }
 
 export function listNpcs(roomId: string): NpcRow[] {
@@ -47,6 +65,7 @@ export function createNpc(roomId: string, w: { name: string; power: number | nul
     imageW: null,
     imageH: null,
     imageBytes: null,
+    figure: null,
     createdAt: now,
     updatedAt: now,
   };

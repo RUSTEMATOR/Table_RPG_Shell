@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
-import type { GmAck, GmCharacterView, GmSlotView, HintCheck } from '@zg/shared';
+import type { Figure, GmAck, GmCharacterView, GmSlotView, HintCheck } from '@zg/shared';
 import { GmSlot, SaveField } from '../components/GmSlot.tsx';
 import { PlayerCard } from '../components/PlayerCard.tsx';
 import { ThemePick } from '../components/ThemePick.tsx';
@@ -12,8 +12,11 @@ import { emitGm, useConnection, useSocketEvent } from '../lib/socket.ts';
 import { cn } from '../lib/cn.ts';
 import { Button, buttonVariants, Card, Field, Input, Select, Sheet, Switch, TabPanel, Tabs, Textarea, toast } from '../ui/index.ts';
 
+// Конструктор фигурки — отдельный чанк: каталог деталей нужен только на этой вкладке.
+const FigureEditor = lazy(() => import('../figure/FigureEditor.tsx').then((m) => ({ default: m.FigureEditor })));
+
 const STAGES = ['Спит', 'Пробуждение', 'Освоение', 'Мастерство', 'Предел'];
-type Tab = 'traits' | 'sheet' | 'summaries' | 'notes';
+type Tab = 'traits' | 'sheet' | 'summaries' | 'figure' | 'notes';
 type SlotPatch = (s: GmSlotView) => GmSlotView;
 
 const levelOf = (r: GmSlotView['revealed']): GmSlotView['revealLevel'] => (r.trait ? 'revealed' : r.hint.trim() ? 'hinted' : 'hidden');
@@ -66,6 +69,16 @@ export function GmCharacter() {
       setError(null);
       if (ok) toast(ok);
     } else setError(OWNER_ERRORS[r.error] ?? `Не сохранилось: ${r.error}`);
+  };
+  const figure = async (f: Figure | null) => {
+    const r = await api<GmCharacterView>('POST', `/api/gm/characters/${encodeURIComponent(id)}/figure`, f);
+    if (!r.ok) {
+      toast.error(`Не сохранилось: ${r.error}`);
+      return false;
+    }
+    setC(r.data);
+    toast(f ? 'Фигурка сохранена' : 'Фигурка убрана');
+    return true;
   };
   const power = async (patch: Record<string, unknown>) => {
     const r = await api<GmCharacterView>('POST', `/api/gm/characters/${encodeURIComponent(id)}/power`, patch);
@@ -140,6 +153,7 @@ export function GmCharacter() {
               { value: 'traits', label: `Черты · ${c.slots.length}` },
               { value: 'sheet', label: 'Лист' },
               { value: 'summaries', label: 'Сводки' },
+              { value: 'figure', label: 'Фигурка' },
               { value: 'notes', label: 'Заметки' },
             ]}
           >
@@ -170,6 +184,19 @@ export function GmCharacter() {
             </TabPanel>
             <TabPanel value="summaries" className="flex flex-col gap-4 focus:outline-none">
               <SummaryPanel c={c} onChange={setC} />
+            </TabPanel>
+            <TabPanel value="figure" className="flex max-w-[560px] flex-col gap-4 focus:outline-none">
+              {tab === 'figure' && (
+                <Suspense fallback={<p className="muted">Загрузка…</p>}>
+                  <FigureEditor
+                    key={c.id}
+                    value={c.figure}
+                    onSave={figure}
+                    onClear={() => figure(null)}
+                    note={c.ownerMemberId ? 'Игрок может менять фигурку сам, во вкладке «Фигурка».' : 'Фигурку увидят игроки и стол — на карте и в бою.'}
+                  />
+                </Suspense>
+              )}
             </TabPanel>
             <TabPanel value="notes" className="flex flex-col gap-4 focus:outline-none">
               <Card>

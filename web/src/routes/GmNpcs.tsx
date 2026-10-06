@@ -1,11 +1,15 @@
-import { useCallback, useEffect, useState } from 'react';
-import type { GmNpc } from '@zg/shared';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import type { Figure, GmNpc } from '@zg/shared';
 import { api } from '../lib/api.ts';
 import { useConnection, useSocketEvent } from '../lib/socket.ts';
 import { AnimatePresence, m } from 'motion/react';
 import { spring } from '../lib/motion.tsx';
 import { cn } from '../lib/cn.ts';
-import { Badge, Button, buttonVariants, Card, CardTitle, Field, Input, Textarea, toast } from '../ui/index.ts';
+import { Badge, Button, buttonVariants, Card, CardTitle, Field, Input, Sheet, Textarea, toast } from '../ui/index.ts';
+
+// Фигурки — отдельный чанк (каталог деталей LPC и сборка листов), грузится, только если есть что показать.
+const FigureEditor = lazy(() => import('../figure/FigureEditor.tsx').then((m) => ({ default: m.FigureEditor })));
+const FigureSprite = lazy(() => import('../figure/FigureSprite.tsx').then((m) => ({ default: m.FigureSprite })));
 
 export function GmNpcs() {
   return <Npcs />;
@@ -75,6 +79,7 @@ function NpcEditor({ n, onChange }: { n: GmNpc; onChange: (n: GmNpc) => void }) 
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [confirmDel, setConfirmDel] = useState(false);
+  const [figureOpen, setFigureOpen] = useState(false);
   useEffect(() => {
     setName(n.name);
     setPower(n.power ? String(n.power) : '');
@@ -124,6 +129,17 @@ function NpcEditor({ n, onChange }: { n: GmNpc; onChange: (n: GmNpc) => void }) 
     onChange((await res.json()) as GmNpc);
     setMsg(null);
   };
+  const figure = async (f: Figure | null) => {
+    const r = await api<GmNpc>('POST', `/api/gm/npcs/${n.id}/figure`, f);
+    if (!r.ok) {
+      toast.error('Фигурка не сохранилась');
+      return false;
+    }
+    onChange(r.data);
+    toast(f ? 'Фигурка сохранена' : 'Фигурка убрана');
+    if (!f) setFigureOpen(false);
+    return true;
+  };
   const remove = async () => {
     if (!confirmDel) return setConfirmDel(true);
     await api('POST', `/api/gm/npcs/${n.id}/delete`);
@@ -150,6 +166,14 @@ function NpcEditor({ n, onChange }: { n: GmNpc; onChange: (n: GmNpc) => void }) 
             {n.image ? 'Заменить' : 'Портрет'}
             <input type="file" accept="image/*" className="sr-only" onChange={(e) => upload(e.target.files?.[0])} disabled={busy} />
           </label>
+          <Button size="sm" variant="ghost" className="gap-1.5" onClick={() => setFigureOpen(true)}>
+            {n.figure && (
+              <Suspense fallback={null}>
+                <FigureSprite figure={n.figure} size={32} paused className="-my-1" />
+              </Suspense>
+            )}
+            {n.figure ? 'Фигурка' : '+ Фигурка'}
+          </Button>
         </div>
         <div className="grid gap-3">
           <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_200px]">
@@ -191,6 +215,11 @@ function NpcEditor({ n, onChange }: { n: GmNpc; onChange: (n: GmNpc) => void }) 
         </Button>
       </div>
       {msg && <p className="m-0 text-[13.6px] text-muted">{msg}</p>}
+      <Sheet open={figureOpen} onOpenChange={setFigureOpen} title={`Фигурка · ${n.name || 'противник'}`}>
+        <Suspense fallback={<p className="muted">Загрузка…</p>}>
+          <FigureEditor value={n.figure} onSave={figure} onClear={() => figure(null)} note="Фигурку увидят игроки и стол, когда противник окажется на карте или в бою. Сила и заметки остаются у мастера." />
+        </Suspense>
+      </Sheet>
     </Card>
   );
 }

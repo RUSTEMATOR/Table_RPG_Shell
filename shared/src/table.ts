@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { MapFocusSchema, MapIdSchema } from './maps.ts';
+import type { Figure } from './figure.ts';
 
 // ---- Общий экран: что видит стол (белый список, strictObject) ----
 
@@ -58,6 +59,7 @@ export interface GmNpc {
   band: string;
   notes: string;
   image: { url: string; w: number; h: number; bytes: number } | null;
+  figure: Figure | null;
   /** Портрет сейчас на столе. */
   shown: boolean;
   /** Противник текущей сессии. */

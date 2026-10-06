@@ -8,6 +8,7 @@ export const TAB_ICONS = {
   rolls: 'M12 6a6 6 0 1 0 0 12a6 6 0 0 0 0-12zM12 2v6M12 16v6M2 12h6M16 12h6M12 11.6v.8',
   card: 'M12 3l7 3v5c0 4.5-3 8-7 10c-4-2-7-5.5-7-10V6z',
   diary: 'M6 3h9l3 3v15H6zM15 3v3h3M9 10h6M9 14h6M9 18h4',
+  figure: 'M9 21h6M10 21l1-7h2l1 7M8 11h8M12 3a3 3 0 1 0 0 6a3 3 0 0 0 0-6zM12 9v5',
   map: 'M4 18l5-6 4 3 7-10M4 18v.1M9 12v.1M13 15v.1M20 5v.1',
 } as const;
 

@@ -20,7 +20,7 @@ function read<T>(key: string, fallback: T): T {
 }
 
 let flags: Record<UnreadTab, boolean> = { card: false, diary: false, ...read<Partial<Record<UnreadTab, boolean>>>(KEY, {}) };
-let active: UnreadTab | 'rolls' | 'map' | null = null;
+let active: UnreadTab | 'rolls' | 'map' | 'figure' | null = null;
 const listeners = new Set<() => void>();
 const emit = () => {
   save(KEY, JSON.stringify(flags));
@@ -34,7 +34,7 @@ function mark(tab: UnreadTab) {
 }
 
 /** Открыта вкладка: снять её значок. */
-export function setActiveTab(tab: UnreadTab | 'rolls' | 'map' | null) {
+export function setActiveTab(tab: UnreadTab | 'rolls' | 'map' | 'figure' | null) {
   active = tab;
   if ((tab === 'card' || tab === 'diary') && flags[tab]) {
     flags = { ...flags, [tab]: false };

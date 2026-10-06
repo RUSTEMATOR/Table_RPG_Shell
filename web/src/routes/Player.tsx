@@ -66,9 +66,11 @@ function PlayerHome({ active, theme, base, choice, onChoice }: { active: boolean
 
 // Карта — отдельный чанк (рендерер и рельеф): в первую загрузку экрана игрока не входит.
 const PlayerMap = lazy(() => import('../components/PlayerMap.tsx').then((m) => ({ default: m.PlayerMap })));
+// Конструктор фигурки — тоже отдельный чанк (каталог деталей, сборка листов).
+const PlayerFigure = lazy(() => import('../components/PlayerFigure.tsx').then((m) => ({ default: m.PlayerFigure })));
 
-type Tab = 'card' | 'rolls' | 'diary' | 'map';
-const TABS: Tab[] = ['rolls', 'card', 'diary', 'map'];
+type Tab = 'card' | 'rolls' | 'figure' | 'diary' | 'map';
+const TABS: Tab[] = ['rolls', 'card', 'figure', 'diary', 'map'];
 const isTab = (v: string | null | undefined): v is Tab => TABS.includes(v as Tab);
 
 /**
@@ -83,7 +85,7 @@ function PlayerTabs() {
   const [mounted, setMounted] = useState<ReadonlySet<Tab>>(() => new Set([tab]));
   useEffect(() => {
     // карта (рельеф ~100 КБ и данные) — только когда игрок до неё дойдёт
-    const t = window.setTimeout(() => setMounted((m) => new Set([...m, ...TABS.filter((x) => x !== 'map')])), 900);
+    const t = window.setTimeout(() => setMounted((m) => new Set([...m, ...TABS.filter((x) => x !== 'map' && x !== 'figure')])), 900);
     return () => window.clearTimeout(t);
   }, []);
   useEffect(() => {
@@ -186,6 +188,12 @@ function PlayerTabs() {
           </>,
         )}
         {pane('card', <PlayerHome active={tab === 'card'} theme={theme} base={base} choice={choice} onChoice={pickTheme} />)}
+        {pane(
+          'figure',
+          <Suspense fallback={<p className="muted">Загрузка…</p>}>
+            <PlayerFigure />
+          </Suspense>,
+        )}
         {pane('diary', <Diary active={tab === 'diary'} />)}
         {pane(
           'map',
@@ -201,6 +209,7 @@ function PlayerTabs() {
         items={[
           { value: 'rolls', label: LABELS.rolls, icon: TAB_ICONS.rolls },
           { value: 'card', label: LABELS.card, icon: TAB_ICONS.card, dot: unread.card },
+          { value: 'figure', label: LABELS.figure, icon: TAB_ICONS.figure },
           { value: 'diary', label: LABELS.diary, icon: TAB_ICONS.diary, dot: unread.diary },
           { value: 'map', label: LABELS.map, icon: TAB_ICONS.map },
         ]}
@@ -209,7 +218,7 @@ function PlayerTabs() {
   );
 }
 
-const LABELS: Record<Tab, string> = { rolls: 'Броски', card: 'Карточка', diary: 'Дневник', map: 'Карта' };
+const LABELS: Record<Tab, string> = { rolls: 'Броски', card: 'Карточка', figure: 'Фигурка', diary: 'Дневник', map: 'Карта' };
 
 /** Лента игрока с фильтром «Все» / «Мои». Выбор запоминается на устройстве. */
 function FeedCard() {

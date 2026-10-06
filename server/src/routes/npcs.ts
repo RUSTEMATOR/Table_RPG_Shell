@@ -1,9 +1,9 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { NpcWriteSchema } from '@zg/shared';
+import { FigureSchema, NpcWriteSchema } from '@zg/shared';
 import { requireGm } from '../auth/requireGm.ts';
 import { IMAGE_BODY_LIMIT, IMAGE_TYPES } from '../domain/media.ts';
-import { createNpc, deleteNpc, getNpc, gmNpc, listNpcs, setNpcImage, updateNpc, type NpcRow } from '../domain/npc.ts';
+import { createNpc, deleteNpc, getNpc, gmNpc, listNpcs, setNpcFigure, setNpcImage, updateNpc, type NpcRow } from '../domain/npc.ts';
 import { setShownNpc, shownNpcId } from '../domain/scenes.ts';
 import { activeSession, setOpponent } from '../domain/session.ts';
 import { publish } from '../realtime/publish.ts';
@@ -67,6 +67,18 @@ export async function gmNpcRoutes(app: FastifyInstance) {
       request.log.warn({ err }, 'npc: картинка не обработалась');
       return reply.code(400).send({ error: 'bad_image', message: 'Не получилось прочитать картинку' });
     }
+    changed(roomId, next);
+    return view(roomId, next);
+  });
+
+  // Фигурка противника (этап 23); null — убрать.
+  app.post<{ Params: { id: string } }>('/api/gm/npcs/:id/figure', async (request, reply) => {
+    const b = FigureSchema.nullable().safeParse(request.body);
+    if (!b.success) return reply.code(400).send({ error: 'bad_request' });
+    const roomId = request.auth!.room.id;
+    const r = getNpc(roomId, request.params.id);
+    if (!r) return reply.code(404).send({ error: 'not_found' });
+    const next = setNpcFigure(r, b.data);
     changed(roomId, next);
     return view(roomId, next);
   });
