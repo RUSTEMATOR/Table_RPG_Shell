@@ -4,7 +4,7 @@
 // жёлтый 2/4·1/8… см. TEAM_SHIFT). Поэтому берётся только синий вариант, а цветные вершины помечаются атрибутом _TEAM (0/1):
 // на клиенте шейдер сдвигает U по цвету фракции экземпляра.
 // На выходе:
-//   web/public/models/world.glb   — все модели одним файлом: у каждой свой узел с именем id, общая текстура, квантование;
+//   web/public/models/world.glb   — все модели одним файлом: у каждой свой узел с именем id, общая текстура, квантование, сжатие meshopt;
 //   web/src/maps3d/models.json     — каталог: id → размеры (габарит, низ), есть ли цветные вершины.
 // Запуск: node tools/extract-models/extract.mjs  (KAYKIT_DIR=<клон> — чтобы не клонировать заново).
 // Результат руками не править — менять MODELS и запускать снова.
@@ -15,7 +15,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Document, NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
-import { dedup, getBounds, mergeDocuments, prune, quantize, unpartition, weld } from '@gltf-transform/functions';
+import { dedup, getBounds, meshopt, mergeDocuments, prune, quantize, unpartition, weld } from '@gltf-transform/functions';
+import { MeshoptEncoder } from 'meshoptimizer';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../..');
 const REPO = 'https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0.git';
@@ -128,7 +129,8 @@ function markTeam(blue, red) {
 
 async function main() {
   const dir = join(repoDir(), 'addons/kaykit_medieval_hexagon_pack/Assets/gltf');
-  const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
+  await MeshoptEncoder.ready;
+  const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({ 'meshopt.encoder': MeshoptEncoder });
   const out = new Document();
   out.createBuffer();
   const scene = out.createScene('world');
@@ -153,12 +155,20 @@ async function main() {
     merged.dispose();
   }
 
-  await out.transform(unpartition(), dedup(), weld(), prune({ keepAttributes: true }), quantize({ quantizePosition: 14, quantizeNormal: 8, quantizeTexcoord: 12 }));
+  // квантование и сжатие meshopt (EXT_meshopt_compression): клиент распаковывает MeshoptDecoder из three
+  await out.transform(
+    unpartition(),
+    dedup(),
+    weld(),
+    prune({ keepAttributes: true }),
+    quantize({ quantizePosition: 14, quantizeNormal: 8, quantizeTexcoord: 12 }),
+    meshopt({ encoder: MeshoptEncoder, level: 'medium' }),
+  );
   const glb = await io.writeBinary(out);
   mkdirSync(join(root, 'web/public/models'), { recursive: true });
   writeFileSync(join(root, 'web/public/models/world.glb'), glb);
   const lines = Object.entries(catalog).map(([id, m]) => `  ${JSON.stringify(id)}: ${JSON.stringify(m)}`);
-  const head = `"source": ${JSON.stringify(`KayKit Medieval Hexagon Pack 1.0 @ ${SHA.slice(0, 8)}`)},\n "teamShift": ${JSON.stringify(TEAM_SHIFT)}`;
+  const head = `"source": ${JSON.stringify(`KayKit Medieval Hexagon Pack 1.0 @ ${SHA.slice(0, 8)}-meshopt`)},\n "teamShift": ${JSON.stringify(TEAM_SHIFT)}`;
   writeFileSync(join(root, 'web/src/maps3d/models.json'), `{\n ${head},\n "models": {\n${lines.join(',\n')}\n }\n}\n`);
   console.log(`world.glb: ${(glb.byteLength / 1024).toFixed(0)} КБ, моделей: ${MODELS.length}`);
 }

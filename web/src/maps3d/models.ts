@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { MAP_H, MAP_W } from '@zg/shared';
 import catalog from './models.json';
@@ -22,31 +23,35 @@ let pending: Promise<Library> | null = null;
 
 /** Загрузка моделей — один раз на приложение. */
 export function loadLibrary(): Promise<Library> {
-  pending ??= new GLTFLoader().loadAsync(URL).then((gltf) => {
-    gltf.scene.updateMatrixWorld(true);
-    const geometry = new Map<ModelId, THREE.BufferGeometry>();
-    let atlas: THREE.Texture | null = null;
-    for (const group of gltf.scene.children) {
-      const id = group.name as ModelId;
-      if (!(id in MODEL_INFO)) continue;
-      const parts: THREE.BufferGeometry[] = [];
-      group.traverse((o) => {
-        const mesh = o as THREE.Mesh;
-        if (!mesh.isMesh) return;
-        const mat = mesh.material as THREE.MeshStandardMaterial;
-        if (!atlas && mat.map) atlas = mat.map;
-        parts.push(plain(mesh.geometry, mesh.matrixWorld));
-      });
-      if (parts.length) geometry.set(id, parts.length === 1 ? parts[0]! : mergeGeometries(parts)!);
-    }
-    if (!atlas) throw new Error('world.glb: нет текстуры');
-    const tex = atlas as THREE.Texture;
-    // атлас — плашки цвета: без мип-уровней, иначе вдали соседние плашки смешиваются
-    tex.generateMipmaps = false;
-    tex.minFilter = THREE.LinearFilter;
-    tex.needsUpdate = true;
-    return { geometry, atlas: tex };
-  });
+  // файл сжат meshopt (tools/extract-models): распаковка — MeshoptDecoder из three
+  pending ??= new GLTFLoader()
+    .setMeshoptDecoder(MeshoptDecoder)
+    .loadAsync(URL)
+    .then((gltf) => {
+      gltf.scene.updateMatrixWorld(true);
+      const geometry = new Map<ModelId, THREE.BufferGeometry>();
+      let atlas: THREE.Texture | null = null;
+      for (const group of gltf.scene.children) {
+        const id = group.name as ModelId;
+        if (!(id in MODEL_INFO)) continue;
+        const parts: THREE.BufferGeometry[] = [];
+        group.traverse((o) => {
+          const mesh = o as THREE.Mesh;
+          if (!mesh.isMesh) return;
+          const mat = mesh.material as THREE.MeshStandardMaterial;
+          if (!atlas && mat.map) atlas = mat.map;
+          parts.push(plain(mesh.geometry, mesh.matrixWorld));
+        });
+        if (parts.length) geometry.set(id, parts.length === 1 ? parts[0]! : mergeGeometries(parts)!);
+      }
+      if (!atlas) throw new Error('world.glb: нет текстуры');
+      const tex = atlas as THREE.Texture;
+      // атлас — плашки цвета: без мип-уровней, иначе вдали соседние плашки смешиваются
+      tex.generateMipmaps = false;
+      tex.minFilter = THREE.LinearFilter;
+      tex.needsUpdate = true;
+      return { geometry, atlas: tex };
+    });
   return pending;
 }
 

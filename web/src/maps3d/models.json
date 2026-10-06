@@ -1,5 +1,5 @@
 {
- "source": "KayKit Medieval Hexagon Pack 1.0 @ 84fa4e91",
+ "source": "KayKit Medieval Hexagon Pack 1.0 @ 84fa4e91-meshopt",
  "teamShift": {"blue":0,"red":0.125,"yellow":0.25,"green":0.375},
  "models": {
   "castle": {"size":[1.975,3.979,2.256],"min":[-0.988,0,-1.128],"max":[0.988,3.979,1.128],"team":true},

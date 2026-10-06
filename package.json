@@ -30,6 +30,7 @@
     "@gltf-transform/core": "^4.5.1",
     "@gltf-transform/extensions": "^4.5.1",
     "@gltf-transform/functions": "^4.5.1",
+    "meshoptimizer": "^0.22.0",
     "polygon-clipping": "^0.15.7"
   }
 }
