@@ -190,6 +190,8 @@ export type PresencePublic = z.infer<typeof PresencePublicSchema>;
  */
 export const PlaceDetailPublicSchema = z.strictObject({
   id: z.string(),
+  /** отряд рядом — можно войти: только тогда игроку приходят места в городе, слухи и «кто здесь» (столу — всегда) */
+  inside: z.boolean(),
   mapId: MapIdSchema,
   name: z.string(),
   kind: PlaceKindSchema,

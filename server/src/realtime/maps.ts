@@ -29,11 +29,12 @@ export function notifyPlaceChanged(roomId: string, placeId: string): void {
   const p = getPlace(roomId, placeId);
   const mapId = MapIdSchema.safeParse(p?.mapId);
   if (!mapId.success) return;
-  const json = JSON.stringify(projectPlaceDetail(roomId, placeId));
+  // и игроку, и столу: у стола внутренности города видны всегда, у игрока — только когда отряд рядом
+  const json = JSON.stringify([projectPlaceDetail(roomId, placeId, 'player'), projectPlaceDetail(roomId, placeId, 'table')]);
   const key = `${roomId}:place:${placeId}`;
   if (lastSent.get(key) === json) return;
   // первый раз после запуска: скрытое место сигнала не даёт
-  if (!lastSent.has(key) && json === 'null') {
+  if (!lastSent.has(key) && json === '[null,null]') {
     lastSent.set(key, json);
     return;
   }

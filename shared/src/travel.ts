@@ -169,3 +169,13 @@ export function daysText(days: number): string {
   const word = n % 10 === 1 && n % 100 !== 11 ? 'день' : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? 'дня' : 'дней';
   return `≈ ${n} ${word}`;
 }
+
+/** Насколько близко должен быть отряд, чтобы войти в место (единицы карты): у больших городов — шире. */
+export function enterRadius(kind: string): number {
+  return kind === 'capital' ? 80 : kind === 'bigtown' ? 65 : kind === 'city' || kind === 'college' || kind === 'elven' ? 50 : 40;
+}
+
+/** Отряд рядом с местом — в него можно войти. */
+export function partyNear(place: { x: number; y: number; kind: string }, party: { x: number; y: number } | null | undefined): boolean {
+  return !!party && Math.hypot(place.x - party.x, place.y - party.y) <= enterRadius(place.kind);
+}

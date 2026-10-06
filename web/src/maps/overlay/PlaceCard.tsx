@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { PLACE_KIND_LABELS, RUMOR_KIND_LABELS, SPOT_KIND_LABELS, type PlaceDetailPublic, type PresencePublic } from '@zg/shared';
 import { api } from '../../lib/api.ts';
 import { useSocketEvent } from '../../lib/socket.ts';
@@ -16,7 +16,7 @@ const TEAM_COLOR = { blue: '#3b5f9a', red: '#9a3b2f', yellow: '#b08a1e', green: 
 const SERIF = "'Cormorant Garamond', Georgia, serif";
 
 /** Карточка места: перечитывается по сигналу; null — нет или скрыто (тогда карточка закрывается). */
-export function usePlaceDetail(base: '/api/player/maps/places' | '/api/table/maps/places', id: string | null) {
+export function usePlaceDetail(base: '/api/player/maps/places' | '/api/table/maps/places', id: string | null, refresh?: string) {
   const [d, setD] = useState<PlaceDetailPublic | null>(null);
   const [gone, setGone] = useState(false);
   const reload = useCallback(async () => {
@@ -32,10 +32,21 @@ export function usePlaceDetail(base: '/api/player/maps/places' | '/api/table/map
     setGone(false);
     void reload();
   }, [reload]);
+  // отряд переместился — можно ли войти, решает сервер заново
+  const first = useRef(true);
+  useEffect(() => {
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    void reload();
+  }, [refresh]);
   useSocketEvent('map:place.changed', (e) => e.placeId === id && void reload());
   return { d, gone };
 }
 
+/** Куда можно войти (у озера, бури и отметки «внутри» нет). */
+const ENTERABLE = (k: PlaceDetailPublic['kind']) => k !== 'lake' && k !== 'storm' && k !== 'mark';
 const hasCity = (d: PlaceDetailPublic) => d.spots.length > 0 || d.rumors.length > 0 || d.here.length > 0;
 
 function Banner({ d, big }: { d: PlaceDetailPublic; big?: boolean }) {
@@ -85,17 +96,20 @@ function Facts({ d, big }: { d: PlaceDetailPublic; big?: boolean }) {
 /** Карточка места поверх карты: на телефоне — снизу, на широком экране — справа. */
 export function PlaceCard({
   id,
+  refresh,
   onClose,
   onEnter,
   extra,
 }: {
   id: string;
+  /** меняется, когда отряд переместился */
+  refresh?: string;
   onClose: () => void;
   onEnter: () => void;
   /** дополнительная строка (путь и дни — этап 28) */
   extra?: (d: PlaceDetailPublic) => ReactNode;
 }) {
-  const { d, gone } = usePlaceDetail('/api/player/maps/places', id);
+  const { d, gone } = usePlaceDetail('/api/player/maps/places', id, refresh);
   useEffect(() => {
     if (gone) onClose();
   }, [gone]); // onClose — колбэк экрана
@@ -125,7 +139,16 @@ export function PlaceCard({
             {d.description || 'Об этом месте пока ничего не известно.'}
           </p>
           {extra?.(d)}
-          {hasCity(d) && (
+          {!d.inside && ENTERABLE(d.kind) && (
+            <div className="flex items-center gap-2.5 rounded-[10px] border border-dashed border-[rgba(243,236,217,.3)] px-3 py-2.5 text-[14px] opacity-85">
+              <svg viewBox="0 0 24 24" width={18} height={18} aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                <rect x={5} y={11} width={14} height={10} rx={2} />
+                <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+              </svg>
+              <span>Войти можно, когда отряд будет рядом.</span>
+            </div>
+          )}
+          {d.inside && hasCity(d) && (
             <button
               type="button"
               onClick={onEnter}

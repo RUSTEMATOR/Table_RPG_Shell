@@ -4,6 +4,7 @@ import {
   MapPublicSchema,
   PlaceDetailPublicSchema,
   PlaceKindSchema,
+  partyNear,
   RumorKindSchema,
   SpotKindSchema,
   type MapId,
@@ -12,7 +13,7 @@ import {
   type PlaceDetailPublic,
 } from '@zg/shared';
 import { db, schema } from '../db/client.ts';
-import { MAPS, ensureMaps, getParty, getPlace, partyFigures, partyMove, pieceKey, pieces, placeRows, refOf, regionRows, roads, tokenRows } from '../domain/maps.ts';
+import { MAPS, ensureMaps, getParty, getPlace, partyFigures, partyMove, type PlaceRow, pieceKey, pieces, placeRows, refOf, regionRows, roads, tokenRows } from '../domain/maps.ts';
 import { imageUrl } from '../domain/media.ts';
 import { npcFigure } from '../domain/npc.ts';
 import { presenceRows, rumorRows, spotRows } from '../domain/places.ts';
@@ -105,26 +106,21 @@ export function projectMapForTable(roomId: string, mapId: MapId): MapPublic {
  * (имя и фигурка противника из библиотеки, роль от мастера; без id противника, силы, заметок, портрета).
  * Скрытое не оставляет ни следа, ни счётчика; note_gm не читается. На выходе — PlaceDetailPublicSchema.parse.
  */
-export function projectPlaceDetail(roomId: string, placeId: string): PlaceDetailPublic | null {
+export function projectPlaceDetail(roomId: string, placeId: string, viewer: 'player' | 'table'): PlaceDetailPublic | null {
   const p = getPlace(roomId, placeId);
   if (!p || !p.visible || p.kind === 'deleted') return null;
+  // войти в город игрок может, только когда отряд рядом (и виден игрокам); иначе — лишь карточка снаружи
+  const party = getParty(roomId);
+  const inside = viewer === 'table' || (!!party && party.visible && party.mapId === p.mapId && partyNear(p, party));
+  if (!inside) return outside(p);
   const spots = spotRows(p.id).filter((s) => s.visible);
   const spotIds = new Set(spots.map((s) => s.id));
   const here = presenceRows(p.id)
     .filter(({ p: x }) => x.visible)
     .map(({ p: x, name, figure }) => ({ spotId: x.spotId && spotIds.has(x.spotId) ? x.spotId : null, v: { id: x.id, name, label: x.label, figure: npcFigure({ figure }) } }));
   return PlaceDetailPublicSchema.parse({
-    id: p.id,
-    mapId: MapIdSchema.parse(p.mapId),
-    name: p.name,
-    kind: PlaceKindSchema.catch('mark').parse(p.kind),
-    subtitle: p.subtitle,
-    ink: p.ink,
-    description: p.description,
-    ruler: p.ruler,
-    faction: p.faction,
-    population: p.population,
-    image: p.imageFile ? { url: imageUrl(p.imageFile), w: p.imageW ?? 0, h: p.imageH ?? 0 } : null,
+    ...card(p),
+    inside: true,
     spots: spots.map((s) => ({
       id: s.id,
       kind: SpotKindSchema.catch('other').parse(s.kind),
@@ -138,4 +134,26 @@ export function projectPlaceDetail(roomId: string, placeId: string): PlaceDetail
       .map((r) => ({ id: r.id, kind: RumorKindSchema.catch('rumor').parse(r.kind), text: r.text })),
     here: here.filter((h) => h.spotId === null).map((h) => h.v),
   });
+}
+
+/** Карточка места снаружи: что видно издали. */
+function card(p: PlaceRow) {
+  return {
+    id: p.id,
+    mapId: MapIdSchema.parse(p.mapId),
+    name: p.name,
+    kind: PlaceKindSchema.catch('mark').parse(p.kind),
+    subtitle: p.subtitle,
+    ink: p.ink,
+    description: p.description,
+    ruler: p.ruler,
+    faction: p.faction,
+    population: p.population,
+    image: p.imageFile ? { url: imageUrl(p.imageFile), w: p.imageW ?? 0, h: p.imageH ?? 0 } : null,
+  };
+}
+
+/** Отряд далеко: внутренности города (места, слухи, кто здесь) не уходят вовсе. */
+function outside(p: PlaceRow): PlaceDetailPublic {
+  return PlaceDetailPublicSchema.parse({ ...card(p), inside: false, spots: [], rumors: [], here: [] });
 }

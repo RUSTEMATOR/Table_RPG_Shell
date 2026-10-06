@@ -102,6 +102,8 @@ export function PlayerMap({ active }: { active: boolean }) {
   const [regionHint, setRegionHint] = useState<{ name: string; link: MapId } | null>(null);
   useEffect(() => setRegionHint(null), [mapId]);
   const links = map && map.id === mapId ? map.regions.filter((r) => r.link) : [];
+  // где отряд: от этого зависит, можно ли войти в город (решает сервер)
+  const partyKey = map?.party ? `${Math.round(map.party.x)},${Math.round(map.party.y)}` : 'none';
 
   const saveNote = async (text: string) => {
     if (!edit) return;
@@ -223,6 +225,7 @@ export function PlayerMap({ active }: { active: boolean }) {
           <PlaceCard
             key={card}
             id={card}
+            refresh={partyKey}
             onClose={() => setCard(null)}
             onEnter={() => setInCity(true)}
             extra={(d) => (
@@ -238,6 +241,7 @@ export function PlayerMap({ active }: { active: boolean }) {
         {card && inCity && (
           <PlayerCity
             id={card}
+            refresh={partyKey}
             at={map?.places.find((p) => p.id === card) ?? null}
             camera={camera}
             onClose={() => setInCity(false)}
@@ -290,17 +294,38 @@ function TravelInfo({ route, hasParty, proposal, onPropose }: { route: Route | n
 }
 
 /** Экран города поверх карты; в 3D камера тем временем низко кружит над городом. */
-function PlayerCity({ id, at, camera, onClose, onGone }: { id: string; at: { x: number; y: number } | null; camera: MapCamera | null; onClose: () => void; onGone: () => void }) {
-  const { d, gone } = usePlaceDetail('/api/player/maps/places', id);
+function PlayerCity({
+  id,
+  refresh,
+  at,
+  camera,
+  onClose,
+  onGone,
+}: {
+  id: string;
+  refresh: string;
+  at: { x: number; y: number } | null;
+  camera: MapCamera | null;
+  onClose: () => void;
+  onGone: () => void;
+}) {
+  const { d, gone } = usePlaceDetail('/api/player/maps/places', id, refresh);
   useEffect(() => {
     if (gone) onGone();
   }, [gone]); // onGone — колбэк экрана
+  // отряд ушёл — город закрывается, остаётся карточка снаружи
+  useEffect(() => {
+    if (d && !d.inside) {
+      toast('Отряд ушёл из города');
+      onClose();
+    }
+  }, [d?.inside]); // onClose — колбэк экрана
   useEffect(() => {
     if (!at || !camera?.orbit) return;
     camera.orbit(at.x, at.y, true);
     return () => camera.orbit?.(at.x, at.y, false);
   }, [at?.x, at?.y, camera]);
-  if (!d) return null;
+  if (!d || !d.inside) return null;
   return <CityScreen d={d} onClose={onClose} />;
 }
 
