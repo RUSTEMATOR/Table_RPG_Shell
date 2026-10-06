@@ -6,7 +6,21 @@ import { MAP_H, MAP_W } from '@zg/shared';
 // трансформацией (без перерисовки React на каждый кадр). Пальцы: один — сдвиг, два — масштаб; мышь: колесо — масштаб
 // у курсора, перетаскивание — сдвиг. Во время жеста слой держит растр (will-change), после — перерисовывается чётко.
 
-export type Camera = {
+/** Камера карты снаружи: одна для пергамента и 3D. zoom — 1 (вся карта) … 5–6 (вблизи). */
+export type MapCamera = {
+  /** экран → карта */
+  toMap: (clientX: number, clientY: number) => { x: number; y: number };
+  /** плавно навести на точку карты с масштабом (1 — вся карта) */
+  flyTo: (x: number, y: number, zoom: number, opts?: { duration?: number; instant?: boolean }) => void;
+  zoomBy: (f: number) => void;
+  /** куда смотрит камера сейчас: центр и масштаб */
+  view: () => { x: number; y: number; zoom: number };
+  /** 3D: повернуть на север и угол поворота (0 — север вверху) */
+  north?: () => void;
+  yaw?: () => number;
+};
+
+export type Camera = MapCamera & {
   k: MotionValue<number>;
   x: MotionValue<number>;
   y: MotionValue<number>;
@@ -14,11 +28,6 @@ export type Camera = {
   moving: boolean;
   /** минимальный масштаб (вся карта целиком) */
   fit: number;
-  /** экран → карта */
-  toMap: (clientX: number, clientY: number) => { x: number; y: number };
-  /** плавно навести на точку карты с масштабом (в долях fit: 1 — вся карта) */
-  flyTo: (x: number, y: number, zoom: number, opts?: { duration?: number; instant?: boolean }) => void;
-  zoomBy: (f: number) => void;
   handlers: {
     onPointerDown: (e: RPointerEvent) => void;
     onPointerMove: (e: RPointerEvent) => void;
@@ -217,5 +226,10 @@ export function useCamera(box: RefObject<HTMLElement | null>, opts: { reducedMot
     },
   };
 
-  return { k, x, y, moving, fit, toMap, flyTo, zoomBy, handlers, wasDrag: () => dragged.current };
+  const view = () => {
+    const { w, h } = size.current;
+    const kk = k.get();
+    return { x: (w / 2 - x.get()) / kk, y: (h / 2 - y.get()) / kk, zoom: Math.min(MAX_ZOOM, Math.max(1, kk / fitRef.current)) };
+  };
+  return { k, x, y, moving, fit, toMap, flyTo, zoomBy, view, handlers, wasDrag: () => dragged.current };
 }

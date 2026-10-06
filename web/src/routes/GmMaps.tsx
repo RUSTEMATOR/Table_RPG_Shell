@@ -6,7 +6,7 @@ import { useConnection, useSocketEvent } from '../lib/socket.ts';
 import { load, save } from '../lib/storage.ts';
 import { cn } from '../lib/cn.ts';
 import { MapView, ZoomButtons, type MapViewData } from '../maps/MapView.tsx';
-import type { Camera } from '../maps/camera.ts';
+import type { MapCamera } from '../maps/camera.ts';
 import { preloadArt } from '../maps/MapArt.tsx';
 import { Badge, Button, Card, CardTitle, Field, Input, Segmented, Select, Sheet, Switch, Textarea, toast } from '../ui/index.ts';
 
@@ -32,7 +32,7 @@ export function GmMaps() {
   const [tool, setTool] = useState<Tool>('select');
   const [piece, setPiece] = useState('');
   const [token, setToken] = useState<string | null>(null);
-  const [camera, setCamera] = useState<Camera | null>(null);
+  const [camera, setCamera] = useState<MapCamera | null>(null);
   const [panel, setPanel] = useState(false);
   // Лист — только когда боковой панели нет на экране (узкое окно).
   const openPanel = () => {
@@ -127,11 +127,8 @@ export function GmMaps() {
   };
   const currentFocus = () => {
     if (!camera) return null;
-    const el = document.getElementById('gm-map-box');
-    const r = el?.getBoundingClientRect();
-    if (!r) return null;
-    const c = camera.toMap(r.left + r.width / 2, r.top + r.height / 2);
-    return { x: Math.round(c.x), y: Math.round(c.y), zoom: Math.min(6, Math.max(1, Math.round((camera.k.get() / camera.fit) * 10) / 10)) };
+    const c = camera.view();
+    return { x: Math.round(c.x), y: Math.round(c.y), zoom: Math.min(6, Math.max(1, Math.round(c.zoom * 10) / 10)) };
   };
   const onTable = view?.table?.mapId === mapId;
 

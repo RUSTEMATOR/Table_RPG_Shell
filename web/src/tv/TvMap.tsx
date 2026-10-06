@@ -4,7 +4,7 @@ import type { MapFocus, MapId, MapPublic } from '@zg/shared';
 import { api } from '../lib/api.ts';
 import { useConnection, useSocketEvent } from '../lib/socket.ts';
 import { MapView } from '../maps/MapView.tsx';
-import type { Camera } from '../maps/camera.ts';
+import type { MapCamera } from '../maps/camera.ts';
 
 const TITLES: Record<MapId, string> = { world: 'Карта мира', razdolye: 'Раздолье', frozen: 'Замёрзшие земли' };
 
@@ -26,7 +26,7 @@ export function TvMap({ show, still }: { show: { id: MapId; focus: MapFocus | nu
 
 function TvMapBody({ id, focus, still }: { id: MapId; focus: MapFocus | null; still: boolean }) {
   const [map, setMap] = useState<MapPublic | null>(null);
-  const [camera, setCamera] = useState<Camera | null>(null);
+  const [camera, setCamera] = useState<MapCamera | null>(null);
   const reload = useCallback(async () => {
     const r = await api<MapPublic>('GET', `/api/table/maps/${id}`);
     if (r.ok) setMap(r.data);

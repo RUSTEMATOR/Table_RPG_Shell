@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useMemo, useRef, type MouseEvent as RMouseEv
 import { m } from 'motion/react';
 import type { MapId, MapNote, MapPlacePublic, MapRegionPublic, PlaceKind } from '@zg/shared';
 import { ArtBase, ArtDefs, ArtPaper, ArtRelief, ArtTop, PaperDefs, useArt } from './MapArt.tsx';
-import { useCamera, type Camera } from './camera.ts';
+import { useCamera, type MapCamera } from './camera.ts';
 import { ensureMapFonts } from './fonts.ts';
 import { cn } from '../lib/cn.ts';
 import type { ViewToken } from './MapTokens.tsx';
@@ -30,7 +30,7 @@ const PAPER = '#f3ecd9';
 let seq = 0;
 
 /** Значок места по виду. Цвета и формы — из макетов. */
-function PlaceIcon({ kind, ink }: { kind: PlaceKind; ink: string | null }) {
+export function PlaceIcon({ kind, ink }: { kind: PlaceKind; ink: string | null }) {
   switch (kind) {
     case 'capital':
     case 'bigtown': {
@@ -123,23 +123,7 @@ function labelOf(p: ViewPlace) {
   } as const;
 }
 
-export function MapView({
-  data,
-  mode,
-  selected,
-  onPlace,
-  onPlaceMove,
-  onPick,
-  onRegion,
-  onNote,
-  selectedToken,
-  onToken,
-  onTokenMove,
-  camera: external,
-  instant,
-  className,
-  children,
-}: {
+export type MapViewProps = {
   data: MapViewData;
   mode: 'gm' | 'player' | 'table';
   selected?: string | null;
@@ -156,13 +140,31 @@ export function MapView({
   onToken?: (id: string) => void;
   /** мастер перетащил фигурку (координаты карты) */
   onTokenMove?: (id: string, x: number, y: number) => void;
-  camera?: (c: Camera) => void;
+  camera?: (c: MapCamera) => void;
   /** без полётов камеры (стол с «Анимация выкл.») */
   instant?: boolean;
   className?: string;
   /** кнопки поверх карты (масштаб, легенда) */
   children?: ReactNode;
-}) {
+};
+
+export function MapView({
+  data,
+  mode,
+  selected,
+  onPlace,
+  onPlaceMove,
+  onPick,
+  onRegion,
+  onNote,
+  selectedToken,
+  onToken,
+  onTokenMove,
+  camera: external,
+  instant,
+  className,
+  children,
+}: MapViewProps) {
   useEffect(() => ensureMapFonts(), []);
   const art = useArt(data.id);
   const box = useRef<HTMLDivElement>(null);
@@ -456,7 +458,7 @@ export function MapView({
 }
 
 /** Кнопки масштаба поверх карты (как в макете). */
-export function ZoomButtons({ camera, className }: { camera: Camera | null; className?: string }) {
+export function ZoomButtons({ camera, className }: { camera: MapCamera | null; className?: string }) {
   const btn =
     'grid size-11 cursor-pointer place-items-center rounded-[10px] border border-solid border-[rgba(74,59,38,.22)] bg-[rgba(250,247,238,.94)] font-ui text-[22px] text-[#2e2416] shadow-[0_6px_18px_rgba(60,50,30,.14)]';
   return (

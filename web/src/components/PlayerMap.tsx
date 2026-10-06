@@ -5,7 +5,7 @@ import { useConnection, useSocketEvent } from '../lib/socket.ts';
 import { load, save } from '../lib/storage.ts';
 import { cn } from '../lib/cn.ts';
 import { MapView, ZoomButtons } from '../maps/MapView.tsx';
-import type { Camera } from '../maps/camera.ts';
+import type { MapCamera } from '../maps/camera.ts';
 import { Button, Field, Sheet, Textarea, toast } from '../ui/index.ts';
 
 const TITLES: Record<MapId, string> = { world: 'Мир', razdolye: 'Раздолье', frozen: 'Замёрзшие земли' };
@@ -21,7 +21,7 @@ export function PlayerMap({ active }: { active: boolean }) {
   });
   useEffect(() => save('zg:player:map', mapId), [mapId]);
   const [map, setMap] = useState<MapPublic | null>(null);
-  const [camera, setCamera] = useState<Camera | null>(null);
+  const [camera, setCamera] = useState<MapCamera | null>(null);
   const [noteMode, setNoteMode] = useState(false);
   const [edit, setEdit] = useState<{ note: MapNote | null; x: number; y: number } | null>(null);
 
