@@ -1,0 +1,327 @@
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { PLACE_KIND_LABELS, RUMOR_KIND_LABELS, SPOT_KIND_LABELS, type PlaceDetailPublic, type PresencePublic } from '@zg/shared';
+import { api } from '../../lib/api.ts';
+import { useSocketEvent } from '../../lib/socket.ts';
+import { cn } from '../../lib/cn.ts';
+import { FigureSprite } from '../../figure/FigureSprite.tsx';
+import { PlaceIcon } from '../MapView.tsx';
+import { teamOf } from '../../maps3d/settlements.ts';
+
+// Карточка места и экран города (этап 27) — у игрока и на столе. Данные — только открытое (projectPlaceDetail на сервере):
+// описание, правитель, фракция, население, места в городе, открытые слухи и задания, «кто здесь».
+// Экран города — как в Mount & Blade: меню мест слева, описание выбранного и кто там; фон — картинка мастера или
+// сам город в 3D (камера кружит над ним).
+
+const TEAM_COLOR = { blue: '#3b5f9a', red: '#9a3b2f', yellow: '#b08a1e', green: '#3f7a3f' } as const;
+const SERIF = "'Cormorant Garamond', Georgia, serif";
+
+/** Карточка места: перечитывается по сигналу; null — нет или скрыто (тогда карточка закрывается). */
+export function usePlaceDetail(base: '/api/player/maps/places' | '/api/table/maps/places', id: string | null) {
+  const [d, setD] = useState<PlaceDetailPublic | null>(null);
+  const [gone, setGone] = useState(false);
+  const reload = useCallback(async () => {
+    if (!id) return;
+    const r = await api<PlaceDetailPublic>('GET', `${base}/${id}`);
+    if (r.ok) {
+      setD(r.data);
+      setGone(false);
+    } else if (r.status === 404) setGone(true);
+  }, [base, id]);
+  useEffect(() => {
+    setD(null);
+    setGone(false);
+    void reload();
+  }, [reload]);
+  useSocketEvent('map:place.changed', (e) => e.placeId === id && void reload());
+  return { d, gone };
+}
+
+const hasCity = (d: PlaceDetailPublic) => d.spots.length > 0 || d.rumors.length > 0 || d.here.length > 0;
+
+function Banner({ d, big }: { d: PlaceDetailPublic; big?: boolean }) {
+  const team = TEAM_COLOR[teamOf(d.ink, d.kind)];
+  return (
+    <div className="flex items-center gap-3">
+      <span
+        className={cn('grid shrink-0 place-items-center rounded-[8px] border-2 border-solid border-[rgba(243,236,217,.6)]', big ? 'size-[7vh]' : 'size-12')}
+        style={{ background: team }}
+      >
+        <svg viewBox="-17 -17 34 34" className={big ? 'size-[4.6vh]' : 'size-8'} aria-hidden="true">
+          <PlaceIcon kind={d.kind} ink="#f3ecd9" />
+        </svg>
+      </span>
+      <div className="grid min-w-0">
+        <h2 className={cn('m-0 truncate leading-none font-bold', big ? 'text-[clamp(36px,4.6vh,72px)]' : 'text-[26px]')} style={{ fontFamily: SERIF }}>
+          {d.name || PLACE_KIND_LABELS[d.kind]}
+        </h2>
+        <span className={cn('opacity-75', big ? 'text-[clamp(16px,2vh,30px)]' : 'text-[13.6px]')}>
+          {PLACE_KIND_LABELS[d.kind]}
+          {d.subtitle ? ` · ${d.subtitle}` : ''}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function Facts({ d, big }: { d: PlaceDetailPublic; big?: boolean }) {
+  const list = [
+    ['Правитель', d.ruler],
+    ['Фракция', d.faction],
+    ['Население', d.population],
+  ].filter(([, v]) => v);
+  if (!list.length) return null;
+  return (
+    <dl className={cn('m-0 grid gap-x-4 gap-y-0.5', big ? 'grid-cols-[auto_1fr] text-[clamp(16px,2.1vh,32px)]' : 'grid-cols-[auto_1fr] text-[14px]')}>
+      {list.map(([k, v]) => (
+        <div key={k} className="contents">
+          <dt className="opacity-65">{k}</dt>
+          <dd className="m-0 font-semibold">{v}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+/** Карточка места поверх карты: на телефоне — снизу, на широком экране — справа. */
+export function PlaceCard({
+  id,
+  onClose,
+  onEnter,
+  extra,
+}: {
+  id: string;
+  onClose: () => void;
+  onEnter: () => void;
+  /** дополнительная строка (путь и дни — этап 28) */
+  extra?: (d: PlaceDetailPublic) => ReactNode;
+}) {
+  const { d, gone } = usePlaceDetail('/api/player/maps/places', id);
+  useEffect(() => {
+    if (gone) onClose();
+  }, [gone]); // onClose — колбэк экрана
+  return (
+    <div
+      className="absolute inset-x-2 bottom-2 z-[2] grid max-h-[62%] gap-3 overflow-y-auto overscroll-contain rounded-[14px] border border-solid border-[rgba(243,236,217,.25)] bg-[rgba(32,26,18,.92)] p-4 text-[#f3ecd9] shadow-[0_14px_40px_rgba(10,8,4,.45)] backdrop-blur-sm sm:top-3 sm:right-3 sm:bottom-auto sm:left-auto sm:max-h-[calc(100%-24px)] sm:w-[360px]"
+      onPointerDown={(e) => e.stopPropagation()}
+      onClick={(e) => e.stopPropagation()}
+      role="dialog"
+      aria-label="Место на карте"
+    >
+      <button
+        type="button"
+        aria-label="Закрыть"
+        onClick={onClose}
+        className="absolute top-2 right-2 grid size-8 cursor-pointer place-items-center rounded-full border-0 bg-[rgba(243,236,217,.12)] text-[18px] text-[#f3ecd9]"
+      >
+        ×
+      </button>
+      {!d ? (
+        <span className="opacity-70">Загрузка…</span>
+      ) : (
+        <>
+          <Banner d={d} />
+          <Facts d={d} />
+          <p className="m-0 text-[15px] leading-relaxed whitespace-pre-line opacity-90" style={{ fontFamily: SERIF, fontSize: 17 }}>
+            {d.description || 'Об этом месте пока ничего не известно.'}
+          </p>
+          {extra?.(d)}
+          {hasCity(d) && (
+            <button
+              type="button"
+              onClick={onEnter}
+              className="cursor-pointer rounded-[10px] border border-solid border-[#c9971f] bg-[#c9971f] px-4 py-2.5 font-ui text-[15px] font-bold text-[#201a12] hover:bg-[#ddb04a]"
+            >
+              Войти в {d.kind === 'village' ? 'деревню' : d.kind === 'camp' || d.kind === 'vampire' ? 'лагерь' : 'город'}
+            </button>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+function Here({ list, big }: { list: PresencePublic[]; big?: boolean }) {
+  if (!list.length) return null;
+  return (
+    <ul className={cn('m-0 grid list-none gap-2 p-0', big && 'gap-[1.2vh]')}>
+      {list.map((h) => (
+        <li key={h.id} className="flex items-center gap-3">
+          <span className={cn('grid shrink-0 place-items-center overflow-hidden rounded-full bg-[rgba(243,236,217,.12)]', big ? 'size-[8vh]' : 'size-14')}>
+            {h.figure ? (
+              <FigureSprite figure={h.figure} size={big ? 96 : 64} className="pointer-events-none" />
+            ) : (
+              <span className="font-ui text-[22px] font-bold">{(h.name.trim()[0] ?? '?').toUpperCase()}</span>
+            )}
+          </span>
+          <span className="grid">
+            <strong className={cn('font-ui', big && 'text-[clamp(18px,2.4vh,36px)]')}>{h.name}</strong>
+            {h.label && <span className={cn('opacity-75', big ? 'text-[clamp(15px,1.9vh,28px)]' : 'text-[13.6px]')}>{h.label}</span>}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+type Section = { key: string; title: string; kind?: string };
+
+/**
+ * Экран города: меню слева (обзор, места в городе, слухи, кто здесь), справа — выбранное. table — крупно и без нажатий
+ * (на столе показывает мастер). Фон — картинка мастера; без неё экран полупрозрачный, за ним — город в 3D.
+ */
+export function CityScreen({ d, onClose, table }: { d: PlaceDetailPublic; onClose?: () => void; table?: boolean }) {
+  const sections: Section[] = [
+    { key: 'about', title: 'Обзор' },
+    ...d.spots.map((s) => ({ key: `spot:${s.id}`, title: s.name || SPOT_KIND_LABELS[s.kind], kind: SPOT_KIND_LABELS[s.kind] })),
+    ...(d.rumors.length ? [{ key: 'rumors', title: 'Слухи и задания' }] : []),
+    ...(d.here.length ? [{ key: 'here', title: 'Кто здесь' }] : []),
+  ];
+  const [sel, setSel] = useState('about');
+  useEffect(() => {
+    if (!sections.some((s) => s.key === sel)) setSel('about');
+  }, [d]); // sections — из d
+  useEffect(() => {
+    if (!onClose) return;
+    const key = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', key);
+    return () => window.removeEventListener('keydown', key);
+  }, [onClose]);
+  const spot = sel.startsWith('spot:') ? d.spots.find((s) => `spot:${s.id}` === sel) : null;
+  const big = !!table;
+
+  // на столе — всё сразу, без меню
+  if (table)
+    return (
+      <div className="absolute inset-0 grid grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] gap-[4vw] overflow-hidden p-[6vh_5vw] text-[#f3ecd9]">
+        <Backdrop d={d} />
+        <div className="relative grid content-start gap-[2.4vh]">
+          <Banner d={d} big />
+          <Facts d={d} big />
+          {d.description && (
+            <p className="m-0 text-[clamp(20px,2.5vh,40px)] leading-snug whitespace-pre-line" style={{ fontFamily: SERIF }}>
+              {d.description}
+            </p>
+          )}
+          <Here list={[...d.here, ...d.spots.flatMap((s) => s.here)]} big />
+        </div>
+        <div className="relative grid content-start gap-[2vh]">
+          {d.spots.map((s) => (
+            <div key={s.id} className="grid gap-[0.4vh] rounded-[1vh] bg-[rgba(20,16,10,.55)] p-[1.6vh_1.4vw]">
+              <span className="text-[clamp(13px,1.6vh,24px)] tracking-[.08em] uppercase opacity-70">{SPOT_KIND_LABELS[s.kind]}</span>
+              <strong className="text-[clamp(22px,2.8vh,44px)] leading-none" style={{ fontFamily: SERIF }}>
+                {s.name || SPOT_KIND_LABELS[s.kind]}
+              </strong>
+              {s.description && <span className="text-[clamp(16px,2vh,30px)] opacity-90">{s.description}</span>}
+            </div>
+          ))}
+          {d.rumors.length > 0 && (
+            <div className="grid gap-[1vh] rounded-[1vh] bg-[rgba(20,16,10,.55)] p-[1.6vh_1.4vw]">
+              <span className="text-[clamp(13px,1.6vh,24px)] tracking-[.08em] uppercase opacity-70">Слухи и задания</span>
+              {d.rumors.map((r) => (
+                <span key={r.id} className="text-[clamp(16px,2vh,30px)]">
+                  <b className={r.kind === 'quest' ? 'text-[#e8c25a]' : undefined}>{RUMOR_KIND_LABELS[r.kind]}.</b> {r.text}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+
+  return (
+    <div
+      className="absolute inset-0 z-[3] grid grid-rows-[auto_minmax(0,1fr)] gap-3 p-3 text-[#f3ecd9] sm:grid-cols-[230px_minmax(0,1fr)] sm:grid-rows-1 sm:p-4"
+      onPointerDown={(e) => e.stopPropagation()}
+      onClick={(e) => e.stopPropagation()}
+      role="dialog"
+      aria-label={`Город: ${d.name}`}
+    >
+      <Backdrop d={d} />
+      <nav aria-label="Меню города" className="relative grid content-start gap-1.5 rounded-[14px] bg-[rgba(32,26,18,.86)] p-3 backdrop-blur-sm">
+        <Banner d={d} />
+        <div className="mt-1 flex gap-1.5 overflow-x-auto pb-1 sm:grid sm:overflow-visible sm:pb-0">
+          {sections.map((s) => (
+            <button
+              key={s.key}
+              type="button"
+              aria-current={sel === s.key}
+              onClick={() => setSel(s.key)}
+              className={cn(
+                'grid shrink-0 cursor-pointer gap-0 rounded-[9px] border border-solid px-3 py-1.5 text-left font-ui text-[15px] whitespace-nowrap',
+                sel === s.key ? 'border-[#c9971f] bg-[rgba(201,151,31,.22)]' : 'border-transparent bg-[rgba(243,236,217,.06)] hover:bg-[rgba(243,236,217,.12)]',
+              )}
+            >
+              <span className="font-semibold">{s.title}</span>
+              {s.kind && s.kind !== s.title && <span className="text-[11.5px] opacity-65">{s.kind}</span>}
+            </button>
+          ))}
+        </div>
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="mt-1 hidden cursor-pointer rounded-[9px] border border-solid border-[rgba(243,236,217,.3)] bg-transparent px-3 py-2 font-ui text-[14px] text-[#f3ecd9] sm:block"
+          >
+            Покинуть город
+          </button>
+        )}
+      </nav>
+      <section className="relative grid content-start gap-3 overflow-y-auto overscroll-contain rounded-[14px] bg-[rgba(32,26,18,.86)] p-4 backdrop-blur-sm">
+        {onClose && (
+          <button
+            type="button"
+            aria-label="Покинуть город"
+            onClick={onClose}
+            className="absolute top-2 right-2 grid size-8 cursor-pointer place-items-center rounded-full border-0 bg-[rgba(243,236,217,.12)] text-[18px] text-[#f3ecd9] sm:hidden"
+          >
+            ×
+          </button>
+        )}
+        {sel === 'about' && (
+          <>
+            <Facts d={d} />
+            <p className="m-0 leading-relaxed whitespace-pre-line" style={{ fontFamily: SERIF, fontSize: 18 }}>
+              {d.description || 'Об этом месте пока ничего не известно.'}
+            </p>
+            <Here list={d.here} />
+          </>
+        )}
+        {spot && (
+          <>
+            <span className="text-[12px] tracking-[.08em] uppercase opacity-65">{SPOT_KIND_LABELS[spot.kind]}</span>
+            <h3 className="m-0 text-[26px] leading-none" style={{ fontFamily: SERIF }}>
+              {spot.name || SPOT_KIND_LABELS[spot.kind]}
+            </h3>
+            <p className="m-0 leading-relaxed whitespace-pre-line" style={{ fontFamily: SERIF, fontSize: 18 }}>
+              {spot.description || 'Ничего примечательного.'}
+            </p>
+            <Here list={spot.here} />
+          </>
+        )}
+        {sel === 'rumors' && (
+          <ul className="m-0 grid list-none gap-2.5 p-0">
+            {d.rumors.map((r) => (
+              <li key={r.id} className="grid gap-0.5 border-l-[3px] border-solid pl-3" style={{ borderColor: r.kind === 'quest' ? '#e8c25a' : 'rgba(243,236,217,.35)' }}>
+                <span className="text-[12px] tracking-[.08em] uppercase opacity-65">{RUMOR_KIND_LABELS[r.kind]}</span>
+                <span style={{ fontFamily: SERIF, fontSize: 18 }}>{r.text}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+        {sel === 'here' && <Here list={[...d.here, ...d.spots.flatMap((s) => s.here)]} />}
+      </section>
+    </div>
+  );
+}
+
+/** Фон экрана города: картинка мастера с затемнением; без неё — лёгкое затемнение (за ним виден город). */
+function Backdrop({ d }: { d: PlaceDetailPublic }) {
+  return d.image ? (
+    <div aria-hidden="true" className="absolute inset-0 -z-0">
+      <img src={d.image.url} alt="" className="size-full object-cover" />
+      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(14,11,7,.75),rgba(14,11,7,.25)_60%,rgba(14,11,7,.55))]" />
+    </div>
+  ) : (
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(14,11,7,.55),rgba(14,11,7,0)_55%)]" />
+  );
+}

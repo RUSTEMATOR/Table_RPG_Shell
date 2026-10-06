@@ -20,6 +20,8 @@ export type MapCamera = {
   /** 3D: повернуть на север и угол поворота (0 — север вверху) */
   north?: () => void;
   yaw?: () => number;
+  /** 3D: облететь точку низко и медленно по кругу (экран города); off — остановить */
+  orbit?: (x: number, y: number, on: boolean) => void;
 };
 
 export type Camera = MapCamera & {

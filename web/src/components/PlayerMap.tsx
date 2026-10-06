@@ -6,6 +6,7 @@ import { load, save } from '../lib/storage.ts';
 import { cn } from '../lib/cn.ts';
 import { MapLookToggle, MapStage, useMapLook } from '../maps/MapStage.tsx';
 import { MapHud } from '../maps/overlay/MapHud.tsx';
+import { CityScreen, PlaceCard, usePlaceDetail } from '../maps/overlay/PlaceCard.tsx';
 import type { MapCamera } from '../maps/camera.ts';
 import { Button, Field, Sheet, Textarea, toast } from '../ui/index.ts';
 
@@ -26,6 +27,19 @@ export function PlayerMap({ active }: { active: boolean }) {
   const [noteMode, setNoteMode] = useState(false);
   const [look, setLook, can3d] = useMapLook();
   const [edit, setEdit] = useState<{ note: MapNote | null; x: number; y: number } | null>(null);
+  // карточка места и экран города (этап 27)
+  const [card, setCard] = useState<string | null>(null);
+  const [inCity, setInCity] = useState(false);
+  useEffect(() => {
+    setCard(null);
+    setInCity(false);
+  }, [mapId]);
+  const openPlace = (id: string) => {
+    setCard(id);
+    setInCity(false);
+    const p = map?.places.find((x) => x.id === id);
+    if (p && camera) camera.flyTo(p.x, p.y, Math.max(3, camera.view().zoom), { duration: 0.9 });
+  };
 
   const reload = useCallback(async () => {
     const r = await api<MapPublic>('GET', `/api/player/maps/${mapId}`);
@@ -94,6 +108,8 @@ export function PlayerMap({ active }: { active: boolean }) {
             data={map}
             mode="player"
             camera={setCamera}
+            selected={card}
+            {...(noteMode ? {} : { onPlace: openPlace })}
             onRegion={(r) => r.link && setMapId(r.link)}
             onPick={(x, y) => {
               if (!noteMode) return;
@@ -103,16 +119,44 @@ export function PlayerMap({ active }: { active: boolean }) {
             onNote={(n) => setEdit({ note: n, x: n.x, y: n.y })}
             className={cn('absolute inset-0', noteMode && 'cursor-crosshair')}
           >
-            <MapHud camera={camera} places={map.places} regions={map.regions} party={map.party} />
+            <MapHud camera={camera} places={map.places} regions={map.regions} party={map.party} onPlace={openPlace} />
           </MapStage>
         ) : (
           <div className="grid h-full place-items-center text-muted">Загрузка…</div>
+        )}
+        {card && !inCity && <PlaceCard key={card} id={card} onClose={() => setCard(null)} onEnter={() => setInCity(true)} />}
+        {card && inCity && (
+          <PlayerCity
+            id={card}
+            at={map?.places.find((p) => p.id === card) ?? null}
+            camera={camera}
+            onClose={() => setInCity(false)}
+            onGone={() => {
+              setInCity(false);
+              setCard(null);
+            }}
+          />
         )}
       </div>
       {map && map.regions.length === 0 && map.places.length === 0 && <p className="m-0 text-[13.6px] text-muted">Здесь пока туман: мастер откроет земли по ходу игры.</p>}
       <NoteSheet edit={edit} onClose={() => setEdit(null)} onSave={saveNote} onRemove={removeNote} />
     </div>
   );
+}
+
+/** Экран города поверх карты; в 3D камера тем временем низко кружит над городом. */
+function PlayerCity({ id, at, camera, onClose, onGone }: { id: string; at: { x: number; y: number } | null; camera: MapCamera | null; onClose: () => void; onGone: () => void }) {
+  const { d, gone } = usePlaceDetail('/api/player/maps/places', id);
+  useEffect(() => {
+    if (gone) onGone();
+  }, [gone]); // onGone — колбэк экрана
+  useEffect(() => {
+    if (!at || !camera?.orbit) return;
+    camera.orbit(at.x, at.y, true);
+    return () => camera.orbit?.(at.x, at.y, false);
+  }, [at?.x, at?.y, camera]);
+  if (!d) return null;
+  return <CityScreen d={d} onClose={onClose} />;
 }
 
 function NoteSheet({ edit, onClose, onSave, onRemove }: { edit: { note: MapNote | null } | null; onClose: () => void; onSave: (text: string) => void; onRemove: () => void }) {

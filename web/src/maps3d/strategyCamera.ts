@@ -24,6 +24,8 @@ export class StrategyCamera {
   tilt = 0;
   maxDist = 1400;
   interactive = true;
+  /** медленный облёт (рад/с): экран города — камера кружит над городом */
+  spin = 0;
   private groundY = 0;
   private w = 1;
   private h = 1;
@@ -195,6 +197,10 @@ export class StrategyCamera {
       this.vel.y *= decay;
       active = true;
     }
+    if (this.spin && !this.gesture) {
+      this.yaw += this.spin * dt;
+      active = true;
+    }
     if (this.keys.size && this.interactive) {
       const k = this.keys;
       const sp = this.dist * 0.9 * dt;
@@ -227,7 +233,7 @@ export class StrategyCamera {
   }
 
   get busy(): boolean {
-    return !!this.flight || Math.abs(this.vel.x) > 0.5 || Math.abs(this.vel.y) > 0.5 || this.keys.size > 0;
+    return !!this.spin || !!this.flight || Math.abs(this.vel.x) > 0.5 || Math.abs(this.vel.y) > 0.5 || this.keys.size > 0;
   }
 
   // ---- ввод ----

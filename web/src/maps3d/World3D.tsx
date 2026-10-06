@@ -78,6 +78,17 @@ export function World3D({
       onChange: (fn) => scene.onFrame(fn),
       north: () => scene.cam.north(),
       yaw: () => scene.cam.yaw,
+      orbit: (x, y, on) => {
+        if (!on) {
+          scene.cam.spin = 0;
+          scene.cam.tilt = 0;
+          return;
+        }
+        scene.cam.flyTo(x, y, 6, { duration: 1.4, instant: scene.instant });
+        scene.cam.tilt = -0.12;
+        scene.cam.spin = scene.instant ? 0 : 0.07;
+        scene.requestRender();
+      },
     };
     camera?.(c);
   }, [scene]); // camera — колбэк экрана, меняться не должен
