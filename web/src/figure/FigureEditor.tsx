@@ -2,6 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { FIGURE_SLOTS, type Figure, type FigurePart, type FigureSlot } from '@zg/shared';
 import { COLOR_LABELS, DEFAULT_FIGURE, OPTIONAL, SKINS, SLOT_LABELS, catalog, colorChoices, item, palettes, randomFigure, type Item } from './catalog.ts';
 import { FigureSprite, type Dir, type Pose } from './FigureSprite.tsx';
+import { FigureCredits } from './FigureCredits.tsx';
 import { Button, Segmented } from '../ui/index.ts';
 import { cn } from '../lib/cn.ts';
 
@@ -40,6 +41,12 @@ export function FigureEditor({
   const [pose, setPose] = useState<Pose>('walk');
   const [busy, setBusy] = useState(false);
   const dirty = JSON.stringify(draft) !== JSON.stringify(value ?? null);
+  // Фигурку поменяли в другом месте (мастер, другое устройство): подхватить, если здесь ничего не правили.
+  const [seen, setSeen] = useState(value);
+  if (value !== seen) {
+    setSeen(value);
+    if (JSON.stringify(draft) === JSON.stringify(seen ?? DEFAULT_FIGURE)) setDraft(value ?? DEFAULT_FIGURE);
+  }
 
   const items = useMemo(() => (catalog.slots[slot] ?? []).filter((i) => i.bodies.includes(draft.body)), [slot, draft.body]);
   const current = draft.parts[slot];
@@ -187,6 +194,7 @@ export function FigureEditor({
         </Button>
       )}
       {note && <p className="m-0 text-[13.6px] text-muted">{note}</p>}
+      <FigureCredits />
     </div>
   );
 }

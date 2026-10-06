@@ -1,0 +1,57 @@
+import { useEffect, useState } from 'react';
+import { Button, Sheet } from '../ui/index.ts';
+
+type Credit = { name: string; licenses: string[]; urls: string[] };
+
+/**
+ * «Авторы графики»: детали фигурок взяты из открытого набора LPC (CC-BY-SA 3.0 / GPL 3.0 / OGA-BY / CC-BY).
+ * Эти лицензии требуют указать авторов — список собирает tools/extract-lpc из CREDITS.csv набора,
+ * полная таблица по файлам лежит рядом с картинками: /lpc/CREDITS.csv.
+ */
+export function FigureCredits() {
+  const [open, setOpen] = useState(false);
+  const [list, setList] = useState<Credit[] | null>(null);
+  useEffect(() => {
+    if (open && !list) void import('./credits.json').then((m) => setList(m.default as Credit[]));
+  }, [open, list]);
+  return (
+    <>
+      <Button variant="ghost" size="sm" className="justify-self-start text-muted" onClick={() => setOpen(true)}>
+        Авторы графики
+      </Button>
+      <Sheet open={open} onOpenChange={setOpen} title="Авторы графики">
+        <p className="m-0 text-[14px] text-muted">
+          Фигурки собираются из деталей открытого набора{' '}
+          <a href="https://github.com/LiberatedPixelCup/Universal-LPC-Spritesheet-Character-Generator" target="_blank" rel="noreferrer" className="text-link">
+            Liberated Pixel Cup
+          </a>
+          . Спасибо художникам. Лицензии: CC-BY-SA 3.0, GPL 2.0/3.0, OGA-BY 3.0, CC-BY 3.0/4.0, CC0 —{' '}
+          <a href="/lpc/CREDITS.csv" target="_blank" rel="noreferrer" className="text-link">
+            полный список по файлам
+          </a>
+          .
+        </p>
+        {!list ? (
+          <p className="muted">Загрузка…</p>
+        ) : (
+          <ul className="m-0 grid list-none gap-2 p-0">
+            {list.map((c) => (
+              <li key={c.name} className="grid gap-0.5 border-b border-solid border-border pb-2 last:border-0">
+                <span className="font-ui font-semibold">
+                  {c.urls[0] ? (
+                    <a href={c.urls[0]} target="_blank" rel="noreferrer" className="text-text">
+                      {c.name}
+                    </a>
+                  ) : (
+                    c.name
+                  )}
+                </span>
+                <span className="text-[12.8px] text-muted">{c.licenses.join(' · ')}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Sheet>
+    </>
+  );
+}
