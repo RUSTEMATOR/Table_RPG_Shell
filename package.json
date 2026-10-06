@@ -27,6 +27,9 @@
     "backup:dev": "ZG_ENV_FILE=$HOME/.config/zelenogorye/.env.development npm run backup -w server"
   },
   "devDependencies": {
+    "@gltf-transform/core": "^4.5.1",
+    "@gltf-transform/extensions": "^4.5.1",
+    "@gltf-transform/functions": "^4.5.1",
     "polygon-clipping": "^0.15.7"
   }
 }

@@ -37,7 +37,8 @@ export default defineConfig({
         // Физика кубиков (Rapier, WebAssembly внутри, ~4 МБ) не входит в предкэш: качается при первом броске
         // и дальше берётся из кэша, в том числе без сети.
         // Листы фигурок LPC (~2,5 МБ, сотни файлов) — тоже вне предкэша: качаются по мере надобности, дальше из кэша.
-        globIgnores: ['**/physics.worker-*.js', 'lpc/**'],
+        // Модели 3D-карты (models/world.glb, ~1,8 МБ) — так же: при первом открытии 3D-карты; версия — в ?v=.
+        globIgnores: ['**/physics.worker-*.js', 'lpc/**', 'models/**'],
         runtimeCaching: [
           {
             urlPattern: ({ url }) => /\/assets\/physics\.worker-[\w-]+\.js$/.test(url.pathname),
@@ -48,6 +49,11 @@ export default defineConfig({
             urlPattern: ({ url }) => url.pathname.startsWith('/lpc/'),
             handler: 'CacheFirst',
             options: { cacheName: 'zg-figures', expiration: { maxEntries: 1200 } },
+          },
+          {
+            urlPattern: ({ url }) => url.pathname.startsWith('/models/'),
+            handler: 'CacheFirst',
+            options: { cacheName: 'zg-models', expiration: { maxEntries: 4 } },
           },
         ],
         cleanupOutdatedCaches: true,

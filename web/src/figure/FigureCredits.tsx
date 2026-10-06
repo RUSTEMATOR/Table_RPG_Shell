@@ -4,7 +4,7 @@ import { Button, Sheet } from '../ui/index.ts';
 type Credit = { name: string; licenses: string[]; urls: string[] };
 
 /**
- * «Авторы графики»: детали фигурок взяты из открытого набора LPC (CC-BY-SA 3.0 / GPL 3.0 / OGA-BY / CC-BY).
+ * «Авторы графики»: детали фигурок взяты из открытого набора LPC (CC-BY-SA 3.0 / GPL 3.0 / OGA-BY / CC-BY), модели 3D-карты — KayKit (CC0).
  * Эти лицензии требуют указать авторов — список собирает tools/extract-lpc из CREDITS.csv набора,
  * полная таблица по файлам лежит рядом с картинками: /lpc/CREDITS.csv.
  */
@@ -30,6 +30,13 @@ export function FigureCredits() {
             полный список по файлам
           </a>
           .
+        </p>
+        <p className="m-0 text-[14px] text-muted">
+          Модели 3D-карты — набор{' '}
+          <a href="https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0" target="_blank" rel="noreferrer" className="text-link">
+            KayKit Medieval Hexagon Pack
+          </a>{' '}
+          Кея Лаусберга (Kay Lousberg), CC0.
         </p>
         {!list ? (
           <p className="muted">Загрузка…</p>
