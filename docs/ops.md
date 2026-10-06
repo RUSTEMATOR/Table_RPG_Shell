@@ -63,9 +63,14 @@ chmod 600 ~/.config/zelenogorye/.env
 
 **Гостевой вход для проверки интерфейса.** На странице входа (только в dev, `NODE_ENV=development`, — значит, и на этом хосте) есть «Посмотреть без входа»: «Мастер», «Игрок», «Стол». Гость попадает в отдельную «Демо-комнату» (код `DEMO26`, создаётся и наполняется тестовыми данными при первом входе) — рабочую dev-комнату он не видит: все запросы и события ограничены комнатой сессии. У гостевых участников нет PIN, войти в демо-комнату по коду нельзя. В демо-комнате выключены Jev и Claude (платные вызовы) и скрыто «Состояние» сервера. Гостю-столу показывается «Выйти», чтобы сменить роль. В проде маршрут `/api/auth/guest` отвечает 404. Сбросить демо-комнату: остановить dev, удалить комнату `DEMO26` из dev-базы (каскадно уходит всё её содержимое) — при следующем гостевом входе она создастся заново.
 
-1. `bash ops/scripts/qa-setup.sh` — кладёт `servers/zelenogorye-qa.conf`, `nginx -t`, reload. Другое имя: `QA_DOMAIN=… bash ops/scripts/qa-setup.sh`.
+1. `bash ops/scripts/qa-setup.sh` — кладёт `servers/zelenogorye-qa.conf`, `nginx -t`, reload и ставит службу dev (см. ниже). Другое имя: `QA_DOMAIN=… bash ops/scripts/qa-setup.sh`.
 2. Cloudflare → Zero Trust → Networks → Tunnels → туннель этого Mac → Public Hostname → Add: имя `qc-zelenogorye`, домен `qa-temple-of-serenity.cc`, Service `HTTP` `localhost:8080`. DNS-запись появится сама.
-3. `ZG_QA_HOST=qc-zelenogorye.qa-temple-of-serenity.cc npm run dev`.
-4. С телефона по мобильной сети открыть адрес, обычный вход (docs/dev-data.md).
+3. С телефона по мобильной сети открыть адрес, обычный вход (docs/dev-data.md).
 
-Убрать: `bash ops/scripts/qa-setup.sh --remove` и удалить Public Hostname в Cloudflare. Пока `npm run dev` не запущен, хост отвечает 502.
+**Служба dev** — как у qc-intercom: служба пользователя `~/Library/LaunchAgents/com.zelenogorye.qa-dev.plist`, без sudo. Запускает `npm run dev` (через `node scripts/dev.mjs`) из этой папки с `ZG_QA_HOST`; поднимается при входе в систему — вход на этом Mac автоматический, значит, и после перезагрузки; упала — перезапускается через 10 с. Логи — `~/Library/Logs/zelenogorye-qa-dev.log` и `.err`.
+- Перезапуск (после правок `.env.development`, `npm install`, смены ветки): `launchctl kickstart -k gui/$(id -u)/com.zelenogorye.qa-dev`. Правки кода подхватываются сами (как в обычном `npm run dev`).
+- Остановить на время: `launchctl bootout gui/$(id -u)/com.zelenogorye.qa-dev`; вернуть: `launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.zelenogorye.qa-dev.plist`.
+- Пока служба работает, второй `npm run dev` в терминале не запустится (порты 3001 и 5173 заняты) — сначала остановить службу.
+- Node из nvm: путь к node зашит в службу. После обновления node — заново `bash ops/scripts/qa-setup.sh`.
+
+Убрать: `bash ops/scripts/qa-setup.sh --remove` (конфиг nginx и служба) и удалить Public Hostname в Cloudflare. Пока служба не работает, хост отвечает 502.
