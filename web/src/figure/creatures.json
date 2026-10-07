@@ -1,0 +1,310 @@
+{
+ "source": "[LPC] Monsters (OpenGameArt) 2c591d0e",
+ "v": "cd25ba53",
+ "creatures": [
+  {
+   "id": "bat",
+   "label": "Летучая мышь",
+   "cell": 64,
+   "frames": {
+    "idle": [
+     1,
+     2,
+     3,
+     4
+    ],
+    "walk": [
+     1,
+     2,
+     3,
+     4
+    ],
+    "attack": [
+     5,
+     6
+    ],
+    "hurt": [
+     0
+    ]
+   },
+   "fps": {
+    "idle": 10
+   }
+  },
+  {
+   "id": "bee",
+   "label": "Пчела",
+   "cell": 32,
+   "frames": {
+    "idle": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "walk": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "attack": [
+     4,
+     5
+    ],
+    "hurt": [
+     0
+    ]
+   },
+   "fps": {
+    "idle": 10
+   }
+  },
+  {
+   "id": "snake",
+   "label": "Змея",
+   "cell": 64,
+   "frames": {
+    "idle": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "walk": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "attack": [
+     4,
+     5
+    ],
+    "hurt": [
+     5
+    ]
+   }
+  },
+  {
+   "id": "slime",
+   "label": "Слизень",
+   "cell": 64,
+   "frames": {
+    "idle": [
+     0,
+     1,
+     2,
+     1
+    ],
+    "walk": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "attack": [
+     3,
+     4,
+     5
+    ],
+    "hurt": [
+     3
+    ]
+   }
+  },
+  {
+   "id": "ghost",
+   "label": "Призрак",
+   "cell": 64,
+   "frames": {
+    "idle": [
+     0,
+     1,
+     2,
+     1
+    ],
+    "walk": [
+     0,
+     1,
+     2,
+     1
+    ],
+    "attack": [
+     4,
+     5
+    ],
+    "hurt": [
+     3
+    ]
+   }
+  },
+  {
+   "id": "eyeball",
+   "label": "Глаз",
+   "cell": 64,
+   "frames": {
+    "idle": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "walk": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "attack": [
+     4,
+     5
+    ],
+    "hurt": [
+     0
+    ]
+   },
+   "ranged": true
+  },
+  {
+   "id": "small_worm",
+   "label": "Червь",
+   "cell": 64,
+   "frames": {
+    "idle": [
+     0,
+     1,
+     2,
+     1
+    ],
+    "walk": [
+     0,
+     1,
+     2,
+     1
+    ],
+    "attack": [
+     3,
+     4
+    ],
+    "hurt": [
+     5
+    ]
+   }
+  },
+  {
+   "id": "big_worm",
+   "label": "Большой червь",
+   "cell": 64,
+   "frames": {
+    "idle": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "walk": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "attack": [
+     4,
+     5
+    ],
+    "hurt": [
+     0
+    ]
+   },
+   "ranged": true
+  },
+  {
+   "id": "pumpking",
+   "label": "Тыквенный король",
+   "cell": 64,
+   "frames": {
+    "idle": [
+     0,
+     1,
+     2,
+     1
+    ],
+    "walk": [
+     0,
+     1,
+     2,
+     1
+    ],
+    "attack": [
+     3,
+     4,
+     5
+    ],
+    "hurt": [
+     0
+    ]
+   },
+   "ranged": true
+  },
+  {
+   "id": "man_eater_flower",
+   "label": "Цветок-людоед",
+   "cell": 128,
+   "frames": {
+    "idle": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "walk": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "attack": [
+     4,
+     5
+    ],
+    "hurt": [
+     0
+    ]
+   }
+  }
+ ],
+ "credits": [
+  {
+   "name": "Charles Sanchez (CharlesGabriel)",
+   "licenses": [
+    "CC-BY-SA 3.0",
+    "GPL 3.0"
+   ],
+   "urls": [
+    "https://opengameart.org/content/lpc-monsters"
+   ]
+  },
+  {
+   "name": "bagzie",
+   "licenses": [
+    "CC-BY-SA 3.0",
+    "GPL 3.0",
+    "OGA-BY 3.0"
+   ],
+   "urls": [
+    "https://opengameart.org/content/lpc-monsters"
+   ]
+  },
+  {
+   "name": "bluecarrot16",
+   "licenses": [
+    "CC-BY-SA 3.0",
+    "GPL 3.0"
+   ],
+   "urls": [
+    "https://opengameart.org/content/lpc-monsters"
+   ]
+  }
+ ]
+}
