@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState, type PointerEvent } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState, type FormEvent, type PointerEvent } from 'react';
 import { EFFECT_LABELS } from '@zg/shared';
 import { addOwn, holdOwn, type FeedRoll } from '../lib/feed.ts';
 import { useMe } from '../lib/me.tsx';
@@ -148,7 +148,16 @@ export function RollPanel({ role }: { role: 'gm' | 'player' }) {
   };
 
   const busy = pending !== null && error === null;
-  const trayH = role === 'gm' ? 'h-[220px]' : 'h-[clamp(240px,46dvh,380px)]';
+  // Лоток игрока ниже на низком экране: кнопка «Бросить» остаётся под пальцем без прокрутки.
+  const trayH = role === 'gm' ? 'h-[220px]' : 'h-[clamp(200px,40dvh,380px)] [@media(max-height:700px)]:h-[clamp(180px,34dvh,300px)]';
+  // «Ввод» в подписи бросает; клавиатура закрывается, чтобы был виден лоток.
+  const labelInput = useRef<HTMLInputElement>(null);
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    if (busy) return;
+    labelInput.current?.blur();
+    send(kind, newRequestId());
+  };
 
   return (
     <Card className="roll-panel @container/roll gap-3">
@@ -203,18 +212,22 @@ export function RollPanel({ role }: { role: 'gm' | 'player' }) {
             />
             <Segmented label="Кто видит" value={visibility} onChange={setVisibility} options={options} />
           </div>
-          <Input
-            className="roll-label"
-            aria-label="Подпись к броску"
-            placeholder={role === 'gm' ? 'Кто или что бросает (необязательно)' : 'Что делаю (необязательно)'}
-            value={label}
-            maxLength={300}
-            onChange={(e) => setLabel(e.target.value)}
-            disabled={busy}
-          />
-          <Button variant="primary" size="lg" className="w-full" disabled={busy} onClick={() => send(kind, newRequestId())}>
-            {busy ? 'Бросаю…' : `Бросить ${kind}`}
-          </Button>
+          <form onSubmit={submit} className="grid gap-3">
+            <Input
+              ref={labelInput}
+              className="roll-label"
+              aria-label="Подпись к броску"
+              placeholder={role === 'gm' ? 'Кто или что бросает (необязательно)' : 'Что делаю (необязательно)'}
+              value={label}
+              maxLength={300}
+              enterKeyHint="go"
+              onChange={(e) => setLabel(e.target.value)}
+              disabled={busy}
+            />
+            <Button type="submit" variant="primary" size="lg" className="w-full" disabled={busy}>
+              {busy ? 'Бросаю…' : `Бросить ${kind}`}
+            </Button>
+          </form>
 
           {error && pending && (
             <div className="flex flex-wrap items-center gap-2">
