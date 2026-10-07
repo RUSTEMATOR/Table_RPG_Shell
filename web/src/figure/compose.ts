@@ -1,11 +1,13 @@
-import { FIGURE_SLOTS, type Figure, type FigureSlot } from '@zg/shared';
-import { item, palettes, type Anim, type BodyType, type Item, type Layer, type Material } from './catalog.ts';
+import { FIGURE_SLOTS, isCreature, type CreatureFigure, type Figure, type FigureSlot, type HumanFigure } from '@zg/shared';
+import { creature, CREATURE_V, item, palettes, type Anim, type BodyType, type Item, type Layer, type Material } from './catalog.ts';
 
 // Сборка листа анимации фигурки из слоёв LPC: загрузка, перекраска по палитре, порядок по z.
 // Обычные кадры — 64×64; у крупного удара (меч, булава) — 192×192, кадр тела по центру.
 // Ряды: вверх, влево, вниз, вправо; у «ранен» — один ряд. Результат кэшируется по описанию фигурки.
+// Существо (этап 33) — свой лист целиком: из него вырезаются кадры анимации (creatures.json).
 
-export type Sheet = { canvas: HTMLCanvasElement; cell: number; cols: number; rows: number };
+/** first — с какого кадра цикл (у ходьбы людей кадр 0 — «стоит»); fps — своя скорость анимации листа. */
+export type Sheet = { canvas: HTMLCanvasElement; cell: number; cols: number; rows: number; first: number; fps?: number };
 
 const BASE = '/lpc/sheets/';
 const images = new Map<string, Promise<HTMLImageElement | null>>();
@@ -68,7 +70,7 @@ function recolor(url: string, material: Material, from: string, to: string): Pro
 }
 
 type Part = { slot: FigureSlot; it: Item; color?: string };
-function partsOf(f: Figure): Part[] {
+function partsOf(f: HumanFigure): Part[] {
   const out: Part[] = [];
   for (const slot of FIGURE_SLOTS) {
     const p = f.parts[slot];
@@ -90,8 +92,9 @@ function fileOf(layer: Layer, body: BodyType, anim: Anim, it: Item, color: strin
   return `${BASE}${path}${anim}.png`;
 }
 
-/** Атака фигурки — по оружию; без оружия — удар рукой. */
+/** Атака фигурки — по оружию; без оружия — удар рукой. Существо, которое бьёт издали (глаз, тыква), — как заклинание: в бою не подходит. */
 export function attackOf(f: Figure): Anim {
+  if (isCreature(f)) return creature(f.creature)?.ranged ? 'spellcast' : 'slash';
   return item('weapon', f.parts.weapon?.id)?.attack ?? 'slash';
 }
 
@@ -102,14 +105,31 @@ export function sheetOf(f: Figure, anim: Anim): Promise<Sheet | null> {
   const key = `${JSON.stringify(f)}|${anim}`;
   let p = sheets.get(key);
   if (!p) {
-    p = build(f, anim);
+    p = isCreature(f) ? buildCreature(f, anim) : build(f, anim);
     sheets.set(key, p);
     if (sheets.size > 80) sheets.delete(sheets.keys().next().value!);
   }
   return p;
 }
 
-async function build(f: Figure, anim: Anim): Promise<Sheet | null> {
+/** Лист существа: кадры анимации из его листа (атака — любая анимация удара, у кого нет «ранен» — стоит). */
+async function buildCreature(f: CreatureFigure, anim: Anim): Promise<Sheet | null> {
+  const c = creature(f.creature);
+  if (!c) return null;
+  const img = await load(`/lpc/creatures/${c.id}.png?v=${CREATURE_V}`);
+  if (!img) return null;
+  const key = anim === 'idle' || anim === 'walk' || anim === 'hurt' ? anim : 'attack';
+  const frames = c.frames[key];
+  const canvas = document.createElement('canvas');
+  canvas.width = frames.length * c.cell;
+  canvas.height = 4 * c.cell;
+  const ctx = canvas.getContext('2d')!;
+  ctx.imageSmoothingEnabled = false;
+  for (let r = 0; r < 4; r++) frames.forEach((col, i) => ctx.drawImage(img, col * c.cell, r * c.cell, c.cell, c.cell, i * c.cell, r * c.cell, c.cell, c.cell));
+  return { canvas, cell: c.cell, cols: frames.length, rows: 4, first: 0, ...(c.fps?.[key] ? { fps: c.fps[key] } : {}) };
+}
+
+async function build(f: HumanFigure, anim: Anim): Promise<Sheet | null> {
   const parts = partsOf(f);
   type Draw = { z: number; img: CanvasImageSource & { width: number; height: number }; oversize: boolean; fromWalk: boolean };
   const draws: Draw[] = [];
@@ -159,7 +179,8 @@ async function build(f: Figure, anim: Anim): Promise<Sheet | null> {
       }
     }
   }
-  return { canvas, cell, cols, rows };
+  // у ходьбы кадр 0 — «стоит», цикл с 1
+  return { canvas, cell, cols, rows, first: anim === 'walk' ? 1 : 0 };
 }
 
 /** Заранее подгрузить листы фигурки (например, перед боем на столе). */

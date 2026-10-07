@@ -1,6 +1,7 @@
-import type { Figure, FigureSlot } from '@zg/shared';
+import type { CreatureId, FigureSlot, HumanFigure } from '@zg/shared';
 import raw from './catalog.json';
 import palettesRaw from './palettes.json';
+import creaturesRaw from './creatures.json';
 
 // Каталог деталей LPC (tools/extract-lpc): слоты, детали, слои, анимации, способ окраски.
 
@@ -29,6 +30,15 @@ export const SLOT_LABELS: Record<FigureSlot, string> = {
 };
 /** Слоты, которые можно оставить пустыми (у тела и лица всегда что-то выбрано). */
 export const OPTIONAL: FigureSlot[] = ['hair', 'beard', 'torso', 'armour', 'cape', 'legs', 'feet', 'headwear', 'weapon'];
+
+/** Существо (этап 33, tools/extract-lpc/creatures.mjs): кадр px, номера столбцов по анимациям; ranged — бьёт издали. */
+export type CreatureFrames = Record<'idle' | 'walk' | 'attack' | 'hurt', number[]>;
+export type Creature = { id: CreatureId; label: string; cell: number; frames: CreatureFrames; ranged?: true; fps?: Partial<Record<keyof CreatureFrames, number>> };
+const creatures = creaturesRaw as unknown as { v: string; creatures: Creature[]; credits: { name: string; licenses: string[]; urls: string[] }[] };
+export const CREATURES = creatures.creatures;
+export const CREATURE_V = creatures.v;
+export const CREATURE_CREDITS = creatures.credits;
+export const creature = (id: CreatureId): Creature | undefined => CREATURES.find((c) => c.id === id);
 
 export function item(slot: FigureSlot, id: string | undefined): Item | undefined {
   return id ? catalog.slots[slot]?.find((i) => i.id === id) : undefined;
@@ -119,7 +129,7 @@ export const SKINS = [
   'fur_white',
 ];
 
-export const DEFAULT_FIGURE: Figure = {
+export const DEFAULT_FIGURE: HumanFigure = {
   v: 1,
   body: 'female',
   skin: 'light',
@@ -134,7 +144,7 @@ export const DEFAULT_FIGURE: Figure = {
 };
 
 /** Случайная фигурка человека: для «Случайно» в конструкторе. */
-export function randomFigure(rnd: () => number = Math.random): Figure {
+export function randomFigure(rnd: () => number = Math.random): HumanFigure {
   const pick = <T>(a: T[]) => a[Math.floor(rnd() * a.length)]!;
   const body: BodyType = rnd() < 0.5 ? 'male' : 'female';
   const human = (s: FigureSlot) => (catalog.slots[s] ?? []).filter((i) => i.bodies.includes(body));

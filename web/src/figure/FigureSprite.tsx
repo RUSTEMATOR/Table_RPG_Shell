@@ -54,8 +54,7 @@ export function FigureSprite({
     if (!c || !sheet) return;
     const ctx = c.getContext('2d')!;
     const row = sheet.rows === 1 ? 0 : Math.min(ROW[dir], sheet.rows - 1);
-    // у ходьбы кадр 0 — «стоит», цикл с 1
-    const first = anim === 'walk' ? 1 : 0;
+    const first = sheet.first;
     const n = sheet.cols - first;
     const draw = (i: number) => {
       ctx.clearRect(0, 0, c.width, c.height);
@@ -66,7 +65,7 @@ export function FigureSprite({
       draw(0);
       return;
     }
-    const fps = FPS[anim] ?? 10;
+    const fps = sheet.fps ?? FPS[anim] ?? 10;
     const start = performance.now();
     let raf = 0;
     let last = -1;

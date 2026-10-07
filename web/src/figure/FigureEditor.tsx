@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react';
-import { FIGURE_SLOTS, type Figure, type FigurePart, type FigureSlot } from '@zg/shared';
-import { COLOR_LABELS, DEFAULT_FIGURE, OPTIONAL, SKINS, SLOT_LABELS, catalog, colorChoices, item, palettes, randomFigure, type Item } from './catalog.ts';
+import { FIGURE_SLOTS, isCreature, type CreatureFigure, type Figure, type FigurePart, type FigureSlot, type HumanFigure } from '@zg/shared';
+import { COLOR_LABELS, CREATURES, DEFAULT_FIGURE, OPTIONAL, SKINS, SLOT_LABELS, catalog, colorChoices, item, palettes, randomFigure, type Item } from './catalog.ts';
 import { FigureSprite, type Dir, type Pose } from './FigureSprite.tsx';
 import { FigureCredits } from './FigureCredits.tsx';
 import { Button, Segmented } from '../ui/index.ts';
@@ -22,20 +22,27 @@ function swatch(material: keyof typeof palettes | null, key: string): string {
 /**
  * Конструктор фигурки (макет «Игрок · Фигурка»): превью с поворотом и позами, части фигурки, варианты миниатюрами,
  * цвета, «Случайно», «Сохранить». Общий для игрока (своя фигурка) и мастера (любой персонаж и противник).
+ * creatures — можно выбрать существо вместо человека (этап 33): только у противников; персонаж всегда человек.
  */
 export function FigureEditor({
   value,
   onSave,
   onClear,
   note,
+  creatures,
 }: {
   value: Figure | null;
   onSave: (f: Figure) => Promise<boolean>;
   /** Убрать фигурку совсем (у мастера); без него кнопки нет. */
   onClear?: () => Promise<boolean>;
   note?: string;
+  creatures?: boolean;
 }) {
-  const [draft, setDraft] = useState<Figure>(value ?? DEFAULT_FIGURE);
+  // Человек и существо правятся отдельно: переключение туда-обратно не теряет собранного.
+  const [kind, setKind] = useState<'human' | 'creature'>(value && isCreature(value) && creatures ? 'creature' : 'human');
+  const [human, setHuman] = useState<HumanFigure>(value && !isCreature(value) ? value : DEFAULT_FIGURE);
+  const [beast, setBeast] = useState<CreatureFigure>(value && isCreature(value) ? value : { v: 1, creature: CREATURES[0]!.id });
+  const draft: Figure = kind === 'creature' ? beast : human;
   const [slot, setSlot] = useState<FigureSlot>('hair');
   const [dir, setDir] = useState(0);
   const [pose, setPose] = useState<Pose>('walk');
@@ -45,22 +52,30 @@ export function FigureEditor({
   const [seen, setSeen] = useState(value);
   if (value !== seen) {
     setSeen(value);
-    if (JSON.stringify(draft) === JSON.stringify(seen ?? DEFAULT_FIGURE)) setDraft(value ?? DEFAULT_FIGURE);
+    if (JSON.stringify(draft) === JSON.stringify(seen ?? DEFAULT_FIGURE)) {
+      if (value && isCreature(value)) {
+        setBeast(value);
+        if (creatures) setKind('creature');
+      } else {
+        setHuman(value ?? DEFAULT_FIGURE);
+        setKind('human');
+      }
+    }
   }
 
-  const items = useMemo(() => (catalog.slots[slot] ?? []).filter((i) => i.bodies.includes(draft.body)), [slot, draft.body]);
-  const current = draft.parts[slot];
+  const items = useMemo(() => (catalog.slots[slot] ?? []).filter((i) => i.bodies.includes(human.body)), [slot, human.body]);
+  const current = human.parts[slot];
   const cur = item(slot, current?.id);
   const colors = slot === 'body' ? [] : colorChoices(slot, cur);
   const material = cur?.colors?.kind === 'palette' ? cur.colors.material : null;
 
-  const setPart = (s: FigureSlot, p: FigurePart | undefined) => setDraft((f) => ({ ...f, parts: { ...f.parts, [s]: p } }));
+  const setPart = (s: FigureSlot, p: FigurePart | undefined) => setHuman((f) => ({ ...f, parts: { ...f.parts, [s]: p } }));
   const choose = (it: Item | null) => {
     if (!it) return setPart(slot, undefined);
     // голова не-человека (орк, волк, скелет) — кожа её родного цвета, чтобы тело совпало с головой
     const skin = ownSkin(it);
     if (skin) {
-      return setDraft((f) => ({ ...f, skin, parts: { ...f.parts, head: { id: it.id } } }));
+      return setHuman((f) => ({ ...f, skin, parts: { ...f.parts, head: { id: it.id } } }));
     }
     const keep = current?.color && colorChoices(slot, it).includes(current.color) ? current.color : undefined;
     const first = colorChoices(slot, it)[0];
@@ -69,9 +84,9 @@ export function FigureEditor({
   const ownSkin = (it: Item | null) =>
     slot === 'head' && it && !it.id.startsWith('human_') && it.colors?.kind === 'palette' && it.colors.material === 'body' ? it.colors.base : null;
   const withItem = (it: Item | null): Figure => ({
-    ...draft,
-    skin: ownSkin(it) ?? draft.skin,
-    parts: { ...draft.parts, [slot]: it ? { id: it.id, ...(current?.color ? { color: current.color } : {}) } : undefined },
+    ...human,
+    skin: ownSkin(it) ?? human.skin,
+    parts: { ...human.parts, [slot]: it ? { id: it.id, ...(current?.color ? { color: current.color } : {}) } : undefined },
   });
 
   const save = async () => {
@@ -82,7 +97,10 @@ export function FigureEditor({
   const clear = async () => {
     if (!onClear) return;
     setBusy(true);
-    if (await onClear()) setDraft(DEFAULT_FIGURE);
+    if (await onClear()) {
+      setHuman(DEFAULT_FIGURE);
+      setKind('human');
+    }
     setBusy(false);
   };
 
@@ -120,76 +138,105 @@ export function FigureEditor({
         />
       </section>
 
-      <nav aria-label="Части фигурки" className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
-        {FIGURE_SLOTS.map((s) => (
-          <Button key={s} size="sm" variant={s === slot ? 'primary' : 'ghost'} aria-current={s === slot || undefined} className="shrink-0" onClick={() => setSlot(s)}>
-            {SLOT_LABELS[s]}
-          </Button>
-        ))}
-      </nav>
-
-      {slot === 'body' && (
+      {creatures && (
         <Segmented
-          label="Телосложение"
-          value={draft.body}
-          onChange={(b) =>
-            setDraft((f) => ({
-              ...f,
-              body: b,
-              parts: { ...f.parts, head: f.parts.head?.id?.startsWith('human_') ? { id: b === 'male' ? 'human_male' : 'human_female' } : f.parts.head },
-            }))
-          }
-          options={[
-            { value: 'female', label: 'Женское' },
-            { value: 'male', label: 'Мужское' },
-          ]}
+          label="Кто"
+          value={kind}
+          onChange={setKind}
           className="justify-self-start"
+          options={[
+            { value: 'human', label: 'Человек' },
+            { value: 'creature', label: 'Существо' },
+          ]}
         />
       )}
 
-      <div role="radiogroup" aria-label={SLOT_LABELS[slot]} className="grid grid-cols-4 gap-2 min-[480px]:grid-cols-6">
-        {OPTIONAL.includes(slot) && (
-          <Option on={!current} label="Нет" onPick={() => choose(null)}>
-            <FigureSprite figure={withItem(null)} pose="idle" size={64} paused />
-          </Option>
-        )}
-        {items.map((it) => (
-          <Option key={it.id} on={current?.id === it.id} label={it.label} sub={slot === 'weapon' && it.attack ? ATTACK_LABEL[it.attack] : undefined} onPick={() => choose(it)}>
-            <FigureSprite figure={withItem(it)} pose={slot === 'weapon' ? 'attack' : 'idle'} dir={slot === 'weapon' ? 'right' : 'down'} size={64} paused />
-          </Option>
-        ))}
-      </div>
-
-      {(slot === 'body' || slot === 'head' || colors.length > 0) && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="w-12 font-ui text-xs tracking-[.06em] text-muted uppercase">{slot === 'body' || slot === 'head' ? 'Кожа' : 'Цвет'}</span>
-          <div role="radiogroup" aria-label={slot === 'body' || slot === 'head' ? 'Цвет кожи' : 'Цвет'} className="flex flex-wrap gap-2">
-            {(slot === 'body' || slot === 'head' ? SKINS : colors).map((c) => {
-              const on =
-                slot === 'body' || slot === 'head' ? draft.skin === c : current?.color === c || (!current?.color && cur?.colors?.kind === 'palette' && cur.colors.base === c);
-              return (
-                <button
-                  key={c}
-                  type="button"
-                  role="radio"
-                  aria-checked={on}
-                  aria-label={COLOR_LABELS[c] ?? c}
-                  title={COLOR_LABELS[c] ?? c}
-                  onClick={() => (slot === 'body' || slot === 'head' ? setDraft((f) => ({ ...f, skin: c })) : current && setPart(slot, { ...current, color: c }))}
-                  className={cn(
-                    'size-8 cursor-pointer rounded-full border-[3px] border-solid border-surface',
-                    on ? 'shadow-[0_0_0_2px_var(--accent)]' : 'shadow-[0_0_0_1px_var(--border)]',
-                  )}
-                  style={{ background: swatch(slot === 'body' || slot === 'head' ? 'body' : material, c) }}
-                />
-              );
-            })}
-          </div>
+      {kind === 'creature' ? (
+        <div role="radiogroup" aria-label="Существо" className="grid grid-cols-4 gap-2 min-[480px]:grid-cols-6">
+          {CREATURES.map((c) => (
+            <Option key={c.id} on={beast.creature === c.id} label={c.label} sub={c.ranged ? 'издали' : undefined} onPick={() => setBeast({ v: 1, creature: c.id })}>
+              <FigureSprite figure={{ v: 1, creature: c.id }} pose="idle" size={c.cell > 64 ? 32 : 64} paused />
+            </Option>
+          ))}
         </div>
+      ) : (
+        <>
+          <nav aria-label="Части фигурки" className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
+            {FIGURE_SLOTS.map((s) => (
+              <Button key={s} size="sm" variant={s === slot ? 'primary' : 'ghost'} aria-current={s === slot || undefined} className="shrink-0" onClick={() => setSlot(s)}>
+                {SLOT_LABELS[s]}
+              </Button>
+            ))}
+          </nav>
+
+          {slot === 'body' && (
+            <Segmented
+              label="Телосложение"
+              value={human.body}
+              onChange={(b) =>
+                setHuman((f) => ({
+                  ...f,
+                  body: b,
+                  parts: { ...f.parts, head: f.parts.head?.id?.startsWith('human_') ? { id: b === 'male' ? 'human_male' : 'human_female' } : f.parts.head },
+                }))
+              }
+              options={[
+                { value: 'female', label: 'Женское' },
+                { value: 'male', label: 'Мужское' },
+              ]}
+              className="justify-self-start"
+            />
+          )}
+
+          <div role="radiogroup" aria-label={SLOT_LABELS[slot]} className="grid grid-cols-4 gap-2 min-[480px]:grid-cols-6">
+            {OPTIONAL.includes(slot) && (
+              <Option on={!current} label="Нет" onPick={() => choose(null)}>
+                <FigureSprite figure={withItem(null)} pose="idle" size={64} paused />
+              </Option>
+            )}
+            {items.map((it) => (
+              <Option key={it.id} on={current?.id === it.id} label={it.label} sub={slot === 'weapon' && it.attack ? ATTACK_LABEL[it.attack] : undefined} onPick={() => choose(it)}>
+                <FigureSprite figure={withItem(it)} pose={slot === 'weapon' ? 'attack' : 'idle'} dir={slot === 'weapon' ? 'right' : 'down'} size={64} paused />
+              </Option>
+            ))}
+          </div>
+
+          {(slot === 'body' || slot === 'head' || colors.length > 0) && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="w-12 font-ui text-xs tracking-[.06em] text-muted uppercase">{slot === 'body' || slot === 'head' ? 'Кожа' : 'Цвет'}</span>
+              <div role="radiogroup" aria-label={slot === 'body' || slot === 'head' ? 'Цвет кожи' : 'Цвет'} className="flex flex-wrap gap-2">
+                {(slot === 'body' || slot === 'head' ? SKINS : colors).map((c) => {
+                  const on =
+                    slot === 'body' || slot === 'head' ? human.skin === c : current?.color === c || (!current?.color && cur?.colors?.kind === 'palette' && cur.colors.base === c);
+                  return (
+                    <button
+                      key={c}
+                      type="button"
+                      role="radio"
+                      aria-checked={on}
+                      aria-label={COLOR_LABELS[c] ?? c}
+                      title={COLOR_LABELS[c] ?? c}
+                      onClick={() => (slot === 'body' || slot === 'head' ? setHuman((f) => ({ ...f, skin: c })) : current && setPart(slot, { ...current, color: c }))}
+                      className={cn(
+                        'size-8 cursor-pointer rounded-full border-[3px] border-solid border-surface',
+                        on ? 'shadow-[0_0_0_2px_var(--accent)]' : 'shadow-[0_0_0_1px_var(--border)]',
+                      )}
+                      style={{ background: swatch(slot === 'body' || slot === 'head' ? 'body' : material, c) }}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       <div className="flex gap-2">
-        <Button variant="ghost" className="flex-1" onClick={() => setDraft(randomFigure())}>
+        <Button
+          variant="ghost"
+          className="flex-1"
+          onClick={() => (kind === 'creature' ? setBeast({ v: 1, creature: CREATURES[Math.floor(Math.random() * CREATURES.length)]!.id }) : setHuman(randomFigure()))}
+        >
           Случайно
         </Button>
         <Button variant="primary" className="flex-[2]" disabled={busy || !dirty} onClick={save}>

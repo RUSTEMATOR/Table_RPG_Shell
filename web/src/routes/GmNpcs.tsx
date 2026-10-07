@@ -217,7 +217,13 @@ function NpcEditor({ n, onChange }: { n: GmNpc; onChange: (n: GmNpc) => void }) 
       {msg && <p className="m-0 text-[13.6px] text-muted">{msg}</p>}
       <Sheet open={figureOpen} onOpenChange={setFigureOpen} title={`Фигурка · ${n.name || 'противник'}`}>
         <Suspense fallback={<p className="muted">Загрузка…</p>}>
-          <FigureEditor value={n.figure} onSave={figure} onClear={() => figure(null)} note="Фигурку увидят игроки и стол, когда противник окажется на карте или в бою. Сила и заметки остаются у мастера." />
+          <FigureEditor
+            creatures
+            value={n.figure}
+            onSave={figure}
+            onClear={() => figure(null)}
+            note="Фигурку увидят игроки и стол, когда противник окажется на карте или в бою. Сила и заметки остаются у мастера."
+          />
         </Suspense>
       </Sheet>
     </Card>

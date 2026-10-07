@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Button, ICON_SET, Sheet } from '../ui/index.ts';
+import { CREATURE_CREDITS } from './catalog.ts';
 
 type Credit = { name: string; licenses: string[]; urls: string[] };
 
@@ -31,6 +32,13 @@ export function FigureCredits() {
             полный список по файлам
           </a>
           .
+        </p>
+        <p className="m-0 text-[14px] text-muted">
+          Существа противников —{' '}
+          <a href="https://opengameart.org/content/lpc-monsters" target="_blank" rel="noreferrer" className="text-link">
+            [LPC] Monsters
+          </a>
+          : {CREATURE_CREDITS.map((c) => c.name).join(', ')} (CC-BY-SA 3.0 / GPL 3.0, летучая мышь — ещё OGA-BY 3.0).
         </p>
         <p className="m-0 text-[14px] text-muted">
           Модели 3D-карты — набор{' '}

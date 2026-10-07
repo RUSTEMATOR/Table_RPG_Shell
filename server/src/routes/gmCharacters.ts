@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
-import { RollParamsSchema, type Catalog, type GmCharacterListItem, FigureSchema } from '@zg/shared';
+import { RollParamsSchema, type Catalog, type GmCharacterListItem, HumanFigureSchema } from '@zg/shared';
 import { requireGm } from '../auth/requireGm.ts';
 import { newId } from '../auth/tokens.ts';
 import { db, schema } from '../db/client.ts';
@@ -240,9 +240,9 @@ export async function gmCharacterRoutes(app: FastifyInstance) {
       .optional(),
   });
 
-  // Фигурка персонажа (этап 23): мастер может собрать или поправить любую. null — убрать.
+  // Фигурка персонажа (этап 23): мастер может собрать или поправить любую. null — убрать. Персонаж — всегда человек (существа — у противников).
   app.post<{ Params: { id: string } }>('/api/gm/characters/:id/figure', async (request, reply) => {
-    const b = FigureSchema.nullable().safeParse(request.body);
+    const b = HumanFigureSchema.nullable().safeParse(request.body);
     if (!b.success) return bad(reply);
     const roomId = request.auth!.room.id;
     const lc = loadCharacter(roomId, request.params.id);

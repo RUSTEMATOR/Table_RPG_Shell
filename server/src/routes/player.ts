@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { FigureSchema, PlayerCharacterResponseSchema } from '@zg/shared';
+import { HumanFigureSchema, PlayerCharacterResponseSchema } from '@zg/shared';
 import { portraitBytes } from '../domain/portrait.ts';
 import { loadCharacter, loadOwnedCharacter, saveDoc } from '../domain/repo.ts';
 import { notifyCharacterChanged } from '../realtime/notify.ts';
@@ -15,12 +15,12 @@ export async function playerRoutes(app: FastifyInstance) {
     return PlayerCharacterResponseSchema.parse({ character: lc ? projectForPlayer(lc) : null });
   });
 
-  // Фигурка своего персонажа (этап 23): игрок собирает её сам. Описание проверяется схемой целиком.
+  // Фигурка своего персонажа (этап 23): игрок собирает её сам. Описание проверяется схемой целиком; существо (этап 33) — только у противников.
   app.post('/api/player/character/figure', async (request, reply) => {
     const auth = request.auth;
     if (!auth) return reply.code(401).send({ error: 'unauthorized' });
     if (auth.member.role !== 'player') return reply.code(403).send({ error: 'forbidden' });
-    const b = FigureSchema.safeParse(request.body);
+    const b = HumanFigureSchema.safeParse(request.body);
     if (!b.success) return reply.code(400).send({ error: 'bad_request' });
     const lc = loadOwnedCharacter(auth.room.id, auth.member.id);
     if (!lc) return reply.code(404).send({ error: 'not_found' });
