@@ -1,0 +1,15 @@
+{
+ "source": "Kenney: Casino Audio 1.1, Impact Sounds, RPG Audio (CC0)",
+ "v": "3f150528",
+ "sounds": {
+  "roll": 4,
+  "knock": 3,
+  "crit": 1,
+  "fail": 1,
+  "swing": 2,
+  "hit": 2,
+  "flinch": 1,
+  "page": 2,
+  "door": 1
+ }
+}
