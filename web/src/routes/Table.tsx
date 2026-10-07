@@ -21,6 +21,7 @@ import { TvParticles } from '../tv/TvParticles.tsx';
 import { TvSigns, type Sign } from '../tv/TvSigns.tsx';
 import { TV_VARS, effectColor, isTableRoll } from '../tv/palette.ts';
 import { EFFECT_ICON, GameIcon } from '../ui/GameIcon.tsx';
+import { setSound, useSound } from '../tv/sound.ts';
 
 // Общий экран для ТВ и трансляции. Только публичное: сцена (без текста мастера), портрет противника (имя и картинка),
 // публичные броски, признаки перегрузки. Палитра своя и постоянная: экран смотрят издалека, в тёмной комнате.
@@ -78,6 +79,8 @@ function TableScreen({ room, demo }: { room: string; demo: boolean }) {
     });
   };
 
+  const sound = useSound();
+
   const scene = state.scene;
   return (
     // «Анимация выкл.» гасит всё движение Motion так же, как «Уменьшить движение» в системе.
@@ -105,6 +108,19 @@ function TableScreen({ room, demo }: { room: string; demo: boolean }) {
             className="cursor-pointer rounded-full border border-solid border-[var(--tv-line)] bg-transparent px-4 py-1.5 font-[inherit] text-[0.8em] text-[var(--tv-ink)] hover:bg-white/10"
           >
             {still ? 'Анимация выкл.' : 'Анимация вкл.'}
+          </button>
+          {/* Звук включается только нажатием: так требует браузер. После перезагрузки — «нажмите»: первое нажатие его вернёт. */}
+          <button
+            type="button"
+            data-sound-toggle
+            onClick={() => setSound(sound !== 'on')}
+            aria-pressed={sound !== 'off'}
+            className={cn(
+              'cursor-pointer rounded-full border border-solid bg-transparent px-4 py-1.5 font-[inherit] text-[0.8em] text-[var(--tv-ink)] hover:bg-white/10',
+              sound === 'blocked' ? 'border-[var(--tv-accent)]' : 'border-[var(--tv-line)]',
+            )}
+          >
+            {sound === 'on' ? 'Звук вкл.' : sound === 'blocked' ? 'Звук: нажмите' : 'Звук выкл.'}
           </button>
           {/* Стол не выходит никогда — кроме гостя демо-комнаты: ему надо сменить роль. */}
           {demo && (
