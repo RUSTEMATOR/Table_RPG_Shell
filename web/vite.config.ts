@@ -54,7 +54,8 @@ export default defineConfig({
           {
             urlPattern: ({ url }) => url.pathname.startsWith('/models/'),
             handler: 'CacheFirst',
-            options: { cacheName: 'zg-models', expiration: { maxEntries: 4 } },
+            // world.glb и модели противников models/units/*.glb (~200 КБ каждая, этап 34)
+            options: { cacheName: 'zg-models', expiration: { maxEntries: 16 } },
           },
           {
             urlPattern: ({ url }) => url.pathname.startsWith('/sfx/'),

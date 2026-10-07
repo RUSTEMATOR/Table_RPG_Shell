@@ -1,0 +1,19 @@
+{
+ "source": "KayKit Character Pack Adventures 1.0 + Skeletons 1.0 (CC0)",
+ "v": "8646c74a",
+ "anims": {
+  "idle": "Idle",
+  "walk": "Walking_A"
+ },
+ "units": {
+  "knight": "Рыцарь",
+  "barbarian": "Варвар",
+  "mage": "Маг",
+  "rogue": "Разбойник",
+  "rogue_hooded": "Разбойник в капюшоне",
+  "skeleton_warrior": "Скелет-воин",
+  "skeleton_mage": "Скелет-маг",
+  "skeleton_rogue": "Скелет-разбойник",
+  "skeleton_minion": "Скелет"
+ }
+}
