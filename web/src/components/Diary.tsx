@@ -7,7 +7,7 @@ import { useConnection, useSocketEvent } from '../lib/socket.ts';
 import { load as loadPref, remove as removePref, save as savePref } from '../lib/storage.ts';
 import { rememberReplies } from '../lib/unread.ts';
 import { spring } from '../lib/motion.tsx';
-import { Button, Card, CardTitle, Field, Segmented, Sheet, Textarea } from '../ui/index.ts';
+import { Button, Card, CardTitle, EmptyState, Field, Segmented, Sheet, Textarea } from '../ui/index.ts';
 
 const when = (t: number) => new Date(t).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 
@@ -86,7 +86,7 @@ export function Diary({ active = true }: { active?: boolean }) {
         </Button>
       </div>
       {entries === null && <p className="muted">Загрузка…</p>}
-      {entries?.length === 0 && <p className="muted">Записей пока нет. Здесь можно вести дневник персонажа и задавать вопросы мастеру.</p>}
+      {entries?.length === 0 && <EmptyState icon="quill-ink">Записей пока нет. Здесь можно вести дневник персонажа и задавать вопросы мастеру.</EmptyState>}
       <ul className="m-0 grid list-none gap-3 p-0">
         <AnimatePresence initial={false}>
           {entries?.map((e) => (

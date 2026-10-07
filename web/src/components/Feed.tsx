@@ -3,7 +3,7 @@ import { AnimatePresence, m } from 'motion/react';
 import { spring } from '../lib/motion.tsx';
 import { EFFECT_LABELS } from '@zg/shared';
 import { isGmRoll, useFeed, type FeedRoll } from '../lib/feed.ts';
-import { EFFECT_ICON, GameIcon } from '../ui/GameIcon.tsx';
+import { EFFECT_ICON, EmptyState, GameIcon } from '../ui/GameIcon.tsx';
 
 const Override = lazy(() => import('./FeedGm.tsx').then((x) => ({ default: x.Override })));
 const GreenHint = lazy(() => import('./FeedGm.tsx').then((x) => ({ default: x.GreenHint })));
@@ -15,7 +15,7 @@ export function Feed({ limit = 50, gm = false, only }: { limit?: number; gm?: bo
   const feed = useFeed()
     .filter((r) => !only || only(r))
     .slice(0, limit);
-  if (!feed.length) return <p className="muted">{only ? 'Своих бросков пока нет.' : 'Бросков пока нет.'}</p>;
+  if (!feed.length) return <EmptyState icon="rolling-dices">{only ? 'Своих бросков пока нет.' : 'Бросков пока нет.'}</EmptyState>;
   return (
     <ul className="feed">
       <AnimatePresence initial={false}>

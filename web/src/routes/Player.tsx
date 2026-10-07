@@ -16,7 +16,7 @@ import { resolveTheme, themeVariant } from '../lib/cardTheme/index.ts';
 import { useScheme } from '../lib/colorScheme.ts';
 import { ThemeChoice } from '../components/ThemeChoice.tsx';
 import { TAB_ICONS, TabBar } from '../components/TabBar.tsx';
-import { Card, CardTitle, Segmented, Skeleton } from '../ui/index.ts';
+import { Card, CardTitle, EmptyState, Segmented, Skeleton } from '../ui/index.ts';
 import { useSkin } from '../lib/cardTheme/skin.ts';
 import { noteCardChange, noteDiaryChange, rememberCard, setActiveTab, useUnread } from '../lib/unread.ts';
 
@@ -53,7 +53,7 @@ function PlayerHome({ active, theme, base, choice, onChoice }: { active: boolean
   if (character === null)
     return (
       <Card>
-        <p className="m-0 text-muted">Мастер ещё не выдал тебе персонажа.</p>
+        <EmptyState icon="hooded-figure">Мастер ещё не выдал тебе персонажа.</EmptyState>
       </Card>
     );
   return (

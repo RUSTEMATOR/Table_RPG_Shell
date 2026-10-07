@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { Effect, RumorKind, SpotKind } from '@zg/shared';
 import set from './icons.json';
 import { cn } from '../lib/cn.ts';
@@ -47,3 +48,13 @@ export const EFFECT_ICON: Record<Effect, GameIconName> = {
   crit_damage: 'skull-crack',
   luck: 'clover',
 };
+
+/** Пустое состояние: крупный бледный значок и подпись. */
+export function EmptyState({ icon, children }: { icon: GameIconName; children: ReactNode }) {
+  return (
+    <div className="grid justify-items-center gap-2 py-5 text-center text-muted">
+      <GameIcon name={icon} className="size-11 opacity-50" />
+      <p className="m-0 max-w-[32ch]">{children}</p>
+    </div>
+  );
+}
