@@ -9,6 +9,7 @@ import type { DieColors } from '../dice/mesh.ts';
 import { cn } from '../lib/cn.ts';
 import { effectColor } from './palette.ts';
 import { EFFECT_ICON, GameIcon } from '../ui/GameIcon.tsx';
+import { play } from './sound.ts';
 
 const DiceStage = lazy(() => import('../dice/DiceStage.tsx'));
 // Бой фигурок (этап 25) — свой чанк: каталог деталей и сборка листов нужны, только когда есть кого показать.
@@ -19,6 +20,12 @@ const loadBattle = () => import('./TvBattle.tsx');
 const TV_DIE: DieColors = { body: '#2f8f63', ink: '#0b140e', edge: 'rgba(0,0,0,.3)', font: "'IBM Plex Mono', ui-monospace, monospace" };
 const PLATE_MS = 2200;
 const GAP_MS = 700;
+
+/** Звук исхода: крит — колокол, провал — глухой удар; остальное — без звука (стука кубика достаточно). */
+function outcomeSound(r: FeedRoll, delay = 0): void {
+  if (r.effect === 'crit' || r.effect === 'crit_damage') play('crit', { delay });
+  else if (r.effect === 'fail' || r.effect === 'complication') play('fail', { delay });
+}
 
 type Phase = { roll: FeedRoll; step: 'rolling' | 'battle' | 'plate'; battle?: Battle } | null;
 type Battle = { hero: Figure; foe: Figure; foeName: string };
@@ -73,10 +80,12 @@ export function TvBigRoll({
   }, [can3d]);
 
   // Текущий бросок и «уже лёг»: onLanded и onLost могут прийти оба, плашка — одна.
-  const current = useRef<{ roll: FeedRoll; landed: boolean } | null>(null);
+  // silent — исход не озвучивать при посадке: у боя фигурок свои звуки, без 3D исход звучит сразу
+  const current = useRef<{ roll: FeedRoll; landed: boolean; silent?: boolean } | null>(null);
   const finish = (r: FeedRoll) => {
     if (current.current?.roll.id !== r.id || current.current.landed) return;
     current.current.landed = true;
+    if (!current.current.silent) outcomeSound(r);
     setPhase((p) => (p?.roll.id === r.id ? { ...p, step: 'plate' } : p));
     later(() => {
       // одним обновлением: плашка уходит, число в колонке появляется — Motion переносит его по layoutId
@@ -99,15 +108,23 @@ export function TvBigRoll({
     const battle = three ? await battleFor(r, npcRef.current).catch(() => null) : null;
     if (battle) {
       // сцена сама зовёт finish по окончании (и у неё своя страховка по времени)
+      current.current.silent = true;
       setPhase({ roll: r, step: 'battle', battle });
       return;
     }
     setPhase({ roll: r, step: 'rolling' });
-    if (!can3d) return finish(r);
+    if (!can3d) {
+      // без 3D — сразу плашка: звук броска, исход — следом
+      play('roll');
+      outcomeSound(r, 350);
+      current.current.silent = true;
+      return finish(r);
+    }
     setStage({ key: r.id, kind: r.kind, traj: null, value: r.value });
     const traj = await Promise.race([simulateThrow(r.kind), new Promise<null>((ok) => window.setTimeout(() => ok(null), 900))]);
     if (traj) {
       setStage((s) => (s.key === r.id ? { ...s, traj } : s));
+      play('roll');
       later(() => finish(r), 6000); // страховка: кадры не идут (вкладка скрыта) — очередь не встаёт
     } else finish(r);
   };
@@ -121,6 +138,15 @@ export function TvBigRoll({
       }),
     [can3d, three], // next и filter читают только ref и стабильные функции
   );
+
+  // удары кубика о пол — стуком, громкость по силе удара; совсем лёгкие касания и дробь чаще 90 мс — без звука
+  const lastKnock = useRef(0);
+  const knock = (s: number) => {
+    const t = performance.now();
+    if (s < 0.08 || t - lastKnock.current < 90) return;
+    lastKnock.current = t;
+    play('knock', { gain: 0.35 + s * 0.65 });
+  };
 
   const rolling = phase?.step === 'rolling' && !!stage.key;
   const battle = phase?.battle;
@@ -157,6 +183,7 @@ export function TvBigRoll({
               colors={TV_DIE}
               budget={2.5}
               minSpeed={0.75}
+              onImpact={knock}
               onLanded={() => current.current && finish(current.current.roll)}
               onLost={() => current.current && finish(current.current.roll)}
             />

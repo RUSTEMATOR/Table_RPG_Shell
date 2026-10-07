@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { AnimatePresence, m, MotionConfig } from 'motion/react';
 import { DEMO_ROOM_CODE, EFFECT_LABELS, type TableState } from '@zg/shared';
@@ -21,7 +21,7 @@ import { TvParticles } from '../tv/TvParticles.tsx';
 import { TvSigns, type Sign } from '../tv/TvSigns.tsx';
 import { TV_VARS, effectColor, isTableRoll } from '../tv/palette.ts';
 import { EFFECT_ICON, GameIcon } from '../ui/GameIcon.tsx';
-import { setSound, useSound } from '../tv/sound.ts';
+import { play, setSound, useSound } from '../tv/sound.ts';
 
 // Общий экран для ТВ и трансляции. Только публичное: сцена (без текста мастера), портрет противника (имя и картинка),
 // публичные броски, признаки перегрузки. Палитра своя и постоянная: экран смотрят издалека, в тёмной комнате.
@@ -80,6 +80,19 @@ function TableScreen({ room, demo }: { room: string; demo: boolean }) {
   };
 
   const sound = useSound();
+  // Шелест страницы при смене сцены, дверь — когда мастер показывает город. Не при открытии стола и не после переподключения
+  // с тем же состоянием: сравниваем с предыдущим.
+  const prev = useRef<{ scene?: string; place?: string } | null>(null);
+  const sceneId = state.scene?.id;
+  const placeId = state.map?.focus?.place;
+  useEffect(() => {
+    if (!loaded) return;
+    const p = prev.current;
+    prev.current = { scene: sceneId, place: placeId };
+    if (!p) return;
+    if (placeId && placeId !== p.place) play('door');
+    else if (sceneId && sceneId !== p.scene) play('page');
+  }, [loaded, sceneId, placeId]);
 
   const scene = state.scene;
   return (

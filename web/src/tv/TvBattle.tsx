@@ -4,6 +4,7 @@ import type { Effect, Figure } from '@zg/shared';
 import { FigureSprite, type Pose } from '../figure/FigureSprite.tsx';
 import { attackOf, preloadFigure } from '../figure/compose.ts';
 import { cn } from '../lib/cn.ts';
+import { play } from './sound.ts';
 
 // Бой на столе (этап 25, макет «Стол · Бой»): публичный бросок игрока против противника сессии, показанного на столе.
 // Фигурка игрока выходит слева и бьёт своим оружием; противник справа отвечает по исходу броска с сервера:
@@ -76,6 +77,14 @@ export function TvBattle({
       window.clearTimeout(guard);
     };
   }, []); // сцена живёт один бросок
+
+  // звук: замах — на ударе, попадание — по исходу (крит громче, царапина тише), ответный удар — на промахе
+  useEffect(() => {
+    if (step === 'attack') play('swing');
+    if (step === 'impact' && outcome !== 'miss') play('hit', { gain: outcome === 'crit' ? 1 : outcome === 'hit' ? 0.8 : 0.4 });
+    if (step === 'impact' && outcome === 'crit') play('crit', { delay: 150 });
+    if (step === 'counter') play('flinch', { delay: 250 });
+  }, [step]); // исход постоянен на время сцены
 
   useEffect(() => {
     if (step === 'approach') later(() => setStep('attack'), 380);
