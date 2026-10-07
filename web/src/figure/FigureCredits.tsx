@@ -40,6 +40,13 @@ export function FigureCredits() {
           Кея Лаусберга (Kay Lousberg), CC0.
         </p>
         <p className="m-0 text-[14px] text-muted">
+          Звуки общего экрана —{' '}
+          <a href="https://kenney.nl" target="_blank" rel="noreferrer" className="text-link">
+            Kenney
+          </a>{' '}
+          (Casino Audio, Impact Sounds, RPG Audio), CC0.
+        </p>
+        <p className="m-0 text-[14px] text-muted">
           Значки —{' '}
           <a href="https://game-icons.net" target="_blank" rel="noreferrer" className="text-link">
             game-icons.net
