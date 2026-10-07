@@ -12,6 +12,7 @@ import { flatten, midpoint } from './path.ts';
 import { usePartyWalk } from '../maps/walk.ts';
 import { MapScene } from './scene.ts';
 import { liftOf, teamOf } from './settlements.ts';
+import { loadUnit, type Unit } from './units.ts';
 
 // 3D-карта (этап 26): те же данные и те же обработчики, что у пергамента (MapViewProps), — экраны игрока, мастера
 // и стола меняются только в месте вызова. Сцена — MapScene (three.js), поверх — HTML: подписи мест и земель,
@@ -530,6 +531,33 @@ function Token3D({
   const held = useRef(false);
   const [pose, setPose] = useState<Pose>('idle');
   const [dir, setDir] = useState<Dir>('down');
+  // 3D-модель противника (этап 34) вместо спрайта; не загрузилась — остаётся фигурка
+  const heading = useRef(0);
+  const [unit, setUnit] = useState<Unit | null>(null);
+  const hidden = t.visible === false;
+  useEffect(() => {
+    if (!t.model) return;
+    let alive = true;
+    let remove: (() => void) | null = null;
+    void loadUnit(t.model, scene.castsShadows).then((u) => {
+      if (!alive || !u) return;
+      remove = scene.addUnit(u, () => ({ x: cur.current.x, y: cur.current.y, heading: heading.current }));
+      setUnit(u);
+    });
+    return () => {
+      alive = false;
+      remove?.();
+      setUnit(null);
+    };
+  }, [t.model, scene]);
+  useEffect(() => {
+    unit?.setOpacity(hidden ? 0.5 : 1);
+    scene.requestRender();
+  }, [unit, hidden, scene]);
+  useEffect(() => {
+    unit?.setWalking(pose === 'walk');
+    scene.requestRender();
+  }, [unit, pose, scene]);
 
   // новая точка — фигурка идёт к ней (по экрану — в сторону движения)
   useEffect(() => {
@@ -547,6 +575,8 @@ function Token3D({
     const a = scene.project(from.x, from.y),
       b = scene.project(to.x, to.y);
     setDir(dirOf(b.x - a.x, b.y - a.y));
+    // модель смотрит по ходу: +z рельефа — вниз по карте
+    heading.current = Math.atan2(to.x - from.x, to.y - from.y);
     setPose('walk');
     const release = scene.hold();
     const start = performance.now();
@@ -595,14 +625,13 @@ function Token3D({
     onTokenMove?.(t.id, x, y);
   };
 
-  const hidden = t.visible === false;
   const ring = t.kind === 'npc' ? '#8a1c1c' : '#1f7a4d';
   const S = 100;
   return (
     <Anchored scene={scene} pos={() => ({ x: cur.current.x, y: cur.current.y, lift: 0 })} size={30} min={0.3} max={1.5}>
       <div
         className={cn('absolute bottom-[-8px] left-0 -translate-x-1/2', (editable || onToken) && 'pointer-events-auto', editable && 'cursor-grab active:cursor-grabbing')}
-        style={{ width: S, height: S + 8, opacity: hidden ? 0.5 : 1 }}
+        style={{ width: S, height: S + 8, opacity: hidden && !unit ? 0.5 : 1 }}
         onPointerDown={down}
         onPointerMove={move}
         onPointerUp={up}
@@ -629,7 +658,7 @@ function Token3D({
             style={{ bottom: -6, width: S * 0.8, height: 28 }}
           />
         )}
-        {t.figure ? (
+        {unit ? null : t.figure ? (
           <FigureSprite figure={t.figure} pose={pose} dir={dir} size={S} className="pointer-events-none absolute top-0 left-0" />
         ) : (
           <span

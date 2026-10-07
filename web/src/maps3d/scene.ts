@@ -10,6 +10,7 @@ import { StrategyCamera } from './strategyCamera.ts';
 import { perfStats, timed } from '../maps/perf.ts';
 import { load, save } from '../lib/storage.ts';
 import { buildHeights, fogMask, paintTerrain, WATER, type FogMask, type Heights } from './terrain.ts';
+import type { Unit } from './units.ts';
 
 // Сцена 3D-карты (three.js без React): рельеф, вода, природа, поселения, туман, свет, камера. Рисует только когда нужно
 // (requestRender), постоянно — пока что-то движется (полёт, инерция, переход тумана) или на столе (облака плывут).
@@ -71,6 +72,8 @@ export class MapScene {
   private alive = true;
   private anchors = new Set<Anchor>();
   private frameListeners = new Set<() => void>();
+  /** 3D-противники (этап 34): положение и поворот берутся у жетона каждый кадр */
+  private units = new Set<{ unit: Unit; pos: () => { x: number; y: number; heading: number }; last: string }>();
   private size = { w: 1, h: 1 };
   private ro: ResizeObserver;
   private host: HTMLElement;
@@ -154,6 +157,43 @@ export class MapScene {
       this.holds--;
       this.requestRender();
     };
+  }
+
+  /** Тени включены (не телефон): у моделей противников — тоже. */
+  get castsShadows(): boolean {
+    return this.shadows;
+  }
+
+  /** Модель противника на карте; pos — где стоит и куда смотрит (радианы, 0 — к зрителю). Возвращает «убрать». */
+  addUnit(unit: Unit, pos: () => { x: number; y: number; heading: number }): () => void {
+    const entry = { unit, pos, last: '' };
+    this.units.add(entry);
+    this.scene.add(unit.root);
+    this.shadowDirty = true;
+    this.requestRender();
+    return () => {
+      this.units.delete(entry);
+      unit.dispose();
+      this.shadowDirty = true;
+      this.requestRender();
+    };
+  }
+
+  /** Модели — на место жетона и на рельеф; идущие — следующий кадр анимации. Сдвиг или поза — тени заново. */
+  private placeUnits(dt: number) {
+    const H = this.heights;
+    if (!H) return;
+    for (const u of this.units) {
+      const p = u.pos();
+      const key = `${p.x.toFixed(1)},${p.y.toFixed(1)},${p.heading.toFixed(2)}`;
+      if (key !== u.last) {
+        u.last = key;
+        u.unit.root.position.set(p.x, Math.max(H.at(p.x, p.y), WATER), p.y);
+        u.unit.root.rotation.y = p.heading;
+        this.shadowDirty = true;
+      }
+      if (u.unit.update(dt)) this.shadowDirty = true;
+    }
   }
 
   onFrame(fn: () => void): () => void {
@@ -504,6 +544,7 @@ export class MapScene {
         this.slowFrames = 0;
       }
     }
+    this.placeUnits(dt);
     this.render();
   }
 
