@@ -234,6 +234,25 @@
       display: none;
     }
   }
+  .more-menu {
+    padding: 6px 8px;
+  }
+  .more-menu svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 3;
+    stroke-linecap: round;
+  }
+  /* Экран игрока на телефоне: шапка ниже — больше места вкладкам */
+  @media (max-width: 520px) {
+    .screen-fill .topbar {
+      gap: 8px;
+      padding: max(6px, env(safe-area-inset-top)) 0 6px;
+      margin-bottom: 0;
+    }
+  }
 
   /* ---- Индикатор связи ---- */
   .conn {
