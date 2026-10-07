@@ -4,7 +4,7 @@ import type { FeedRoll } from '../lib/feed.ts';
 import { emitGm } from '../lib/socket.ts';
 import { api } from '../lib/api.ts';
 import { dismissGreen, useGreenSuggestions } from '../lib/suggestions.ts';
-import { Button, Input, Select, toast } from '../ui/index.ts';
+import { Button, EFFECT_ICON, GameIcon, Input, Select, toast } from '../ui/index.ts';
 
 // Мастерская часть строки ленты: исправить бросок, подсказка зелёной магии. Отдельный чанк: игроку не нужен.
 
@@ -22,7 +22,20 @@ export function Override({ r }: { r: FeedRoll }) {
   return (
     <div className="mt-2 grid gap-2 rounded-control border border-solid border-border bg-surface p-3 text-text">
       <div className="grid gap-2 sm:grid-cols-[200px_minmax(0,1fr)]">
-        <Select aria-label="Исход" value={effect} onValueChange={(v) => setEffect(v as Effect)} options={EFFECTS.map((k) => ({ value: k, label: EFFECT_LABELS[k] }))} />
+        <Select
+          aria-label="Исход"
+          value={effect}
+          onValueChange={(v) => setEffect(v as Effect)}
+          options={EFFECTS.map((k) => ({
+            value: k,
+            label: (
+              <span className="inline-flex items-center gap-2">
+                <GameIcon name={EFFECT_ICON[k]} className="text-muted" />
+                {EFFECT_LABELS[k]}
+              </span>
+            ),
+          }))}
+        />
         <Input aria-label="Почему" placeholder="Почему (видит только мастер)" value={note} maxLength={300} onChange={(e) => setNote(e.target.value)} />
       </div>
       <div className="flex gap-2">

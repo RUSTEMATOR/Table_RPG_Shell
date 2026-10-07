@@ -6,6 +6,7 @@ import { capabilities, fullEffects } from '../lib/capabilities.ts';
 import { simulateThrow, warmPhysics } from '../dice/physics.ts';
 import type { StageRoll } from '../dice/DiceStage.tsx';
 import { cn } from '../lib/cn.ts';
+import { EFFECT_ICON, GameIcon } from '../ui/GameIcon.tsx';
 
 const DiceStage = lazy(() => import('../dice/DiceStage.tsx'));
 
@@ -83,7 +84,10 @@ export function MiniTray() {
           <span className="flex max-w-full items-baseline gap-2 truncate rounded-full border border-solid border-border bg-surface px-3 py-1 shadow-card">
             <span className="truncate font-ui text-[13px] text-muted">{plate.character ?? plate.who}</span>
             <b className="font-mono text-xl font-medium tabular-nums">{plate.value}</b>
-            <span className="font-ui text-[13px] font-semibold">{EFFECT_LABELS[plate.effect]}</span>
+            <span className="font-ui text-[13px] font-semibold">
+              <GameIcon name={EFFECT_ICON[plate.effect]} className="mr-1" />
+              {EFFECT_LABELS[plate.effect]}
+            </span>
           </span>
         ) : (
           !stage.key && <span className="font-ui text-xs tracking-[.06em] text-muted uppercase">Броски игроков</span>

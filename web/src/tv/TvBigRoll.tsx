@@ -8,6 +8,7 @@ import type { StageRoll } from '../dice/DiceStage.tsx';
 import type { DieColors } from '../dice/mesh.ts';
 import { cn } from '../lib/cn.ts';
 import { effectColor } from './palette.ts';
+import { EFFECT_ICON, GameIcon } from '../ui/GameIcon.tsx';
 
 const DiceStage = lazy(() => import('../dice/DiceStage.tsx'));
 // Бой фигурок (этап 25) — свой чанк: каталог деталей и сборка листов нужны, только когда есть кого показать.
@@ -176,7 +177,10 @@ export function TvBigRoll({
               <m.b layoutId={`tv-roll-${phase.roll.id}`} className="font-['IBM_Plex_Mono',monospace] text-[clamp(48px,3.8vw,80px)] leading-none font-medium tabular-nums">
                 {phase.roll.value}
               </m.b>
-              <span className={cn('text-[clamp(24px,1.9vw,40px)] font-semibold', effectColor(phase.roll.effect))}>{EFFECT_LABELS[phase.roll.effect]}</span>
+              <span className={cn('text-[clamp(24px,1.9vw,40px)] font-semibold', effectColor(phase.roll.effect))}>
+                <GameIcon name={EFFECT_ICON[phase.roll.effect]} className="mr-[0.3em]" />
+                {EFFECT_LABELS[phase.roll.effect]}
+              </span>
               <span className="text-[clamp(18px,1.45vw,30px)] text-[var(--tv-muted)]">
                 {phase.roll.character ?? phase.roll.who} · {phase.roll.kind}
               </span>

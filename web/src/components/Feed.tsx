@@ -3,6 +3,7 @@ import { AnimatePresence, m } from 'motion/react';
 import { spring } from '../lib/motion.tsx';
 import { EFFECT_LABELS } from '@zg/shared';
 import { isGmRoll, useFeed, type FeedRoll } from '../lib/feed.ts';
+import { EFFECT_ICON, GameIcon } from '../ui/GameIcon.tsx';
 
 const Override = lazy(() => import('./FeedGm.tsx').then((x) => ({ default: x.Override })));
 const GreenHint = lazy(() => import('./FeedGm.tsx').then((x) => ({ default: x.GreenHint })));
@@ -41,6 +42,7 @@ export function Feed({ limit = 50, gm = false, only }: { limit?: number; gm?: bo
                     {r.label && <span> · {r.label}</span>}
                   </div>
                   <div className={`effect-${r.effect}`}>
+                    <GameIcon name={EFFECT_ICON[r.effect]} className="mr-1.5" />
                     {EFFECT_LABELS[r.effect]}
                     {r.corrected && <span className="muted small"> · исправлено мастером</span>}
                   </div>

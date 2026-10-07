@@ -20,6 +20,7 @@ import { TvBigRoll } from '../tv/TvBigRoll.tsx';
 import { TvParticles } from '../tv/TvParticles.tsx';
 import { TvSigns, type Sign } from '../tv/TvSigns.tsx';
 import { TV_VARS, effectColor, isTableRoll } from '../tv/palette.ts';
+import { EFFECT_ICON, GameIcon } from '../ui/GameIcon.tsx';
 
 // Общий экран для ТВ и трансляции. Только публичное: сцена (без текста мастера), портрет противника (имя и картинка),
 // публичные броски, признаки перегрузки. Палитра своя и постоянная: экран смотрят издалека, в тёмной комнате.
@@ -158,7 +159,14 @@ function TableScreen({ room, demo }: { room: string; demo: boolean }) {
                     {r.character ?? r.who} <span className="text-[var(--tv-muted)]">· {r.kind}</span>
                   </span>
                   <span className={cn('text-[clamp(15px,1.15vw,24px)] font-semibold', flying === r.id ? 'text-[var(--tv-muted)]' : effectColor(r.effect))}>
-                    {flying === r.id ? 'бросает…' : EFFECT_LABELS[r.effect]}
+                    {flying === r.id ? (
+                      'бросает…'
+                    ) : (
+                      <>
+                        <GameIcon name={EFFECT_ICON[r.effect]} className="mr-[0.3em]" />
+                        {EFFECT_LABELS[r.effect]}
+                      </>
+                    )}
                   </span>
                 </div>
               </m.div>

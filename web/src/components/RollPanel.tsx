@@ -7,7 +7,7 @@ import { capabilities, fullEffects } from '../lib/capabilities.ts';
 import { haptics } from '../lib/haptics.ts';
 import { simulateThrow, warmPhysics } from '../dice/physics.ts';
 import type { StageRoll } from '../dice/DiceStage.tsx';
-import { Button, Card, CardTitle, Input, Segmented } from '../ui/index.ts';
+import { Button, Card, CardTitle, EFFECT_ICON, GameIcon, Input, Segmented } from '../ui/index.ts';
 import { cn } from '../lib/cn.ts';
 
 const DiceStage = lazy(() => import('../dice/DiceStage.tsx'));
@@ -192,7 +192,10 @@ export function RollPanel({ role }: { role: 'gm' | 'player' }) {
             {spin === null && shown && (
               <span className="flex items-baseline gap-3 rounded-full border border-solid border-border bg-surface px-5 py-1.5 shadow-card">
                 <b className="font-mono text-3xl font-medium tabular-nums">{shown.value}</b>
-                <span className={cn('font-ui text-base font-semibold', effectTone(shown.effect))}>{EFFECT_LABELS[shown.effect]}</span>
+                <span className={cn('font-ui text-base font-semibold', effectTone(shown.effect))}>
+                  <GameIcon name={EFFECT_ICON[shown.effect]} className="mr-1.5" />
+                  {EFFECT_LABELS[shown.effect]}
+                </span>
               </span>
             )}
             {!three && spin === null && !shown && !busy && <span className="font-ui text-sm text-muted">Выбери кубик и бросай</span>}
