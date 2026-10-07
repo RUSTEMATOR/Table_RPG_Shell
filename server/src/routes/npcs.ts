@@ -1,9 +1,9 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { FigureSchema, NpcWriteSchema } from '@zg/shared';
+import { FigureSchema, NpcWriteSchema, UnitIdSchema } from '@zg/shared';
 import { requireGm } from '../auth/requireGm.ts';
 import { IMAGE_BODY_LIMIT, IMAGE_TYPES } from '../domain/media.ts';
-import { createNpc, deleteNpc, getNpc, gmNpc, listNpcs, setNpcFigure, setNpcImage, updateNpc, type NpcRow } from '../domain/npc.ts';
+import { createNpc, deleteNpc, getNpc, gmNpc, listNpcs, setNpcFigure, setNpcImage, setNpcModel, updateNpc, type NpcRow } from '../domain/npc.ts';
 import { setShownNpc, shownNpcId } from '../domain/scenes.ts';
 import { activeSession, setOpponent } from '../domain/session.ts';
 import { mapsWithPiece } from '../domain/maps.ts';
@@ -83,6 +83,18 @@ export async function gmNpcRoutes(app: FastifyInstance) {
     const r = getNpc(roomId, request.params.id);
     if (!r) return reply.code(404).send({ error: 'not_found' });
     const next = setNpcFigure(r, b.data);
+    changed(roomId, next);
+    return view(roomId, next);
+  });
+
+  // 3D-модель противника на 3D-карте (этап 34); null — фигурка как обычно.
+  app.post<{ Params: { id: string } }>('/api/gm/npcs/:id/model3d', async (request, reply) => {
+    const b = z.strictObject({ model: UnitIdSchema.nullable() }).safeParse(request.body);
+    if (!b.success) return reply.code(400).send({ error: 'bad_request' });
+    const roomId = request.auth!.room.id;
+    const r = getNpc(roomId, request.params.id);
+    if (!r) return reply.code(404).send({ error: 'not_found' });
+    const next = setNpcModel(r, b.data.model);
     changed(roomId, next);
     return view(roomId, next);
   });

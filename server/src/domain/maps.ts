@@ -17,11 +17,12 @@ import {
   type MapId,
   type PartyFigure,
   type PartyMove,
+  type UnitId,
 } from '@zg/shared';
 import { newId } from '../auth/tokens.ts';
 import { db, schema } from '../db/client.ts';
 import { SERVER_ROOT } from '../paths.ts';
-import { listNpcs, npcFigure } from './npc.ts';
+import { listNpcs, npcFigure, npcModel } from './npc.ts';
 import { listCharacters } from './repo.ts';
 
 // Карты мира. Неизменная часть (контуры, имена, подписи регионов, исходные места и дороги) — из server/src/maps/json
@@ -310,8 +311,8 @@ export function getToken(roomId: string, id: string): TokenRow | undefined {
     .get();
 }
 
-/** Персонаж или противник, которого можно поставить на карту. owner — только для сервера (чья фигурка у игрока «своя»). */
-export type Piece = GmMapPiece & { owner: string | null };
+/** Персонаж или противник, которого можно поставить на карту. owner — только для сервера (чья фигурка у игрока «своя»); model — 3D-модель противника (этап 34). */
+export type Piece = GmMapPiece & { owner: string | null; model: UnitId | null };
 const figureOf = (v: unknown): Figure | null => {
   const f = FigureSchema.safeParse(v);
   return f.success ? f.data : null;
@@ -320,8 +321,8 @@ export function pieces(roomId: string): Piece[] {
   return [
     ...listCharacters(roomId)
       .sort((a, b) => a.row.name.localeCompare(b.row.name, 'ru'))
-      .map((c) => ({ kind: 'pc' as const, refId: c.row.id, name: c.row.name, figure: figureOf(c.doc.figure), owner: c.row.ownerMemberId })),
-    ...listNpcs(roomId).map((n) => ({ kind: 'npc' as const, refId: n.id, name: n.name, figure: npcFigure(n), owner: null })),
+      .map((c) => ({ kind: 'pc' as const, refId: c.row.id, name: c.row.name, figure: figureOf(c.doc.figure), owner: c.row.ownerMemberId, model: null })),
+    ...listNpcs(roomId).map((n) => ({ kind: 'npc' as const, refId: n.id, name: n.name, figure: npcFigure(n), owner: null, model: npcModel(n) })),
   ];
 }
 export const refOf = (t: Pick<TokenRow, 'characterId' | 'npcId'>) => (t.characterId ? `pc:${t.characterId}` : `npc:${t.npcId}`);
@@ -429,8 +430,8 @@ export function gmMapView(roomId: string, mapId: MapId): GmMapView {
     table: tableMap(roomId),
     tokens: tokenRows(roomId, mapId).flatMap((t) => {
       const p = byRef.get(refOf(t));
-      return p ? [{ id: t.id, kind: p.kind, refId: p.refId, name: p.name, figure: p.figure, x: t.x, y: t.y, visible: t.visible }] : [];
+      return p ? [{ id: t.id, kind: p.kind, refId: p.refId, name: p.name, figure: p.figure, model: p.model, x: t.x, y: t.y, visible: t.visible }] : [];
     }),
-    pieces: all.map(({ owner: _owner, ...p }) => p),
+    pieces: all.map(({ owner: _owner, model: _model, ...p }) => p),
   };
 }

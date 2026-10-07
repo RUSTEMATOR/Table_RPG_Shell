@@ -62,11 +62,18 @@ export type MapNote = z.infer<typeof MapNoteSchema>;
  * mine — фигурка персонажа этого игрока (у стола всегда false). figure null — фигурки нет, рисуется жетон с буквой.
  */
 export const TokenKindSchema = z.enum(['pc', 'npc']);
+/** 3D-модель противника на 3D-карте (этап 34): список — как в web/src/maps3d/units.json (tools/extract-models/units.mjs). */
+export const UNIT_IDS = ['knight', 'barbarian', 'mage', 'rogue', 'rogue_hooded', 'skeleton_warrior', 'skeleton_mage', 'skeleton_rogue', 'skeleton_minion'] as const;
+export type UnitId = (typeof UNIT_IDS)[number];
+export const UnitIdSchema = z.enum(UNIT_IDS);
+
 export const MapTokenPublicSchema = z.strictObject({
   id: z.string(),
   kind: TokenKindSchema,
   name: z.string(),
   figure: FigureSchema.nullable(),
+  /** 3D-модель (только у противника, если мастер выбрал) — внешность, как и фигурка */
+  model: UnitIdSchema.nullable(),
   x: Num,
   y: Num,
   mine: z.boolean(),
@@ -120,6 +127,7 @@ export interface GmMapToken {
   refId: string;
   name: string;
   figure: Figure | null;
+  model: UnitId | null;
   x: number;
   y: number;
   visible: boolean;

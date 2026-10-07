@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { MapFocusSchema, MapIdSchema } from './maps.ts';
+import { MapFocusSchema, MapIdSchema, type UnitId } from './maps.ts';
 import { FigureSchema, type Figure } from './figure.ts';
 
 // ---- Общий экран: что видит стол (белый список, strictObject) ----
@@ -65,6 +65,8 @@ export interface GmNpc {
   notes: string;
   image: { url: string; w: number; h: number; bytes: number } | null;
   figure: Figure | null;
+  /** 3D-модель на 3D-карте (этап 34), null — фигурка как обычно. */
+  model3d: UnitId | null;
   /** Портрет сейчас на столе. */
   shown: boolean;
   /** Противник текущей сессии. */

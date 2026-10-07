@@ -1,0 +1,1 @@
+ALTER TABLE `npc` ADD `model3d` text;

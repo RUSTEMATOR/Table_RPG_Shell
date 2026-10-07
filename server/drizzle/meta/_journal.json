@@ -85,6 +85,13 @@
       "when": 1791294541790,
       "tag": "0011_travel",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1791415357741,
+      "tag": "0012_npc_model3d",
+      "breakpoints": true
     }
   ]
 }

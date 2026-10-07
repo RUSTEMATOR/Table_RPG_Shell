@@ -249,6 +249,8 @@ export const npc = sqliteTable(
     imageBytes: integer('image_bytes'),
     /** Пиксель-арт фигурка (этап 23), JSON по FigureSchema. Внешность — может уйти на стол и игрокам (карта, бой). */
     figure: text('figure'),
+    /** 3D-модель на 3D-карте (этап 34): id из UNIT_IDS, null — фигурка как обычно. Внешность, как и фигурка. */
+    model3d: text('model3d'),
     createdAt: integer('created_at').notNull(),
     updatedAt: integer('updated_at').notNull(),
   },

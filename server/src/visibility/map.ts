@@ -75,7 +75,7 @@ export function projectMapPublic(roomId: string, mapId: MapId, memberId?: string
     party: party && party.visible && party.mapId === mapId ? { x: party.x, y: party.y, move: partyMove(party), figures: partyFigures(pieces(roomId)) } : null,
     tokens: tokens.flatMap((t) => {
       const p = byRef.get(refOf(t));
-      return p ? [{ id: t.id, kind: p.kind, name: p.name, figure: p.figure, x: t.x, y: t.y, mine: !!memberId && p.owner === memberId }] : [];
+      return p ? [{ id: t.id, kind: p.kind, name: p.name, figure: p.figure, model: p.model, x: t.x, y: t.y, mine: !!memberId && p.owner === memberId }] : [];
     }),
     notes: [],
   });
