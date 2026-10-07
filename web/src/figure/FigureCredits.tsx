@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Button, Sheet } from '../ui/index.ts';
+import { Button, ICON_SET, Sheet } from '../ui/index.ts';
 
 type Credit = { name: string; licenses: string[]; urls: string[] };
 
 /**
- * «Авторы графики»: детали фигурок взяты из открытого набора LPC (CC-BY-SA 3.0 / GPL 3.0 / OGA-BY / CC-BY), модели 3D-карты — KayKit (CC0).
+ * «Авторы графики»: детали фигурок взяты из открытого набора LPC (CC-BY-SA 3.0 / GPL 3.0 / OGA-BY / CC-BY), модели 3D-карты — KayKit (CC0),
+ * значки — game-icons.net (CC BY 3.0, авторы — из web/src/ui/icons.json).
  * Эти лицензии требуют указать авторов — список собирает tools/extract-lpc из CREDITS.csv набора,
  * полная таблица по файлам лежит рядом с картинками: /lpc/CREDITS.csv.
  */
@@ -37,6 +38,22 @@ export function FigureCredits() {
             KayKit Medieval Hexagon Pack
           </a>{' '}
           Кея Лаусберга (Kay Lousberg), CC0.
+        </p>
+        <p className="m-0 text-[14px] text-muted">
+          Значки —{' '}
+          <a href="https://game-icons.net" target="_blank" rel="noreferrer" className="text-link">
+            game-icons.net
+          </a>
+          , {ICON_SET.license}. Icons made by{' '}
+          {Object.values(ICON_SET.authors).map((a, i, all) => (
+            <span key={a.name}>
+              <a href={a.url} target="_blank" rel="noreferrer" className="text-link">
+                {a.name}
+              </a>
+              {i < all.length - 1 ? ', ' : ''}
+            </span>
+          ))}
+          .
         </p>
         {!list ? (
           <p className="muted">Загрузка…</p>
