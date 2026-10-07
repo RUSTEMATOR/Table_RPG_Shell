@@ -146,7 +146,7 @@ function Search({ camera, places, onPlace, inColumn }: { camera: MapCamera | nul
             }}
             placeholder="Найти место…"
             aria-label="Найти место на карте"
-            className="block h-11 w-full border-0 bg-transparent px-3.5 font-ui text-[15px] text-[#2e2416] outline-none"
+            className="block h-11 w-full border-0 bg-transparent px-3.5 font-ui text-base text-[#2e2416] pointer-fine:text-[15px] outline-none"
           />
           {found.length > 0 && (
             <ul role="listbox" className="m-0 max-h-[300px] list-none overflow-y-auto border-t border-solid border-[rgba(74,59,38,.14)] p-1">
