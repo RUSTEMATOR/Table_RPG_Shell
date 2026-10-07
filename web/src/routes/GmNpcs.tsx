@@ -1,11 +1,12 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
-import type { Figure, GmNpc } from '@zg/shared';
+import { UNIT_IDS, type Figure, type GmNpc, type UnitId } from '@zg/shared';
 import { api } from '../lib/api.ts';
 import { useConnection, useSocketEvent } from '../lib/socket.ts';
 import { AnimatePresence, m } from 'motion/react';
 import { spring } from '../lib/motion.tsx';
 import { cn } from '../lib/cn.ts';
-import { Badge, Button, buttonVariants, Card, CardTitle, Field, Input, Sheet, Textarea, toast } from '../ui/index.ts';
+import { Badge, Button, buttonVariants, Card, CardTitle, Field, Input, Select, Sheet, Textarea, toast } from '../ui/index.ts';
+import units from '../maps3d/units.json';
 
 // Фигурки — отдельный чанк (каталог деталей LPC и сборка листов), грузится, только если есть что показать.
 const FigureEditor = lazy(() => import('../figure/FigureEditor.tsx').then((m) => ({ default: m.FigureEditor })));
@@ -129,6 +130,14 @@ function NpcEditor({ n, onChange }: { n: GmNpc; onChange: (n: GmNpc) => void }) 
     onChange((await res.json()) as GmNpc);
     setMsg(null);
   };
+  // 3D-модель на 3D-карте (этап 34): сохраняется сразу при выборе
+  const model = async (v: string) => {
+    const m = v === '-' ? null : (v as UnitId);
+    const r = await api<GmNpc>('POST', `/api/gm/npcs/${n.id}/model3d`, { model: m });
+    if (!r.ok) return toast.error('Модель не сохранилась');
+    onChange(r.data);
+    toast(m ? `На 3D-карте — ${units.units[m]}` : 'На 3D-карте — фигурка');
+  };
   const figure = async (f: Figure | null) => {
     const r = await api<GmNpc>('POST', `/api/gm/npcs/${n.id}/figure`, f);
     if (!r.ok) {
@@ -191,6 +200,17 @@ function NpcEditor({ n, onChange }: { n: GmNpc; onChange: (n: GmNpc) => void }) 
               )}
             </Field>
           </div>
+          <Field label="На 3D-карте" hint="Вместо фигурки — объёмная модель (видят игроки и стол). На пергаменте и в бою на столе — фигурка.">
+            {(id) => (
+              <Select
+                id={id}
+                value={n.model3d ?? '-'}
+                onValueChange={(v) => void model(v)}
+                options={[{ value: '-', label: 'Фигурка' }, ...UNIT_IDS.map((u) => ({ value: u, label: units.units[u] }))]}
+                className="sm:max-w-[260px]"
+              />
+            )}
+          </Field>
           <Field label="Заметки мастера (никуда не уходят)">
             {(id) => <Textarea id={id} rows={3} value={notes} maxLength={20000} onChange={(e) => setNotes(e.target.value)} />}
           </Field>
