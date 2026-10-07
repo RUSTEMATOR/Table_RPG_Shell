@@ -15,7 +15,7 @@ import {
 import { api } from '../lib/api.ts';
 import { useSocketEvent } from '../lib/socket.ts';
 import { cn } from '../lib/cn.ts';
-import { Badge, Button, buttonVariants, Card, Field, Input, Select, Switch, TabPanel, Tabs, Textarea, toast } from '../ui/index.ts';
+import { Badge, Button, buttonVariants, Card, Field, GameIcon, Input, RUMOR_ICON, Select, SPOT_ICON, Switch, TabPanel, Tabs, Textarea, toast } from '../ui/index.ts';
 
 // Город у мастера (этап 27): карточка (описание, правитель, фракция, население, картинка), места в городе, слухи и
 // задания (открываются игрокам по одному), «кто здесь» (противники из библиотеки). «Набросать» — черновик Claude
@@ -230,7 +230,15 @@ function SpotRow({ s, send }: { s: GmSpot; send: Send }) {
           aria-label="Вид места"
           value={s.kind}
           onValueChange={(v) => void send(url, { kind: v as SpotKind })}
-          options={SPOT_KINDS.map((k) => ({ value: k, label: SPOT_KIND_LABELS[k] }))}
+          options={SPOT_KINDS.map((k) => ({
+            value: k,
+            label: (
+              <span className="inline-flex items-center gap-2">
+                <GameIcon name={SPOT_ICON[k]} className="text-muted" />
+                {SPOT_KIND_LABELS[k]}
+              </span>
+            ),
+          }))}
           className="min-w-[130px]"
         />
         <Input
@@ -355,7 +363,10 @@ function RumorRow({ r, send }: { r: GmRumor; send: Send }) {
   return (
     <div className={cn('grid gap-2 rounded-control border border-solid border-border p-2.5', !r.visible && 'border-dashed')}>
       <div className="flex items-center gap-2">
-        <Badge tone={r.kind === 'quest' ? 'warn' : 'neutral'}>{RUMOR_KIND_LABELS[r.kind]}</Badge>
+        <Badge tone={r.kind === 'quest' ? 'warn' : 'neutral'}>
+          <GameIcon name={RUMOR_ICON[r.kind]} className="mr-1" />
+          {RUMOR_KIND_LABELS[r.kind]}
+        </Badge>
         {r.visible ? <Badge tone="ok">Открыт</Badge> : <span className="text-[12.5px] text-muted">скрыт</span>}
         <span className="grow" />
         <Button size="sm" variant={r.visible ? 'ghost' : 'primary'} onClick={() => void send(url, { visible: !r.visible }, r.visible ? 'Скрыто' : 'Открыто игрокам')}>

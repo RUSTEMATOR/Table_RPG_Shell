@@ -6,6 +6,7 @@ import { cn } from '../../lib/cn.ts';
 import { FigureSprite } from '../../figure/FigureSprite.tsx';
 import { PlaceIcon } from '../MapView.tsx';
 import { teamOf } from '../../maps3d/settlements.ts';
+import { GameIcon, RUMOR_ICON, SPOT_ICON, type GameIconName } from '../../ui/GameIcon.tsx';
 
 // Карточка места и экран города (этап 27) — у игрока и на столе. Данные — только открытое (projectPlaceDetail на сервере):
 // описание, правитель, фракция, население, места в городе, открытые слухи и задания, «кто здесь».
@@ -186,7 +187,7 @@ function Here({ list, big }: { list: PresencePublic[]; big?: boolean }) {
   );
 }
 
-type Section = { key: string; title: string; kind?: string };
+type Section = { key: string; title: string; kind?: string; icon?: GameIconName };
 
 /**
  * Экран города: меню слева (обзор, места в городе, слухи, кто здесь), справа — выбранное. table — крупно и без нажатий
@@ -195,8 +196,8 @@ type Section = { key: string; title: string; kind?: string };
 export function CityScreen({ d, onClose, table }: { d: PlaceDetailPublic; onClose?: () => void; table?: boolean }) {
   const sections: Section[] = [
     { key: 'about', title: 'Обзор' },
-    ...d.spots.map((s) => ({ key: `spot:${s.id}`, title: s.name || SPOT_KIND_LABELS[s.kind], kind: SPOT_KIND_LABELS[s.kind] })),
-    ...(d.rumors.length ? [{ key: 'rumors', title: 'Слухи и задания' }] : []),
+    ...d.spots.map((s) => ({ key: `spot:${s.id}`, title: s.name || SPOT_KIND_LABELS[s.kind], kind: SPOT_KIND_LABELS[s.kind], icon: SPOT_ICON[s.kind] })),
+    ...(d.rumors.length ? [{ key: 'rumors', title: 'Слухи и задания', icon: RUMOR_ICON.rumor }] : []),
     ...(d.here.length ? [{ key: 'here', title: 'Кто здесь' }] : []),
   ];
   const [sel, setSel] = useState('about');
@@ -230,7 +231,10 @@ export function CityScreen({ d, onClose, table }: { d: PlaceDetailPublic; onClos
         <div className="relative grid content-start gap-[2vh]">
           {d.spots.map((s) => (
             <div key={s.id} className="grid gap-[0.4vh] rounded-[1vh] bg-[rgba(20,16,10,.55)] p-[1.6vh_1.4vw]">
-              <span className="text-[clamp(13px,1.6vh,24px)] tracking-[.08em] uppercase opacity-70">{SPOT_KIND_LABELS[s.kind]}</span>
+              <span className="flex items-center gap-[0.5vw] text-[clamp(13px,1.6vh,24px)] tracking-[.08em] uppercase opacity-70">
+                <GameIcon name={SPOT_ICON[s.kind]} className="size-[1.4em]" />
+                {SPOT_KIND_LABELS[s.kind]}
+              </span>
               <strong className="text-[clamp(22px,2.8vh,44px)] leading-none" style={{ fontFamily: SERIF }}>
                 {s.name || SPOT_KIND_LABELS[s.kind]}
               </strong>
@@ -242,7 +246,11 @@ export function CityScreen({ d, onClose, table }: { d: PlaceDetailPublic; onClos
               <span className="text-[clamp(13px,1.6vh,24px)] tracking-[.08em] uppercase opacity-70">Слухи и задания</span>
               {d.rumors.map((r) => (
                 <span key={r.id} className="text-[clamp(16px,2vh,30px)]">
-                  <b className={r.kind === 'quest' ? 'text-[#e8c25a]' : undefined}>{RUMOR_KIND_LABELS[r.kind]}.</b> {r.text}
+                  <b className={r.kind === 'quest' ? 'text-[#e8c25a]' : undefined}>
+                    <GameIcon name={RUMOR_ICON[r.kind]} className="mr-[0.3em]" />
+                    {RUMOR_KIND_LABELS[r.kind]}.
+                  </b>{' '}
+                  {r.text}
                 </span>
               ))}
             </div>
@@ -270,12 +278,15 @@ export function CityScreen({ d, onClose, table }: { d: PlaceDetailPublic; onClos
               aria-current={sel === s.key}
               onClick={() => setSel(s.key)}
               className={cn(
-                'grid shrink-0 cursor-pointer gap-0 rounded-[9px] border border-solid px-3 py-1.5 text-left font-ui text-[15px] whitespace-nowrap',
+                'flex shrink-0 cursor-pointer items-center gap-2.5 rounded-[9px] border border-solid px-3 py-1.5 text-left font-ui text-[15px] whitespace-nowrap',
                 sel === s.key ? 'border-[#c9971f] bg-[rgba(201,151,31,.22)]' : 'border-transparent bg-[rgba(243,236,217,.06)] hover:bg-[rgba(243,236,217,.12)]',
               )}
             >
-              <span className="font-semibold">{s.title}</span>
-              {s.kind && s.kind !== s.title && <span className="text-[11.5px] opacity-65">{s.kind}</span>}
+              {s.icon && <GameIcon name={s.icon} className="size-5 opacity-80" />}
+              <span className="grid gap-0">
+                <span className="font-semibold">{s.title}</span>
+                {s.kind && s.kind !== s.title && <span className="text-[11.5px] opacity-65">{s.kind}</span>}
+              </span>
             </button>
           ))}
         </div>
@@ -311,7 +322,10 @@ export function CityScreen({ d, onClose, table }: { d: PlaceDetailPublic; onClos
         )}
         {spot && (
           <>
-            <span className="text-[12px] tracking-[.08em] uppercase opacity-65">{SPOT_KIND_LABELS[spot.kind]}</span>
+            <span className="flex items-center gap-1.5 text-[12px] tracking-[.08em] uppercase opacity-65">
+              <GameIcon name={SPOT_ICON[spot.kind]} className="size-4" />
+              {SPOT_KIND_LABELS[spot.kind]}
+            </span>
             <h3 className="m-0 text-[26px] leading-none" style={{ fontFamily: SERIF }}>
               {spot.name || SPOT_KIND_LABELS[spot.kind]}
             </h3>
@@ -325,7 +339,10 @@ export function CityScreen({ d, onClose, table }: { d: PlaceDetailPublic; onClos
           <ul className="m-0 grid list-none gap-2.5 p-0">
             {d.rumors.map((r) => (
               <li key={r.id} className="grid gap-0.5 border-l-[3px] border-solid pl-3" style={{ borderColor: r.kind === 'quest' ? '#e8c25a' : 'rgba(243,236,217,.35)' }}>
-                <span className="text-[12px] tracking-[.08em] uppercase opacity-65">{RUMOR_KIND_LABELS[r.kind]}</span>
+                <span className="flex items-center gap-1.5 text-[12px] tracking-[.08em] uppercase opacity-65">
+                  <GameIcon name={RUMOR_ICON[r.kind]} className="size-4" />
+                  {RUMOR_KIND_LABELS[r.kind]}
+                </span>
                 <span style={{ fontFamily: SERIF, fontSize: 18 }}>{r.text}</span>
               </li>
             ))}
