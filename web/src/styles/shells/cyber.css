@@ -1,1 +1,239 @@
-/* Оболочка «cyber» (этап 38) — правила под html[data-shell="cyber"]. */
+/* Оболочка «Киберинтерфейс» (этап 38): неоновый HUD. Темы: Неон, Найт-Сити, Аугментация, Сеть, Анимус.
+   Панели со срезанными углами, развёртка, сбой цвета на заголовках (только украшение), индексы разделов «01»,
+   лоток — голографическая сетка с прицелом. */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&display=swap');
+
+html:root[data-shell='cyber'][data-skin] {
+  --sh-bg: var(--ct-bg);
+  --sh-panel: var(--ct-panel);
+  --sh-hot: var(--ct-accent);
+  --sh-cool: var(--ct-accent2, var(--ct-accent));
+  --sh-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --sh-cut: 18px;
+  background-color: var(--sh-bg);
+  background-image: repeating-linear-gradient(-45deg, color-mix(in oklab, var(--ct-ink) 7%, transparent) 0 2px, transparent 2px 16px);
+}
+html[data-shell='cyber'][data-skin] .topbar {
+  background: transparent;
+  color: var(--ct-hink, var(--ct-ink));
+}
+html[data-shell='cyber'][data-skin] .topbar-title strong {
+  font-family: var(--ct-display);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+html[data-shell='cyber'][data-skin] .topbar .muted {
+  font-family: var(--sh-mono);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+html[data-shell='cyber'][data-skin] .card {
+  background-color: var(--sh-panel);
+  background-image: repeating-linear-gradient(0deg, color-mix(in oklab, var(--sh-cool) 6%, transparent) 0 1px, transparent 1px 3px);
+  border: 0;
+  border-radius: 0;
+  border-top: 3px solid var(--sh-hot);
+  clip-path: polygon(0 0, calc(100% - var(--sh-cut)) 0, 100% var(--sh-cut), 100% 100%, var(--sh-cut) 100%, 0 calc(100% - var(--sh-cut)));
+  box-shadow: none;
+}
+html[data-shell='cyber'][data-skin] .card:nth-child(even) {
+  border-top-color: var(--sh-cool);
+}
+html[data-shell='cyber'][data-skin] .card::before,
+html[data-shell='cyber'][data-skin] .card::after {
+  display: none;
+}
+html[data-shell='cyber'][data-skin] .card-title {
+  font-family: var(--ct-display);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ct-ink);
+  text-shadow:
+    -2px 0 color-mix(in oklab, var(--sh-hot) 85%, transparent),
+    2px 0 color-mix(in oklab, var(--sh-cool) 85%, transparent);
+}
+@media (prefers-reduced-motion: no-preference) {
+  html[data-shell='cyber'][data-skin] .card-title:hover {
+    animation: zg-glitch 0.4s steps(2) 1;
+  }
+  @keyframes zg-glitch {
+    50% {
+      text-shadow:
+        3px 0 var(--sh-hot),
+        -3px 0 var(--sh-cool);
+      transform: translateX(1px);
+    }
+  }
+}
+
+/* Вертикальные вкладки «01 / 02» на чёрной планке */
+html[data-shell='cyber'][data-skin] .zg-spread {
+  gap: 18px;
+}
+html[data-shell='cyber'][data-skin] .zg-tabbar-side {
+  counter-reset: idx;
+  background: var(--sh-panel);
+  padding: 16px 0;
+  gap: 2px;
+  align-content: start;
+  clip-path: polygon(0 0, calc(100% - var(--sh-cut)) 0, 100% var(--sh-cut), 100% 100%, var(--sh-cut) 100%, 0 calc(100% - var(--sh-cut)));
+}
+html[data-shell='cyber'][data-skin] .zg-tabbar-side .zg-tab {
+  counter-increment: idx;
+  border-radius: 0;
+  padding: 0 16px;
+  color: var(--ct-muted);
+  font-family: var(--ct-body);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+html[data-shell='cyber'][data-skin] .zg-tabbar-side .zg-tab::before {
+  content: counter(idx, decimal-leading-zero);
+  font: 700 12px var(--sh-mono);
+  color: var(--sh-cool);
+}
+html[data-shell='cyber'][data-skin] .zg-tabbar-side .zg-tab :is(svg, kbd, span.absolute) {
+  display: none;
+}
+html[data-shell='cyber'][data-skin] .zg-tabbar-side .zg-tab:hover {
+  color: var(--ct-ink);
+  background: color-mix(in oklab, var(--sh-cool) 10%, transparent);
+}
+html[data-shell='cyber'][data-skin] .zg-tabbar-side .zg-tab[aria-current='page'] {
+  background: var(--sh-hot);
+  color: var(--sh-panel);
+  box-shadow: inset 6px 0 0 var(--sh-cool);
+}
+html[data-shell='cyber'][data-skin] .zg-tabbar-side .zg-tab[aria-current='page']::before {
+  color: var(--sh-panel);
+}
+html[data-shell='cyber'][data-skin] .zg-tabbar {
+  background: var(--sh-panel);
+  border-top: 2px solid var(--sh-hot);
+}
+html[data-shell='cyber'][data-skin] .zg-tabbar .zg-tab {
+  color: var(--ct-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+html[data-shell='cyber'][data-skin] .zg-tabbar .zg-tab span.absolute {
+  background: var(--sh-hot);
+  border-radius: 0;
+}
+html[data-shell='cyber'][data-skin] .zg-tabbar .zg-tab[aria-current='page'] {
+  color: var(--sh-cool);
+}
+html[data-shell='cyber'][data-skin] .zg-tabbar .zg-tab[aria-current='page'] svg {
+  color: var(--sh-panel);
+}
+
+/* Кнопки со срезом */
+html[data-shell='cyber'][data-skin] .zg-btn {
+  border-radius: 0;
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 800;
+}
+html[data-shell='cyber'][data-skin] .zg-btn-primary {
+  background: var(--sh-hot);
+  border-color: var(--sh-hot);
+  color: var(--sh-panel);
+}
+html[data-shell='cyber'][data-skin] .zg-btn-primary::after {
+  content: ' >>';
+}
+html[data-shell='cyber'][data-skin] .zg-btn-default {
+  background: color-mix(in oklab, var(--ct-ink) 12%, var(--sh-panel));
+  border-color: transparent;
+  color: var(--ct-ink);
+}
+html[data-shell='cyber'][data-skin] .zg-seg {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  gap: 6px;
+  padding: 0;
+}
+html[data-shell='cyber'][data-skin] .zg-seg-item {
+  background: color-mix(in oklab, var(--ct-ink) 12%, var(--sh-panel));
+  border-radius: 0;
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+html[data-shell='cyber'][data-skin] .zg-seg-ind {
+  border-radius: 0;
+  background: var(--sh-cool);
+}
+html[data-shell='cyber'][data-skin] .zg-seg-item[data-state='on'] {
+  color: var(--sh-panel);
+}
+html[data-shell='cyber'][data-skin] .zg-field {
+  border-radius: 0;
+  background: color-mix(in oklab, var(--ct-ink) 8%, var(--sh-panel));
+  border-color: color-mix(in oklab, var(--sh-cool) 40%, transparent);
+  font-family: var(--sh-mono);
+}
+html[data-shell='cyber'][data-skin] .zg-badge {
+  border-radius: 0;
+  background: var(--sh-cool);
+  color: var(--sh-panel);
+  font-family: var(--sh-mono);
+}
+
+/* Лоток — сетка и прицел */
+html[data-shell='cyber'][data-skin] .zg-tray {
+  border: 0;
+  border-radius: 0;
+  background:
+    radial-gradient(circle at 50% 50%, color-mix(in oklab, var(--sh-cool) 18%, transparent), transparent 62%),
+    repeating-linear-gradient(90deg, color-mix(in oklab, var(--sh-cool) 14%, transparent) 0 1px, transparent 1px 28px),
+    repeating-linear-gradient(0deg, color-mix(in oklab, var(--sh-cool) 14%, transparent) 0 1px, transparent 1px 28px), color-mix(in oklab, var(--sh-panel) 90%, #000);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--ct-ink) 18%, transparent);
+}
+html[data-shell='cyber'][data-skin] .zg-tray::before {
+  content: '';
+  position: absolute;
+  inset: 22% 26%;
+  pointer-events: none;
+  --c: var(--sh-cool);
+  background:
+    linear-gradient(var(--c), var(--c)) top left / 24px 2px no-repeat,
+    linear-gradient(var(--c), var(--c)) top left / 2px 24px no-repeat,
+    linear-gradient(var(--c), var(--c)) top right / 24px 2px no-repeat,
+    linear-gradient(var(--c), var(--c)) top right / 2px 24px no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom left / 24px 2px no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom left / 2px 24px no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom right / 24px 2px no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom right / 2px 24px no-repeat;
+}
+html[data-shell='cyber'][data-skin] .zg-tray-hint {
+  top: auto;
+  bottom: 10px;
+  font-family: var(--sh-mono);
+}
+html[data-shell='cyber'][data-skin] .zg-roll-result {
+  border-radius: 0;
+  border-color: var(--sh-cool);
+  background: var(--sh-panel);
+  font-family: var(--sh-mono);
+}
+html[data-shell='cyber'][data-skin] .feed-value {
+  border-radius: 0;
+  background: transparent;
+  color: var(--sh-hot);
+  font-family: var(--sh-mono);
+  font-weight: 700;
+}
+html[data-shell='cyber'][data-skin] .feed-meta {
+  font-family: var(--sh-mono);
+}
+html[data-shell='cyber'][data-skin] :is(.zg-sheet, .zg-dialog) {
+  background: var(--sh-panel);
+  border-radius: 0;
+  border-top: 3px solid var(--sh-hot);
+}

@@ -1,1 +1,248 @@
-/* Оболочка «terminal» (этап 38) — правила под html[data-shell="terminal"]. */
+/* Оболочка «Терминал» (этап 38): наручный прибор с ЭЛТ-экраном. Тема: Терминал (Fallout).
+   Весь экран — внутри корпуса: оливковый пластик с винтами, на экране люминофор и развёртка. Текст моноширинный,
+   свечение — только у заголовков; развёртка не трогает читаемость (полупрозрачная, поверх, без анимации). */
+@import url('https://fonts.googleapis.com/css2?family=Handjet:wght@500;700&display=swap');
+
+html:root[data-shell='terminal'][data-skin] {
+  --sh-case: #3f432f;
+  --sh-screen: var(--ct-bg);
+  --sh-phos: var(--ct-ink);
+  --sh-dim: var(--ct-muted);
+  --sh-line: var(--ct-line);
+  --sh-amber: var(--ct-accent2, var(--ct-accent));
+  --sh-head: 'Handjet', var(--ct-display), monospace;
+  background: #1a1c14;
+}
+html[data-shell='terminal'][data-skin] body {
+  font-family: var(--ct-body);
+}
+/* корпус и экран */
+html[data-shell='terminal'][data-skin] .screen {
+  position: relative;
+  background: radial-gradient(
+    ellipse at 50% 45%,
+    color-mix(in oklab, var(--sh-screen) 80%, var(--sh-phos) 8%) 0%,
+    var(--sh-screen) 72%,
+    color-mix(in oklab, var(--sh-screen) 60%, #000) 100%
+  );
+  border-radius: 24px;
+  box-shadow:
+    inset 0 0 0 2px #15180f,
+    inset 0 0 60px rgb(0 0 0 / 0.85),
+    0 0 0 14px var(--sh-case),
+    0 0 0 16px #2c2f21,
+    0 0 0 18px #55593f,
+    0 18px 40px rgb(0 0 0 / 0.6);
+  margin: 26px auto;
+  width: calc(100% - 52px);
+}
+html[data-shell='terminal'][data-skin] .screen.screen-fill {
+  height: calc(100dvh - 52px);
+}
+html[data-shell='terminal'][data-skin] .screen::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgb(0 0 0 / 0.22) 0 1px, transparent 1px 3px);
+  z-index: 40;
+}
+@media (max-width: 760px) {
+  html[data-shell='terminal'][data-skin] .screen {
+    margin: 8px;
+    width: calc(100% - 16px);
+    border-radius: 14px;
+    box-shadow:
+      inset 0 0 0 2px #15180f,
+      inset 0 0 40px rgb(0 0 0 / 0.85),
+      0 0 0 6px var(--sh-case),
+      0 0 0 8px #55593f;
+  }
+  html[data-shell='terminal'][data-skin] .screen.screen-fill {
+    height: calc(100dvh - 16px);
+  }
+}
+html[data-shell='terminal'][data-skin] .topbar {
+  background: transparent;
+  border-bottom: 2px solid var(--sh-dim);
+}
+html[data-shell='terminal'][data-skin] :is(h1, h2, h3, .card-title, .topbar-title strong) {
+  font-family: var(--sh-head);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-shadow: 0 0 6px color-mix(in oklab, var(--sh-phos) 55%, transparent);
+}
+html[data-shell='terminal'][data-skin] .card-title {
+  font-size: 1.7rem;
+}
+
+html[data-shell='terminal'][data-skin] .card {
+  background: transparent;
+  border: 1px solid var(--sh-line);
+  border-radius: 0;
+  box-shadow: none;
+}
+html[data-shell='terminal'][data-skin] .card::before,
+html[data-shell='terminal'][data-skin] .card::after {
+  display: none;
+}
+
+/* Вкладки терминала сверху: [ КАРТОЧКА ] */
+html[data-shell='terminal'][data-skin] .zg-spread {
+  grid-template-areas: 'nav nav' 'main aside';
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 400px);
+  gap: 14px 26px;
+}
+html[data-shell='terminal'][data-skin] .zg-spread.zg-spread-wide {
+  grid-template-areas: 'nav' 'main';
+  grid-template-columns: minmax(0, 1fr);
+}
+html[data-shell='terminal'][data-skin] .zg-tabbar-side {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--sh-dim);
+}
+html[data-shell='terminal'][data-skin] .zg-tabbar-side .zg-tab {
+  border-radius: 0;
+  padding: 0 10px;
+  min-height: 40px;
+  color: var(--sh-dim);
+  font-family: var(--sh-head);
+  font-size: 24px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border: 2px solid transparent;
+}
+html[data-shell='terminal'][data-skin] .zg-tabbar-side .zg-tab :is(svg, kbd, span.absolute) {
+  display: none;
+}
+html[data-shell='terminal'][data-skin] .zg-tabbar-side .zg-tab[aria-current='page'] {
+  color: var(--sh-phos);
+  border-color: var(--sh-phos);
+  text-shadow: 0 0 6px color-mix(in oklab, var(--sh-phos) 55%, transparent);
+}
+html[data-shell='terminal'][data-skin] .zg-tabbar {
+  background: transparent;
+  border-top: 2px solid var(--sh-dim);
+}
+html[data-shell='terminal'][data-skin] .zg-tabbar .zg-tab {
+  font-family: var(--sh-head);
+  font-size: 15px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sh-dim);
+}
+html[data-shell='terminal'][data-skin] .zg-tabbar .zg-tab span.absolute {
+  background: transparent;
+  border: 2px solid var(--sh-phos);
+  border-radius: 0;
+}
+html[data-shell='terminal'][data-skin] .zg-tabbar .zg-tab[aria-current='page'] {
+  color: var(--sh-phos);
+}
+
+/* Кнопки: [ D20 ], > БРОСИТЬ < */
+html[data-shell='terminal'][data-skin] .zg-btn {
+  border-radius: 0;
+  background: transparent;
+  border: 2px solid var(--sh-dim);
+  color: var(--sh-dim);
+  font-family: var(--sh-head);
+  font-size: 20px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+html[data-shell='terminal'][data-skin] .zg-btn:hover:not(:disabled) {
+  background: var(--sh-phos);
+  color: var(--sh-screen);
+  border-color: var(--sh-phos);
+}
+html[data-shell='terminal'][data-skin] .zg-btn-primary {
+  border-color: var(--sh-phos);
+  color: var(--sh-phos);
+  font-size: 24px;
+}
+html[data-shell='terminal'][data-skin] .zg-btn-primary::before {
+  content: '> ';
+}
+html[data-shell='terminal'][data-skin] .zg-btn-primary::after {
+  content: ' <';
+}
+html[data-shell='terminal'][data-skin] .zg-seg {
+  background: transparent;
+  border: 0;
+  gap: 8px;
+  padding: 0;
+}
+html[data-shell='terminal'][data-skin] .zg-seg-item {
+  border: 2px solid var(--sh-dim);
+  border-radius: 0;
+  font-family: var(--sh-head);
+  font-size: 19px;
+  letter-spacing: 0.08em;
+  color: var(--sh-dim);
+}
+html[data-shell='terminal'][data-skin] .zg-seg-ind {
+  border-radius: 0;
+  background: var(--sh-phos);
+}
+html[data-shell='terminal'][data-skin] .zg-seg-item[data-state='on'] {
+  color: var(--sh-screen);
+  border-color: var(--sh-phos);
+}
+html[data-shell='terminal'][data-skin] .zg-field {
+  background: transparent;
+  border-radius: 0;
+  border: 0;
+  border-bottom: 2px dashed var(--sh-dim);
+}
+html[data-shell='terminal'][data-skin] .zg-field::placeholder {
+  color: var(--sh-dim);
+}
+html[data-shell='terminal'][data-skin] .zg-badge {
+  background: transparent;
+  color: var(--sh-amber);
+  border-radius: 0;
+  padding-inline: 0;
+}
+html[data-shell='terminal'][data-skin] .zg-badge::before {
+  content: '> ';
+}
+
+/* Лоток — рамка, большая цифра */
+html[data-shell='terminal'][data-skin] .zg-tray {
+  background: transparent;
+  border: 2px solid var(--sh-phos);
+  border-radius: 0;
+}
+html[data-shell='terminal'][data-skin] .zg-tray-hint {
+  color: var(--sh-dim);
+}
+html[data-shell='terminal'][data-skin] .zg-roll-result {
+  background: var(--sh-screen);
+  border: 2px solid var(--sh-phos);
+  border-radius: 0;
+  font-family: var(--sh-head);
+}
+html[data-shell='terminal'][data-skin] .feed-value {
+  background: transparent;
+  color: var(--sh-phos);
+  border-radius: 0;
+  font-family: var(--sh-head);
+  font-size: 1.6rem;
+}
+html[data-shell='terminal'][data-skin] .feed-row::before {
+  content: '>';
+  color: var(--sh-dim);
+  margin-right: 4px;
+}
+html[data-shell='terminal'][data-skin] :is(.zg-sheet, .zg-dialog) {
+  background: var(--sh-screen);
+  border: 2px solid var(--sh-phos);
+  border-radius: 0;
+}

@@ -1,1 +1,213 @@
-/* Оболочка «brass» (этап 38) — правила под html[data-shell="brass"]. */
+/* Оболочка «Латунный прибор» (этап 38): механизм, манометры. Темы: Латунь, Ворвань, Хекстек. Деревянная столешница,
+   панели — тёмная обшивка в латунной оправе с заклёпками, разделы — латунные таблички с рычажком,
+   лоток — циферблат, главная кнопка — круглая. */
+html:root[data-shell='brass'][data-skin] {
+  --sh-wood: color-mix(in oklab, var(--ct-bg) 90%, #000);
+  --sh-panel: var(--ct-panel);
+  --sh-brass: var(--ct-accent);
+  --sh-copper: var(--ct-accent2, var(--ct-accent));
+  --sh-plate: linear-gradient(160deg, color-mix(in oklab, var(--sh-brass) 70%, #fff) 0%, var(--sh-brass) 40%, color-mix(in oklab, var(--sh-brass) 60%, #000) 100%);
+  --sh-rivet: radial-gradient(circle at 35% 30%, color-mix(in oklab, var(--sh-brass) 40%, #fff), var(--sh-brass) 50%, color-mix(in oklab, var(--sh-brass) 45%, #000));
+  background-color: var(--sh-wood);
+  background-image: repeating-linear-gradient(92deg, transparent 0 18px, color-mix(in oklab, var(--sh-wood) 80%, #fff 6%) 18px 22px, transparent 22px 40px), var(--pk-tex, none);
+  background-size:
+    auto,
+    512px 512px;
+  background-blend-mode: normal, soft-light;
+}
+html[data-shell='brass'][data-skin] .topbar {
+  background: transparent;
+  color: var(--ct-hink, var(--ct-ink));
+}
+html[data-shell='brass'][data-skin] .topbar-title strong {
+  background: var(--sh-plate);
+  color: var(--sh-wood);
+  padding: 2px 14px;
+  border-radius: 3px;
+  width: fit-content;
+  box-shadow:
+    inset 0 1px 0 rgb(255 240 200 / 0.6),
+    0 3px 6px rgb(0 0 0 / 0.4);
+}
+html[data-shell='brass'][data-skin] .topbar-title strong::before {
+  display: none;
+}
+
+/* Обшивка в латунной оправе, заклёпки по углам */
+html[data-shell='brass'][data-skin] .card {
+  background-color: var(--sh-panel);
+  background-image: var(--pk-tex, none);
+  background-size: 512px 512px;
+  background-blend-mode: soft-light;
+  border: 0;
+  border-radius: 6px;
+  box-shadow:
+    inset 0 0 0 3px var(--sh-brass),
+    inset 0 0 0 6px var(--sh-panel),
+    inset 0 0 0 7px color-mix(in oklab, var(--sh-brass) 55%, transparent),
+    0 10px 24px rgb(0 0 0 / 0.55);
+  padding: 24px 26px;
+}
+html[data-shell='brass'][data-skin] .card::after {
+  display: none;
+}
+html[data-shell='brass'][data-skin] .card::before {
+  display: block;
+  content: '';
+  position: absolute;
+  inset: 9px;
+  pointer-events: none;
+  border: 0;
+  border-radius: 0;
+  background:
+    var(--sh-rivet) top left / 10px 10px no-repeat,
+    var(--sh-rivet) top right / 10px 10px no-repeat,
+    var(--sh-rivet) bottom left / 10px 10px no-repeat,
+    var(--sh-rivet) bottom right / 10px 10px no-repeat;
+}
+html[data-shell='brass'][data-skin] .card-title {
+  color: var(--sh-brass);
+  text-shadow: 0 2px 0 rgb(0 0 0 / 0.5);
+}
+
+/* Таблички слева */
+html[data-shell='brass'][data-skin] .zg-spread {
+  gap: 24px;
+}
+html[data-shell='brass'][data-skin] .zg-tabbar-side {
+  gap: 12px;
+}
+html[data-shell='brass'][data-skin] .zg-tabbar-side .zg-tab {
+  background: var(--sh-plate);
+  color: var(--sh-wood);
+  border-radius: 4px;
+  min-height: 54px;
+  font-weight: 700;
+  box-shadow:
+    inset 0 2px 0 rgb(255 240 200 / 0.55),
+    inset 0 -3px 6px rgb(60 35 10 / 0.45),
+    0 6px 12px rgb(0 0 0 / 0.45);
+}
+html[data-shell='brass'][data-skin] .zg-tabbar-side .zg-tab :is(kbd, span.absolute) {
+  display: none;
+}
+/* рычажок вместо значка */
+html[data-shell='brass'][data-skin] .zg-tabbar-side .zg-tab > svg {
+  width: 12px;
+  height: 24px;
+  border-radius: 6px;
+  background: var(--sh-wood);
+  box-shadow: inset 0 12px 0 color-mix(in oklab, var(--sh-wood) 60%, #fff 10%);
+  stroke: transparent;
+}
+html[data-shell='brass'][data-skin] .zg-tabbar-side .zg-tab[aria-current='page'] {
+  filter: brightness(1.12);
+  box-shadow:
+    inset 0 0 0 2px var(--sh-wood),
+    0 0 16px color-mix(in oklab, var(--sh-brass) 55%, transparent);
+}
+html[data-shell='brass'][data-skin] .zg-tabbar-side .zg-tab[aria-current='page'] > svg {
+  box-shadow: inset 0 -12px 0 color-mix(in oklab, var(--sh-copper) 80%, #fff);
+}
+html[data-shell='brass'][data-skin] .zg-tabbar {
+  background: var(--sh-wood);
+  border-top: 3px solid var(--sh-brass);
+}
+html[data-shell='brass'][data-skin] .zg-tabbar .zg-tab span.absolute {
+  background: var(--sh-plate);
+}
+html[data-shell='brass'][data-skin] .zg-tabbar .zg-tab[aria-current='page'] {
+  color: var(--sh-brass);
+}
+html[data-shell='brass'][data-skin] .zg-tabbar .zg-tab[aria-current='page'] svg {
+  color: var(--sh-wood);
+}
+
+html[data-shell='brass'][data-skin] .zg-btn {
+  border-radius: 4px;
+  font-weight: 700;
+}
+html[data-shell='brass'][data-skin] .zg-btn-primary {
+  border-radius: 999px;
+  background: radial-gradient(circle at 50% 30%, color-mix(in oklab, var(--sh-copper) 80%, #fff 20%), var(--sh-copper) 60%, color-mix(in oklab, var(--sh-copper) 60%, #000));
+  border: 0;
+  color: #fff8ec;
+  box-shadow:
+    inset 0 0 0 3px var(--sh-brass),
+    0 5px 10px rgb(0 0 0 / 0.5);
+  font-family: var(--ct-body);
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 0 rgb(0 0 0 / 0.5);
+}
+html[data-shell='brass'][data-skin] .zg-btn-default {
+  background: color-mix(in oklab, var(--sh-wood) 80%, #000);
+  border: 2px solid color-mix(in oklab, var(--sh-brass) 45%, var(--sh-wood));
+}
+html[data-shell='brass'][data-skin] .zg-seg {
+  background: color-mix(in oklab, var(--sh-wood) 80%, #000);
+  border: 2px solid color-mix(in oklab, var(--sh-brass) 45%, var(--sh-wood));
+}
+html[data-shell='brass'][data-skin] .zg-seg-ind {
+  background: var(--sh-plate);
+}
+html[data-shell='brass'][data-skin] .zg-seg-item[data-state='on'] {
+  color: var(--sh-wood);
+}
+html[data-shell='brass'][data-skin] .zg-field {
+  background: color-mix(in oklab, var(--sh-wood) 80%, #000);
+  border: 2px solid color-mix(in oklab, var(--sh-brass) 40%, var(--sh-wood));
+}
+html[data-shell='brass'][data-skin] .zg-badge {
+  background: var(--sh-plate);
+  color: var(--sh-wood);
+  border-radius: 2px;
+}
+
+/* Лоток — циферблат */
+html[data-shell='brass'][data-skin] .zg-tray {
+  border: 0;
+  border-radius: 50%;
+  aspect-ratio: 1;
+  height: auto;
+  width: min(100%, 290px);
+  margin-inline: auto;
+  background:
+    repeating-conic-gradient(color-mix(in oklab, var(--sh-wood) 80%, transparent) 0 1deg, transparent 1deg 18deg),
+    radial-gradient(
+      circle,
+      color-mix(in oklab, var(--ct-ink) 92%, var(--sh-brass)) 0 62%,
+      color-mix(in oklab, var(--ct-ink) 80%, var(--sh-brass)) 62% 64%,
+      color-mix(in oklab, var(--ct-ink) 92%, var(--sh-brass)) 64%
+    );
+  box-shadow:
+    inset 0 0 0 8px var(--sh-brass),
+    inset 0 0 0 12px color-mix(in oklab, var(--sh-brass) 45%, #000),
+    inset 0 0 0 14px var(--sh-copper),
+    0 10px 20px rgb(0 0 0 / 0.6);
+}
+html[data-shell='brass'][data-skin] .zg-tray-hint {
+  left: 0;
+  right: 0;
+  top: auto;
+  bottom: 18%;
+  text-align: center;
+  color: var(--sh-wood);
+}
+html[data-shell='brass'][data-skin] .zg-roll-result {
+  background: var(--sh-plate);
+  color: var(--sh-wood);
+  border: 0;
+}
+html[data-shell='brass'][data-skin] .zg-roll-result :is(span, b) {
+  color: inherit;
+}
+html[data-shell='brass'][data-skin] .feed-value {
+  background: transparent;
+  color: var(--sh-brass);
+  font-family: var(--ct-display);
+}
+html[data-shell='brass'][data-skin] :is(.zg-sheet, .zg-dialog) {
+  background: var(--sh-panel);
+  box-shadow: inset 0 0 0 3px var(--sh-brass);
+}

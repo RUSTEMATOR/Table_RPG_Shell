@@ -1,1 +1,225 @@
-/* Оболочка «console» (этап 38) — правила под html[data-shell="console"]. */
+/* Оболочка «Бортовая консоль» (этап 38): пульт корабля. Темы: Бортовой журнал, Голограмма, Омни-интерфейс.
+   Звёздное поле, стеклянные панели с уголками-скобками, вкладки консоли сверху, лоток — радар. */
+html:root[data-shell='console'][data-skin] {
+  --sh-space: var(--ct-bg);
+  --sh-glass: color-mix(in oklab, var(--ct-panel) 88%, transparent);
+  --sh-line: var(--ct-line);
+  --sh-glow: var(--ct-accent);
+  --sh-alt: var(--ct-accent2, var(--ct-accent));
+  background-color: var(--sh-space);
+  background-image:
+    radial-gradient(ellipse at 75% 10%, color-mix(in oklab, var(--sh-alt) 22%, transparent), transparent 50%),
+    radial-gradient(ellipse at 10% 90%, color-mix(in oklab, var(--sh-glow) 14%, transparent), transparent 50%),
+    radial-gradient(color-mix(in oklab, var(--ct-ink) 80%, transparent) 1px, transparent 1.3px),
+    radial-gradient(color-mix(in oklab, var(--ct-ink) 45%, transparent) 1px, transparent 1.3px);
+  background-size:
+    auto,
+    auto,
+    110px 110px,
+    170px 170px;
+  background-position:
+    0 0,
+    0 0,
+    20px 30px,
+    80px 90px;
+  background-attachment: fixed;
+}
+html[data-shell='console'][data-skin] .topbar {
+  background: transparent;
+}
+html[data-shell='console'][data-skin] .topbar-title strong {
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+html[data-shell='console'][data-skin] .topbar .muted {
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+
+/* Стекло с уголками */
+html[data-shell='console'][data-skin] .card {
+  background: linear-gradient(180deg, var(--sh-glass), color-mix(in oklab, var(--ct-bg) 90%, transparent));
+  border: 0;
+  border-radius: 2px;
+  box-shadow:
+    inset 0 0 0 1px var(--sh-line),
+    inset 0 1px 0 color-mix(in oklab, var(--ct-ink) 14%, transparent);
+  backdrop-filter: blur(4px);
+}
+html[data-shell='console'][data-skin] .card::after {
+  display: none;
+}
+html[data-shell='console'][data-skin] .card::before {
+  display: block;
+  content: '';
+  position: absolute;
+  inset: -1px;
+  pointer-events: none;
+  border: 0;
+  border-radius: 0;
+  --c: var(--sh-glow);
+  background:
+    linear-gradient(var(--c), var(--c)) top left / 16px 2px no-repeat,
+    linear-gradient(var(--c), var(--c)) top left / 2px 16px no-repeat,
+    linear-gradient(var(--c), var(--c)) top right / 16px 2px no-repeat,
+    linear-gradient(var(--c), var(--c)) top right / 2px 16px no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom left / 16px 2px no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom left / 2px 16px no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom right / 16px 2px no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom right / 2px 16px no-repeat;
+}
+html[data-shell='console'][data-skin] .card-title {
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Вкладки консоли сверху */
+html[data-shell='console'][data-skin] .zg-spread {
+  grid-template-areas: 'nav nav' 'main aside';
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 420px);
+  gap: 18px 22px;
+}
+html[data-shell='console'][data-skin] .zg-spread.zg-spread-wide {
+  grid-template-areas: 'nav' 'main';
+  grid-template-columns: minmax(0, 1fr);
+}
+html[data-shell='console'][data-skin] .zg-tabbar-side {
+  display: flex;
+  gap: 4px;
+  border-bottom: 2px solid var(--sh-line);
+}
+html[data-shell='console'][data-skin] .zg-tabbar-side .zg-tab {
+  border-radius: 0;
+  padding: 0 22px;
+  margin-bottom: -2px;
+  border-bottom: 2px solid transparent;
+  color: var(--ct-muted);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-size: 14px;
+}
+html[data-shell='console'][data-skin] .zg-tabbar-side .zg-tab :is(svg, kbd, span.absolute) {
+  display: none;
+}
+html[data-shell='console'][data-skin] .zg-tabbar-side .zg-tab[aria-current='page'] {
+  color: var(--sh-glow);
+  border-bottom-color: var(--sh-glow);
+  background: linear-gradient(0deg, color-mix(in oklab, var(--sh-glow) 14%, transparent), transparent);
+}
+html[data-shell='console'][data-skin] .zg-tabbar {
+  background: color-mix(in oklab, var(--ct-bg) 92%, transparent);
+  border-top: 1px solid var(--sh-line);
+}
+html[data-shell='console'][data-skin] .zg-tabbar .zg-tab {
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 11px;
+}
+html[data-shell='console'][data-skin] .zg-tabbar .zg-tab span.absolute {
+  background: color-mix(in oklab, var(--sh-glow) 18%, transparent);
+  box-shadow: inset 0 0 0 1px var(--sh-glow);
+}
+html[data-shell='console'][data-skin] .zg-tabbar .zg-tab[aria-current='page'] {
+  color: var(--sh-glow);
+}
+
+html[data-shell='console'][data-skin] .zg-btn {
+  border-radius: 3px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+html[data-shell='console'][data-skin] .zg-btn-primary {
+  background: var(--sh-glow);
+  border-color: var(--sh-glow);
+  color: var(--ct-bg);
+  box-shadow: 0 0 18px color-mix(in oklab, var(--sh-glow) 35%, transparent);
+}
+html[data-shell='console'][data-skin] .zg-btn-default {
+  background: transparent;
+  border-color: var(--sh-line);
+}
+html[data-shell='console'][data-skin] .zg-seg {
+  background: transparent;
+  border-color: var(--sh-line);
+  border-radius: 3px;
+}
+html[data-shell='console'][data-skin] .zg-seg-item {
+  border-radius: 2px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+html[data-shell='console'][data-skin] .zg-seg-ind {
+  border-radius: 2px;
+  background: color-mix(in oklab, var(--sh-glow) 22%, transparent);
+  box-shadow: inset 0 0 0 1px var(--sh-glow);
+}
+html[data-shell='console'][data-skin] .zg-seg-item[data-state='on'] {
+  color: var(--sh-glow);
+}
+html[data-shell='console'][data-skin] .zg-field {
+  background: color-mix(in oklab, var(--ct-bg) 70%, transparent);
+  border-color: var(--sh-line);
+  border-radius: 3px;
+}
+html[data-shell='console'][data-skin] .zg-badge {
+  background: transparent;
+  color: var(--sh-glow);
+  letter-spacing: 0.2em;
+  padding-inline: 0;
+}
+
+/* Лоток — радар */
+html[data-shell='console'][data-skin] .zg-tray {
+  border: 0;
+  border-radius: 50%;
+  aspect-ratio: 1;
+  height: auto;
+  width: min(100%, 300px);
+  margin-inline: auto;
+  background:
+    conic-gradient(from 20deg, color-mix(in oklab, var(--sh-glow) 40%, transparent), transparent 60deg),
+    repeating-radial-gradient(circle, transparent 0 38px, color-mix(in oklab, var(--sh-glow) 32%, transparent) 38px 39px),
+    radial-gradient(circle, color-mix(in oklab, var(--ct-panel) 90%, #fff 4%), var(--ct-bg));
+  box-shadow:
+    inset 0 0 0 1px var(--sh-glow),
+    0 0 24px color-mix(in oklab, var(--sh-glow) 20%, transparent);
+}
+@media (prefers-reduced-motion: no-preference) {
+  html[data-shell='console'][data-skin] .zg-tray::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, color-mix(in oklab, var(--sh-glow) 30%, transparent), transparent 50deg);
+    animation: zg-sweep 6s linear infinite;
+    pointer-events: none;
+  }
+  @keyframes zg-sweep {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+}
+html[data-shell='console'][data-skin] .zg-tray-hint {
+  left: 0;
+  right: 0;
+  top: auto;
+  bottom: 12%;
+  text-align: center;
+}
+html[data-shell='console'][data-skin] .zg-roll-result {
+  border-color: var(--sh-glow);
+  border-radius: 3px;
+}
+html[data-shell='console'][data-skin] .feed-value {
+  background: transparent;
+  color: var(--sh-glow);
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1px var(--sh-line);
+}
+html[data-shell='console'][data-skin] :is(.zg-sheet, .zg-dialog) {
+  background: var(--ct-panel);
+  box-shadow: inset 0 0 0 1px var(--sh-line);
+}
