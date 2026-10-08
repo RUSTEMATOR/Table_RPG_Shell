@@ -1,7 +1,6 @@
 /* Оболочка «Летопись» (этап 38): иллюминированная рукопись. Темы: Летопись, Крестовый поход, Руны, Драконий свиток,
    Костёр, Империум. Тёмная стена, листы пергамента с полями, буквица-киноварь в заголовке, ярлыки разделов на полях
    справа, жребий — сургучная печать. */
-@import url('https://fonts.googleapis.com/css2?family=Old+Standard+TT:ital,wght@0,400;0,700;1,400&display=swap');
 
 html:root[data-shell='chronicle'][data-skin] {
   --sh-wall: color-mix(in oklab, var(--ct-ink) 70%, #1a120c);

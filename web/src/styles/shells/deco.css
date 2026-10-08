@@ -1,6 +1,5 @@
 /* Оболочка «Ар-деко» (этап 38): отель «Континенталь». Тема: Ар-деко. Чёрный лак и золото, ступенчатые углы панелей,
    двойная золотая кайма, веер лучей над шапкой, разделы — золотые таблички, жребий — монета. */
-@import url('https://fonts.googleapis.com/css2?family=Poiret+One&family=Playfair+Display+SC:wght@400;700&display=swap');
 
 html:root[data-shell='deco'][data-skin] {
   --sh-black: var(--ct-bg);

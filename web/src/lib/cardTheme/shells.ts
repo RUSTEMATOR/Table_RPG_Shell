@@ -2,6 +2,8 @@
 // интерфейс, прибор… Оболочка — слой стилей поверх тех же компонентов, по атрибуту data-shell на <html>.
 // Стили оболочки — свой чанк, грузится при первом показе; правила написаны на переменных темы (--ct-*).
 
+import { ensureFonts } from '../fonts.ts';
+
 export const SHELLS = [
   'book',
   'chronicle',
@@ -96,23 +98,24 @@ export const SHELL_PACK_PARTS: Record<Shell, readonly string[]> = {
   document: [],
 };
 
+// Стили оболочки и её шрифты (свои, из сборки — lib/fonts.ts, этап 40) грузятся вместе при первом показе.
 const LOADERS: Record<Shell, () => Promise<unknown>> = {
-  book: () => import('../../styles/shells/book.css'),
-  chronicle: () => import('../../styles/shells/chronicle.css'),
-  fresco: () => import('../../styles/shells/fresco.css'),
-  ink: () => import('../../styles/shells/ink.css'),
-  manga: () => import('../../styles/shells/manga.css'),
+  book: () => Promise.all([import('../../styles/shells/book.css'), ensureFonts(['Cormorant SC', 'Cormorant Garamond'])]),
+  chronicle: () => Promise.all([import('../../styles/shells/chronicle.css'), ensureFonts(['Old Standard TT'])]),
+  fresco: () => Promise.all([import('../../styles/shells/fresco.css'), ensureFonts(['Forum'])]),
+  ink: () => Promise.all([import('../../styles/shells/ink.css'), ensureFonts(['Neucha'])]),
+  manga: () => Promise.all([import('../../styles/shells/manga.css'), ensureFonts(['Dela Gothic One'])]),
   novel: () => import('../../styles/shells/novel.css'),
-  comic: () => import('../../styles/shells/comic.css'),
-  deco: () => import('../../styles/shells/deco.css'),
-  cyber: () => import('../../styles/shells/cyber.css'),
+  comic: () => Promise.all([import('../../styles/shells/comic.css'), ensureFonts(['Comic Relief'])]),
+  deco: () => Promise.all([import('../../styles/shells/deco.css'), ensureFonts(['Poiret One', 'Playfair Display SC'])]),
+  cyber: () => Promise.all([import('../../styles/shells/cyber.css'), ensureFonts(['JetBrains Mono'])]),
   console: () => import('../../styles/shells/console.css'),
   brass: () => import('../../styles/shells/brass.css'),
-  terminal: () => import('../../styles/shells/terminal.css'),
-  pda: () => import('../../styles/shells/pda.css'),
-  dossier: () => import('../../styles/shells/dossier.css'),
-  pixel: () => import('../../styles/shells/pixel.css'),
-  document: () => import('../../styles/shells/document.css'),
+  terminal: () => Promise.all([import('../../styles/shells/terminal.css'), ensureFonts(['Handjet'])]),
+  pda: () => Promise.all([import('../../styles/shells/pda.css'), ensureFonts(['Russo One'])]),
+  dossier: () => Promise.all([import('../../styles/shells/dossier.css'), ensureFonts(['PT Mono', 'Marck Script'])]),
+  pixel: () => Promise.all([import('../../styles/shells/pixel.css'), ensureFonts(['Pixelify Sans'])]),
+  document: () => Promise.all([import('../../styles/shells/document.css'), ensureFonts(['Oswald'])]),
 };
 
 const loaded = new Set<Shell>();

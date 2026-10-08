@@ -1,6 +1,5 @@
 /* Оболочка «Манга» (этап 38): страница манги. Темы: Сёнен, Агентство. Кадры с толстой чёрной рамкой, скринтон,
    линии скорости в лотке, главы вместо вкладок, тень-сдвиг у выбранного. */
-@import url('https://fonts.googleapis.com/css2?family=Dela+Gothic+One&display=swap');
 
 html:root[data-shell='manga'][data-skin] {
   --sh-ink: color-mix(in oklab, var(--ct-ink) 92%, #000);

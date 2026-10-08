@@ -1,7 +1,6 @@
 /* Оболочка «Полевой КПК» (этап 38): защищённый полевой прибор. Темы: Зона, Пустошь, Бункер, Ракета.
    Экран в прорезиненном корпусе, полоса «опасность» сверху, кнопки разделов — справа, как на приборе,
    надпись на скотче, лоток — счётчик. */
-@import url('https://fonts.googleapis.com/css2?family=Russo+One&display=swap');
 
 html:root[data-shell='pda'][data-skin] {
   --sh-case: color-mix(in oklab, var(--ct-bg) 75%, #000);

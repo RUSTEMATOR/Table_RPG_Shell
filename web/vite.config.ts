@@ -31,7 +31,9 @@ export default defineConfig({
       },
       workbox: {
         // Кэшируется только оболочка; данные всегда идут с сервера.
-        globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        // Шрифты (этап 40): в предкэш — только базовые Lora и Poppins; остальные ~40 семейств тем и оболочек
+        // качаются при первом показе и дальше берутся из кэша zg-fonts.
+        globPatterns: ['**/*.{js,css,html,svg,png}', '**/assets/{lora,poppins}-*.woff2'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api\//, /^\/socket\.io\//],
         // Физика кубиков (Rapier, WebAssembly внутри, ~4 МБ) не входит в предкэш: качается при первом броске
@@ -41,6 +43,11 @@ export default defineConfig({
         // Звуки стола (sfx/, ~170 КБ m4a) — так же: при первом звуке.
         globIgnores: ['**/physics.worker-*.js', 'lpc/**', 'models/**', 'sfx/**', 'art/**'],
         runtimeCaching: [
+          {
+            urlPattern: ({ url }) => /\/assets\/[\w-]+\.woff2$/.test(url.pathname),
+            handler: 'CacheFirst',
+            options: { cacheName: 'zg-fonts', expiration: { maxEntries: 200 } },
+          },
           {
             urlPattern: ({ url }) => /\/assets\/physics\.worker-[\w-]+\.js$/.test(url.pathname),
             handler: 'CacheFirst',

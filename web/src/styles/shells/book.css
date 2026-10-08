@@ -1,7 +1,6 @@
 /* Оболочка «Книга» (этап 38): раскрытая книга на столе. Темы: «Зеленогорье» (и мастер), Пергамент, Письмо из школы,
    Медальон, Созвездия. Стол — тёмный оттенок акцента темы, страницы — панель темы с зерном набора, закладки-ленты,
    подписи капителью, заголовки шрифтом темы. Всё на переменных темы (--ct-*). */
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+SC:wght@500;700&family=Cormorant+Garamond:ital,wght@1,500&display=swap');
 
 html:root[data-shell='book'][data-skin] {
   --sh-desk: color-mix(in oklab, var(--ct-accent) 26%, #0d100d);

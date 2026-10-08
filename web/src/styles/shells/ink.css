@@ -1,6 +1,5 @@
 /* Оболочка «Тушь» (этап 38): бумага васи, мазки кистью, печати-ханко. Темы: Тушь (Цусима), Свиток (Наруто).
    Без рамок и теней — воздух и мазок; разделы — красные печати справа; лоток — энсо, круг одним движением кисти. */
-@import url('https://fonts.googleapis.com/css2?family=Neucha&display=swap');
 
 html:root[data-shell='ink'][data-skin] {
   --sh-paper: var(--ct-panel);

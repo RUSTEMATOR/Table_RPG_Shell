@@ -1,7 +1,6 @@
 /* Оболочка «Досье» (этап 38): папка дела на тёмном столе. Темы: Ночь, Туман, Ловушка, Глубина, Гниль.
    Панели — листы с машинописью, подклеенные скотчем и чуть сдвинутые; ярлыки папок сверху; пометки от руки;
    главная кнопка — штамп; лоток — полароид. Зерно набора — только на столе и бумаге, мягко (soft-light). */
-@import url('https://fonts.googleapis.com/css2?family=PT+Mono&family=Marck+Script&display=swap');
 
 html:root[data-shell='dossier'][data-skin] {
   --sh-desk: color-mix(in oklab, var(--ct-bg) 50%, #1b1714);

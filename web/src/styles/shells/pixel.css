@@ -1,6 +1,5 @@
 /* Оболочка «Пиксель» (этап 38): 8-битная игра. Темы: Пиксель, Блоки. Пиксельные рамки (тени по 4 px),
    звёздное небо, разделы — ячейки панели предметов с номерами, кнопки с «нажатием», лоток — пиксельный кубик. */
-@import url('https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&display=swap');
 
 html:root[data-shell='pixel'][data-skin] {
   --sh-sky: var(--ct-bg);

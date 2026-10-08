@@ -1,3 +1,4 @@
+import { ensureFont } from '../fonts.ts';
 import data from './packs.json';
 
 // Наборы украшений тем (этап 36): маски углов, полосы под заголовком, эмблема, узор фона, зерно, шрифт заголовков.
@@ -37,15 +38,8 @@ export function packCss(base: string): string {
   return `html[data-skin][data-pack="${base}"]{${v.join(';')}}`;
 }
 
-const fonts = new Set<string>();
-
-/** Шрифт набора — с Google Fonts при первом показе (как шрифты тем движка). */
+/** Шрифт набора — свой, из сборки (lib/fonts.ts), при первом показе; как шрифты тем движка. */
 export function ensurePackFont(base: string): void {
   const f = PACKS[base]?.font;
-  if (!f || fonts.has(f)) return;
-  fonts.add(f);
-  const l = document.createElement('link');
-  l.rel = 'stylesheet';
-  l.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(f).replace(/%20/g, '+')}&display=swap`;
-  document.head.appendChild(l);
+  if (f) void ensureFont(f);
 }

@@ -1,6 +1,5 @@
 /* Оболочка «Фреска» (этап 38): роспись вазы и стены. Темы: Фреска, Море. Штукатурка с зерном мрамора, меандр
    сверху и снизу полосы разделов, панели — оштукатуренные прямоугольники, лоток — чернофигурная чаша. */
-@import url('https://fonts.googleapis.com/css2?family=Forum&display=swap');
 
 html:root[data-shell='fresco'][data-skin] {
   --sh-wall: var(--ct-bg);

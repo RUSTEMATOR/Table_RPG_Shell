@@ -1,6 +1,5 @@
 /* Оболочка «Комикс» (этап 38): американский комикс. Темы: Комикс, Корпорация. Точки Бен-Дэй, кадры с чёрной
    рамкой и лёгким наклоном, жёлтые плашки-подписи, выпуски вместо вкладок, «БАМ» в лотке. */
-@import url('https://fonts.googleapis.com/css2?family=Comic+Relief:wght@400;700&display=swap');
 
 html:root[data-shell='comic'][data-skin] {
   --sh-ink: color-mix(in oklab, var(--ct-ink) 95%, #000);
