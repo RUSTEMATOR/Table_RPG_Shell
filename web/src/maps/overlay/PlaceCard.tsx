@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { PLACE_KIND_LABELS, RUMOR_KIND_LABELS, SPOT_KIND_LABELS, type PlaceDetailPublic, type PresencePublic } from '@zg/shared';
+import { PLACE_KIND_LABELS, RUMOR_KIND_LABELS, SPOT_KIND_LABELS, type CitySection, type PlaceDetailPublic, type PresencePublic } from '@zg/shared';
 import { api } from '../../lib/api.ts';
 import { useSocketEvent } from '../../lib/socket.ts';
+import { useActivity } from '../../lib/activity.ts';
 import { cn } from '../../lib/cn.ts';
 import { FigureSprite } from '../../figure/FigureSprite.tsx';
 import { PlaceIcon } from '../MapView.tsx';
@@ -201,6 +202,8 @@ export function CityScreen({ d, onClose, table }: { d: PlaceDetailPublic; onClos
     ...(d.here.length ? [{ key: 'here', title: 'Кто здесь' }] : []),
   ];
   const [sel, setSel] = useState('about');
+  const section: CitySection = sel.startsWith('spot:') ? 'spot' : sel === 'rumors' || sel === 'here' ? sel : 'about';
+  useActivity('map', table ? null : { kind: 'map.city', placeId: d.id, section });
   useEffect(() => {
     if (!sections.some((s) => s.key === sel)) setSel('about');
   }, [d]); // sections — из d

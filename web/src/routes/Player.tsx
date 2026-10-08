@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import type { PlayerCharacter } from '@zg/shared';
+import type { PlayerCharacter, PlayerTab } from '@zg/shared';
 import { Feed } from '../components/Feed.tsx';
 import { isOwnRoll, type FeedRoll } from '../lib/feed.ts';
 import { useMe } from '../lib/me.tsx';
@@ -11,6 +11,7 @@ import { RoleScreen } from '../components/Shell.tsx';
 import { api } from '../lib/api.ts';
 import { useConnection, useSocketEvent } from '../lib/socket.ts';
 import { useWakeLock } from '../lib/wakeLock.ts';
+import { reportTab } from '../lib/activity.ts';
 import { capabilities } from '../lib/capabilities.ts';
 import { resolveTheme, themeVariant } from '../lib/cardTheme/index.ts';
 import { useScheme } from '../lib/colorScheme.ts';
@@ -69,7 +70,7 @@ const PlayerMap = lazy(() => import('../components/PlayerMap.tsx').then((m) => (
 // Конструктор фигурки — тоже отдельный чанк (каталог деталей, сборка листов).
 const PlayerFigure = lazy(() => import('../components/PlayerFigure.tsx').then((m) => ({ default: m.PlayerFigure })));
 
-type Tab = 'card' | 'rolls' | 'figure' | 'diary' | 'map';
+type Tab = PlayerTab;
 const TABS: Tab[] = ['rolls', 'card', 'figure', 'diary', 'map'];
 const isTab = (v: string | null | undefined): v is Tab => TABS.includes(v as Tab);
 
@@ -90,9 +91,16 @@ function PlayerTabs() {
   }, []);
   useEffect(() => {
     setActiveTab(tab);
+    reportTab(tab);
     savePref('zg:player:tab', tab);
   }, [tab]);
-  useEffect(() => () => setActiveTab(null), []);
+  useEffect(
+    () => () => {
+      setActiveTab(null);
+      reportTab(null);
+    },
+    [],
+  );
 
   const pager = useRef<HTMLDivElement>(null);
   const tabRef = useRef(tab);

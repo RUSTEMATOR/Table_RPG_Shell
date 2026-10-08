@@ -3,6 +3,7 @@ import { cn } from '../lib/cn.ts';
 import { Button, Field, Input, Sheet, Textarea } from '../ui/index.ts';
 import type { PlayerCharacter, PlayerItem, PlayerSheetNote, PlayerTrait } from '@zg/shared';
 import { api } from '../lib/api.ts';
+import { useActivity } from '../lib/activity.ts';
 import {
   catChipHtml,
   dot,
@@ -194,6 +195,7 @@ type Res = { character: PlayerCharacter | null };
 /** Снаряжение. Игрок правит его сам; изменения сразу видит мастер. */
 function Items({ items, onChange }: { items: PlayerItem[]; onChange?: (c: PlayerCharacter) => void }) {
   const [editing, setEditing] = useState<string | 'new' | null>(null);
+  useActivity('card', editing !== null ? { kind: 'card.item', isNew: editing === 'new' } : null);
   const [title, setTitle] = useState('');
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MAP_IDS, daysText, routesFrom, type MapId, type MapNote, type MapPublic, type ProposalPublic, type Route } from '@zg/shared';
 import { api } from '../lib/api.ts';
 import { useConnection, useSocketEvent } from '../lib/socket.ts';
+import { useActivity } from '../lib/activity.ts';
 import { load, save } from '../lib/storage.ts';
 import { cn } from '../lib/cn.ts';
 import { MapLookToggle, MapStage, useMapLook } from '../maps/MapStage.tsx';
@@ -39,6 +40,8 @@ export function PlayerMap({ active, full = false }: { active: boolean; full?: bo
     setCard(null);
     setInCity(false);
   }, [mapId]);
+  // мастеру: в городе — раздел сообщает сам экран города
+  useActivity('map', inCity ? null : card ? { kind: 'map.place', placeId: card } : noteMode || edit ? { kind: 'map.note' } : { kind: 'map.view', mapId });
   // путь и время в дороге (этап 28): от отряда по открытым дорогам
   const routeOf = useMemo(() => (map?.party ? routesFrom(mapId, map.party, map.roads, map.places) : null), [map, mapId]);
   const [proposal, setProposal] = useState<ProposalPublic | null>(null);

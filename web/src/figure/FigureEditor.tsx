@@ -5,6 +5,7 @@ import { FigureSprite, type Dir, type Pose } from './FigureSprite.tsx';
 import { FigureCredits } from './FigureCredits.tsx';
 import { Button, Segmented } from '../ui/index.ts';
 import { cn } from '../lib/cn.ts';
+import { useActivity } from '../lib/activity.ts';
 
 const DIRS: Dir[] = ['down', 'left', 'up', 'right'];
 const ATTACK_LABEL: Record<string, string> = { slash: 'удар', thrust: 'выпад', shoot: 'выстрел', spellcast: 'заклинание' };
@@ -30,6 +31,7 @@ export function FigureEditor({
   onClear,
   note,
   creatures,
+  activity,
 }: {
   value: Figure | null;
   onSave: (f: Figure) => Promise<boolean>;
@@ -37,6 +39,8 @@ export function FigureEditor({
   onClear?: () => Promise<boolean>;
   note?: string;
   creatures?: boolean;
+  /** Сообщать мастеру, какая часть открыта (экран игрока). */
+  activity?: boolean;
 }) {
   // Человек и существо правятся отдельно: переключение туда-обратно не теряет собранного.
   const [kind, setKind] = useState<'human' | 'creature'>(value && isCreature(value) && creatures ? 'creature' : 'human');
@@ -44,6 +48,7 @@ export function FigureEditor({
   const [beast, setBeast] = useState<CreatureFigure>(value && isCreature(value) ? value : { v: 1, creature: CREATURES[0]!.id });
   const draft: Figure = kind === 'creature' ? beast : human;
   const [slot, setSlot] = useState<FigureSlot>('hair');
+  useActivity('figure', activity ? { kind: 'figure.edit', slot } : null);
   const [dir, setDir] = useState(0);
   const [pose, setPose] = useState<Pose>('walk');
   const [busy, setBusy] = useState(false);

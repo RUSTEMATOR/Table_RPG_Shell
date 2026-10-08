@@ -1,6 +1,6 @@
 import { io, type Socket } from 'socket.io-client';
 import { useEffect, useRef, useSyncExternalStore } from 'react';
-import type { ClientToServerEvents, GmAck, ServerToClientEvents } from '@zg/shared';
+import type { ClientToServerEvents, GmAck, PlayerActivity, ServerToClientEvents } from '@zg/shared';
 import { BUILD_ID } from './api.ts';
 import { applyWelcome, clearFeed, feedLastSeq, ingest } from './feed.ts';
 
@@ -9,6 +9,7 @@ export type ConnState = 'online' | 'connecting' | 'offline' | 'unauthorized';
 let socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
 let state: ConnState = 'connecting';
 const listeners = new Set<() => void>();
+const connectListeners = new Set<() => void>();
 
 function setState(next: ConnState) {
   if (next === state) return;
@@ -54,6 +55,7 @@ export function connectSocket() {
     setState('online');
     helloInFlight = false;
     hello();
+    connectListeners.forEach((l) => l());
   });
   socket.on('disconnect', (reason) => {
     setState(navigator.onLine ? 'connecting' : 'offline');
@@ -118,6 +120,19 @@ export function useSocketEvent<E extends keyof Events>(event: E, handler: Events
       s.off(event, fn as never);
     };
   }, [event]);
+}
+
+/** После каждого (пере)подключения. */
+export function onSocketConnect(cb: () => void): () => void {
+  connectListeners.add(cb);
+  return () => connectListeners.delete(cb);
+}
+
+/** Активность игрока мастеру. Без связи — false: отправится после подключения. */
+export function emitActivity(payload: PlayerActivity): boolean {
+  if (!socket?.connected) return false;
+  socket.volatile.emit('player:activity', payload);
+  return true;
 }
 
 type GmEvent = 'gm:trait.setReveal' | 'gm:trait.setStage' | 'gm:trait.setTier' | 'gm:trait.setFork' | 'gm:roll.override';

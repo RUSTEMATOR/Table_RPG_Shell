@@ -34,5 +34,5 @@ export function PlayerFigure() {
     toast('Фигурка сохранена');
     return true;
   };
-  return <FigureEditor key={character.id} value={character.figure ?? null} onSave={save} note="Фигурку увидят мастер, стол и другие игроки — на карте и в бою." />;
+  return <FigureEditor key={character.id} value={character.figure ?? null} onSave={save} activity note="Фигурку увидят мастер, стол и другие игроки — на карте и в бою." />;
 }

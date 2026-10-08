@@ -3,6 +3,7 @@ import { THEMES } from '../lib/cardTheme/index.ts';
 import { relLum } from '../lib/cardTheme/engine.mjs';
 import { Button, Sheet } from '../ui/index.ts';
 import { cn } from '../lib/cn.ts';
+import { useActivity } from '../lib/activity.ts';
 
 const OPTIONS = Object.entries(THEMES)
   .filter(([k]) => !k.includes('~'))
@@ -14,6 +15,7 @@ const OPTIONS = Object.entries(THEMES)
  */
 export function ThemeChoice({ base, value, onChange }: { base: string; value: string; onChange: (k: string) => void }) {
   const [open, setOpen] = useState(false);
+  useActivity('card', open ? { kind: 'card.theme' } : null);
   const baseLabel = (THEMES[base] ?? THEMES.other!).label;
   const label = value ? (THEMES[value]?.label ?? baseLabel) : baseLabel;
   return (

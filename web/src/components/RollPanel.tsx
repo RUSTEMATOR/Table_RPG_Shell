@@ -3,6 +3,7 @@ import { EFFECT_LABELS } from '@zg/shared';
 import { addOwn, holdOwn, type FeedRoll } from '../lib/feed.ts';
 import { useMe } from '../lib/me.tsx';
 import { requestRoll } from '../lib/socket.ts';
+import { useActivity } from '../lib/activity.ts';
 import { capabilities, fullEffects } from '../lib/capabilities.ts';
 import { haptics } from '../lib/haptics.ts';
 import { simulateThrow, warmPhysics } from '../dice/physics.ts';
@@ -148,6 +149,7 @@ export function RollPanel({ role }: { role: 'gm' | 'player' }) {
   };
 
   const busy = pending !== null && error === null;
+  useActivity('rolls', role === 'player' && busy ? { kind: 'roll', die: pending.kind } : null);
   // Лоток игрока ниже на низком экране: кнопка «Бросить» остаётся под пальцем без прокрутки.
   const trayH = role === 'gm' ? 'h-[220px]' : 'h-[clamp(200px,40dvh,380px)] [@media(max-height:700px)]:h-[clamp(180px,34dvh,300px)]';
   // «Ввод» в подписи бросает; клавиатура закрывается, чтобы был виден лоток.

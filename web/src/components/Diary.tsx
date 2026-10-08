@@ -6,6 +6,7 @@ import { useMe } from '../lib/me.tsx';
 import { useConnection, useSocketEvent } from '../lib/socket.ts';
 import { load as loadPref, remove as removePref, save as savePref } from '../lib/storage.ts';
 import { rememberReplies } from '../lib/unread.ts';
+import { useActivity } from '../lib/activity.ts';
 import { spring } from '../lib/motion.tsx';
 import { Button, Card, CardTitle, EmptyState, Field, Segmented, Sheet, Textarea } from '../ui/index.ts';
 
@@ -51,6 +52,8 @@ export function Diary({ active = true }: { active?: boolean }) {
   }, [draftKey, draft]);
   // Лист: null — закрыт, 'new' — новая запись, иначе правка записи.
   const [sheet, setSheet] = useState<'new' | DiaryEntryPlayer | null>(null);
+  // Мастеру — только «пишет запись»: ни вид записи, ни новая или правка (запись «Только мне» не выдаёт себя).
+  useActivity('diary', sheet !== null ? { kind: 'diary.write' } : null);
 
   const load = useCallback(async () => {
     const r = await api<{ entries: DiaryEntryPlayer[] }>('GET', '/api/player/diary');
