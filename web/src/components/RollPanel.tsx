@@ -4,6 +4,7 @@ import { addOwn, holdOwn, type FeedRoll } from '../lib/feed.ts';
 import { useMe } from '../lib/me.tsx';
 import { requestRoll } from '../lib/socket.ts';
 import { useActivity } from '../lib/activity.ts';
+import { useMedia } from '../lib/media.ts';
 import { capabilities, fullEffects } from '../lib/capabilities.ts';
 import { haptics } from '../lib/haptics.ts';
 import { simulateThrow, warmPhysics } from '../dice/physics.ts';
@@ -149,6 +150,7 @@ export function RollPanel({ role }: { role: 'gm' | 'player' }) {
   };
 
   const busy = pending !== null && error === null;
+  const mouse = useMedia('(pointer: fine)');
   useActivity('rolls', role === 'player' && busy ? { kind: 'roll', die: pending.kind } : null);
   // Лоток игрока ниже на низком экране: кнопка «Бросить» остаётся под пальцем без прокрутки.
   const trayH = role === 'gm' ? 'h-[220px]' : 'h-[clamp(200px,40dvh,380px)] [@media(max-height:700px)]:h-[clamp(180px,34dvh,300px)]';
@@ -187,7 +189,9 @@ export function RollPanel({ role }: { role: 'gm' | 'player' }) {
             </Suspense>
           )}
           {three && !busy && !shown && (
-            <span className="pointer-events-none absolute top-3 left-4 font-ui text-xs tracking-[.06em] text-muted uppercase">Смахни по лотку, чтобы бросить</span>
+            <span className="pointer-events-none absolute top-3 left-4 font-ui text-xs tracking-[.06em] text-muted uppercase">
+              {mouse ? 'Смахни мышью по лотку или нажми «Бросить»' : 'Смахни по лотку, чтобы бросить'}
+            </span>
           )}
           <div aria-live="polite" className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center">
             {spin !== null && <span className="font-mono text-5xl font-medium tabular-nums text-muted">{spin}</span>}

@@ -14,9 +14,67 @@ export const TAB_ICONS = {
 
 export type TabItem<V extends string> = { value: V; label: string; icon: string; dot?: boolean };
 
-/** Нижняя панель вкладок телефона: подложка под выбранной перетекает, значок «есть новое» появляется пружиной. */
-export function TabBar<V extends string>({ value, onChange, items, controls }: { value: V; onChange: (v: V) => void; items: TabItem<V>[]; controls?: (v: V) => string }) {
+/**
+ * Панель вкладок. bottom — телефон: внизу, значок над подписью. side — компьютер: закладки колонкой слева,
+ * с номером клавиши. Подложка под выбранной перетекает, значок «есть новое» появляется пружиной.
+ */
+export function TabBar<V extends string>({
+  value,
+  onChange,
+  items,
+  controls,
+  variant = 'bottom',
+}: {
+  value: V;
+  onChange: (v: V) => void;
+  items: TabItem<V>[];
+  controls?: (v: V) => string;
+  variant?: 'bottom' | 'side';
+}) {
   const group = useId();
+  if (variant === 'side')
+    return (
+      <nav aria-label="Разделы" className="zg-tabbar-side grid content-start gap-1">
+        {items.map((t, i) => {
+          const on = t.value === value;
+          return (
+            <button
+              key={t.value}
+              type="button"
+              aria-current={on ? 'page' : undefined}
+              aria-controls={controls?.(t.value)}
+              onClick={() => onChange(t.value)}
+              className={cn(
+                'relative flex min-h-11 cursor-pointer items-center gap-3 rounded-control border-0 bg-transparent px-3 text-left font-ui text-[15px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-accent',
+                on ? 'text-accent' : 'text-text hover:bg-surface-2',
+              )}
+            >
+              {on && <m.span layoutId={group} transition={spring.snappy} className="absolute inset-0 rounded-control bg-accent-soft" />}
+              <svg viewBox="0 0 24 24" aria-hidden="true" className="relative size-5 shrink-0 fill-none stroke-current stroke-[1.8] [stroke-linecap:round] [stroke-linejoin:round]">
+                <path d={t.icon} />
+              </svg>
+              <span className="relative grow">{t.label}</span>
+              <AnimatePresence>
+                {t.dot && (
+                  <m.i
+                    key="dot"
+                    aria-label="есть новое"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    exit={{ scale: 0 }}
+                    transition={spring.snappy}
+                    className="relative size-2.5 rounded-full bg-danger"
+                  />
+                )}
+              </AnimatePresence>
+              <kbd aria-hidden="true" className="relative font-mono text-xs text-muted">
+                {i + 1}
+              </kbd>
+            </button>
+          );
+        })}
+      </nav>
+    );
   return (
     <nav
       aria-label="Разделы"

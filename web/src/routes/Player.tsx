@@ -16,15 +16,19 @@ import { capabilities } from '../lib/capabilities.ts';
 import { resolveTheme, themeVariant } from '../lib/cardTheme/index.ts';
 import { useScheme } from '../lib/colorScheme.ts';
 import { ThemeChoice } from '../components/ThemeChoice.tsx';
-import { TAB_ICONS, TabBar } from '../components/TabBar.tsx';
+import { TAB_ICONS, TabBar, type TabItem } from '../components/TabBar.tsx';
+import { DESKTOP_QUERY, PHONE_QUERY, useMedia } from '../lib/media.ts';
+import { useHotkeys } from '../lib/hotkeys.ts';
+import { cn } from '../lib/cn.ts';
 import { Card, CardTitle, EmptyState, Segmented, Skeleton } from '../ui/index.ts';
 import { useSkin } from '../lib/cardTheme/skin.ts';
 import { noteCardChange, noteDiaryChange, rememberCard, setActiveTab, useUnread } from '../lib/unread.ts';
 
 export function Player() {
   useWakeLock();
+  const desktop = useMedia(DESKTOP_QUERY);
   return (
-    <RoleScreen role="player" fill>
+    <RoleScreen role="player" fill wide={desktop}>
       <PlayerTabs />
     </RoleScreen>
   );
@@ -75,7 +79,8 @@ const TABS: Tab[] = ['rolls', 'card', 'figure', 'diary', 'map'];
 const isTab = (v: string | null | undefined): v is Tab => TABS.includes(v as Tab);
 
 /**
- * Вкладки игрока: пейджер на scroll-snap, свайп или панель внизу. У каждой вкладки своя прокрутка.
+ * Вкладки игрока. Телефон — пейджер на scroll-snap, свайп или панель внизу; у каждой вкладки своя прокрутка.
+ * Компьютер — «разворот»: разделы закладками слева, открытый раздел в середине, лоток и лента справа.
  * Открытая сначала вкладка монтируется сразу, остальные — чуть позже и дальше живут (свайп не упирается в пустоту).
  */
 function PlayerTabs() {
@@ -94,6 +99,7 @@ function PlayerTabs() {
     reportTab(tab);
     savePref('zg:player:tab', tab);
   }, [tab]);
+  useEffect(() => mount(tab), [tab]);
   useEffect(
     () => () => {
       setActiveTab(null);
@@ -101,7 +107,73 @@ function PlayerTabs() {
     },
     [],
   );
+  // Клавиши 1–5 — разделы (на компьютере; на телефоне с клавиатурой тоже).
+  const pickRef = useRef<(t: Tab) => void>(setTab);
+  useHotkeys(Object.fromEntries(TABS.map((t, i) => [String(i + 1), () => pickRef.current(t)])));
 
+  const desktop = useMedia(DESKTOP_QUERY);
+  // Карта на телефоне — на весь экран: шапка прячется, в альбомной ориентации вкладки уходят в узкую колонку слева.
+  const phone = useMedia(PHONE_QUERY);
+  const mapFull = tab === 'map' && phone && !desktop;
+  useEffect(() => {
+    document.documentElement.toggleAttribute('data-map-full', mapFull);
+    return () => document.documentElement.removeAttribute('data-map-full');
+  }, [mapFull]);
+  const unread = useUnread();
+  // Тема экрана: выбор игрока на этом устройстве, иначе тема персонажа; «День» / «Ночь» — её вариант.
+  const { me } = useMe();
+  const base = usePlayerSkin();
+  const choiceKey = `zg:player:cardTheme:${me?.member.id ?? ''}`;
+  const [choice, setChoice] = useState(() => loadPref(choiceKey) ?? '');
+  const pickTheme = (k: string) => {
+    setChoice(k);
+    savePref(choiceKey, k);
+  };
+  const scheme = useScheme();
+  const theme = themeVariant(choice || base, scheme);
+  useSkin(theme);
+  // Значки ставятся здесь, а не во вкладках: вкладки слушают события, только чтобы обновить себя.
+  useSocketEvent('diary:changed', ({ entry }) => noteDiaryChange(entry));
+  useSocketEvent('character:updated', ({ character }) => noteCardChange(character));
+
+  const content: Record<Exclude<Tab, 'rolls'>, ReactNode> = {
+    card: <PlayerHome active={tab === 'card'} theme={theme} base={base} choice={choice} onChoice={pickTheme} />,
+    figure: (
+      <Suspense fallback={<p className="muted">Загрузка…</p>}>
+        <PlayerFigure />
+      </Suspense>
+    ),
+    diary: <Diary active={tab === 'diary'} />,
+    map: (
+      <Suspense fallback={<p className="muted">Загрузка карты…</p>}>
+        <PlayerMap active={tab === 'map'} full={mapFull} />
+      </Suspense>
+    ),
+  };
+  const items: TabItem<Tab>[] = [
+    { value: 'rolls', label: LABELS.rolls, icon: TAB_ICONS.rolls },
+    { value: 'card', label: LABELS.card, icon: TAB_ICONS.card, dot: unread.card },
+    { value: 'figure', label: LABELS.figure, icon: TAB_ICONS.figure },
+    { value: 'diary', label: LABELS.diary, icon: TAB_ICONS.diary, dot: unread.diary },
+    { value: 'map', label: LABELS.map, icon: TAB_ICONS.map },
+  ];
+  const mount = useCallback((t: Tab) => setMounted((m) => (m.has(t) ? m : new Set([...m, t]))), []);
+  const props = { tab, setTab, mounted, mount, content, items, pickRef };
+  return desktop ? <Spread {...props} /> : <Pager {...props} />;
+}
+
+type LayoutProps = {
+  tab: Tab;
+  setTab: (t: Tab) => void;
+  mounted: ReadonlySet<Tab>;
+  mount: (t: Tab) => void;
+  content: Record<Exclude<Tab, 'rolls'>, ReactNode>;
+  items: TabItem<Tab>[];
+  pickRef: { current: (t: Tab) => void };
+};
+
+/** Телефон: пейджер на scroll-snap и панель вкладок внизу. */
+function Pager({ tab, setTab, mounted, mount, content, items, pickRef }: LayoutProps) {
   const pager = useRef<HTMLDivElement>(null);
   const tabRef = useRef(tab);
   tabRef.current = tab;
@@ -123,7 +195,6 @@ function PlayerTabs() {
           if (target.current && target.current !== t) continue;
           target.current = null;
           setTab(t);
-          setMounted((m) => (m.has(t) ? m : new Set([...m, t])));
         }
       },
       { root: el, threshold: 0.6 },
@@ -134,15 +205,16 @@ function PlayerTabs() {
   const pick = (t: Tab) => {
     const el = pager.current;
     if (!el) return;
-    if (t === tab) {
+    if (t === tabRef.current) {
       // повторное нажатие — к началу вкладки
       el.querySelector<HTMLElement>(`[data-tab="${t}"]`)?.scrollTo({ top: 0, behavior: capabilities.reducedMotion() ? 'auto' : 'smooth' });
       return;
     }
     target.current = t;
-    setMounted((m) => (m.has(t) ? m : new Set([...m, t])));
+    mount(t); // видно уже по пути, а не после прокрутки
     el.scrollTo({ left: TABS.indexOf(t) * el.clientWidth, behavior: capabilities.reducedMotion() ? 'auto' : 'smooth' });
   };
+  pickRef.current = pick;
   // Поворот телефона: остаться на своей вкладке.
   useEffect(() => {
     const el = pager.current;
@@ -153,29 +225,6 @@ function PlayerTabs() {
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-  // Карта на телефоне — на весь экран: шапка прячется, в альбомной ориентации вкладки уходят в узкую колонку слева.
-  const phone = usePhoneLayout();
-  const mapFull = tab === 'map' && phone;
-  useEffect(() => {
-    document.documentElement.toggleAttribute('data-map-full', mapFull);
-    return () => document.documentElement.removeAttribute('data-map-full');
-  }, [mapFull]);
-  const unread = useUnread();
-  // Тема экрана: выбор игрока на этом устройстве, иначе тема персонажа; «День» / «Ночь» — её вариант.
-  const { me } = useMe();
-  const base = usePlayerSkin();
-  const choiceKey = `zg:player:cardTheme:${me?.member.id ?? ''}`;
-  const [choice, setChoice] = useState(() => loadPref(choiceKey) ?? '');
-  const pickTheme = (k: string) => {
-    setChoice(k);
-    savePref(choiceKey, k);
-  };
-  const scheme = useScheme();
-  const theme = themeVariant(choice || base, scheme);
-  useSkin(theme);
-  // Значки ставятся здесь, а не во вкладках: вкладки слушают события, только чтобы обновить себя.
-  useSocketEvent('diary:changed', ({ entry }) => noteDiaryChange(entry));
-  useSocketEvent('character:updated', ({ character }) => noteCardChange(character));
 
   const pane = (t: Tab, children: ReactNode) => (
     <section
@@ -202,34 +251,54 @@ function PlayerTabs() {
             <FeedCard />
           </>,
         )}
-        {pane('card', <PlayerHome active={tab === 'card'} theme={theme} base={base} choice={choice} onChoice={pickTheme} />)}
-        {pane(
-          'figure',
-          <Suspense fallback={<p className="muted">Загрузка…</p>}>
-            <PlayerFigure />
-          </Suspense>,
-        )}
-        {pane('diary', <Diary active={tab === 'diary'} />)}
-        {pane(
-          'map',
-          <Suspense fallback={<p className="muted">Загрузка карты…</p>}>
-            <PlayerMap active={tab === 'map'} full={mapFull} />
-          </Suspense>,
-        )}
+        {pane('card', content.card)}
+        {pane('figure', content.figure)}
+        {pane('diary', content.diary)}
+        {pane('map', content.map)}
       </div>
-      <TabBar
-        value={tab}
-        onChange={pick}
-        controls={(v) => `pane-${v}`}
-        items={[
-          { value: 'rolls', label: LABELS.rolls, icon: TAB_ICONS.rolls },
-          { value: 'card', label: LABELS.card, icon: TAB_ICONS.card, dot: unread.card },
-          { value: 'figure', label: LABELS.figure, icon: TAB_ICONS.figure },
-          { value: 'diary', label: LABELS.diary, icon: TAB_ICONS.diary, dot: unread.diary },
-          { value: 'map', label: LABELS.map, icon: TAB_ICONS.map },
-        ]}
-      />
+      <TabBar value={tab} onChange={pick} controls={(v) => `pane-${v}`} items={items} />
     </>
+  );
+}
+
+/**
+ * Компьютер: «разворот». Слева — разделы закладками, в середине — открытый раздел, справа — лоток и лента.
+ * Лоток живёт в правой колонке всё время (3D не пересоздаётся при смене раздела); на «Бросках» в середине — лента крупно.
+ * На «Карте» правая колонка прячется — карта на всю ширину.
+ */
+function Spread({ tab, setTab, mounted, content, items, pickRef }: LayoutProps) {
+  const pick = (t: Tab) => {
+    if (t === tab) document.getElementById(`pane-${t}`)?.scrollTo({ top: 0, behavior: capabilities.reducedMotion() ? 'auto' : 'smooth' });
+    else setTab(t);
+  };
+  pickRef.current = pick;
+  const wideMap = tab === 'map';
+  const pane = (t: Tab, children: ReactNode) => (
+    <section
+      key={t}
+      id={`pane-${t}`}
+      aria-label={LABELS[t]}
+      hidden={t !== tab}
+      className="h-full min-h-0 flex-col gap-4 overflow-y-auto overscroll-y-contain pr-1 pb-6 [&:not([hidden])]:flex"
+    >
+      {mounted.has(t) && children}
+    </section>
+  );
+  return (
+    <div className={cn('grid min-h-0 flex-1 gap-6 pt-1', wideMap ? 'grid-cols-[200px_minmax(0,1fr)]' : 'grid-cols-[200px_minmax(0,1fr)_minmax(320px,380px)]')}>
+      <TabBar variant="side" value={tab} onChange={pick} controls={(v) => `pane-${v}`} items={items} />
+      <div className="min-h-0">
+        {pane('rolls', <FeedCard />)}
+        {pane('card', content.card)}
+        {pane('figure', content.figure)}
+        {pane('diary', content.diary)}
+        {pane('map', content.map)}
+      </div>
+      <aside aria-label="Броски" className={cn('min-h-0 flex-col gap-4 overflow-y-auto overscroll-y-contain pb-6', wideMap ? 'hidden' : 'flex')}>
+        <RollPanel role="player" />
+        {tab !== 'rolls' && <FeedCard />}
+      </aside>
+    </div>
   );
 }
 
@@ -277,18 +346,4 @@ function usePlayerSkin(): string {
   }, [take]);
   useSocketEvent('character:updated', ({ character }) => take(character));
   return skin;
-}
-
-/** Телефонная раскладка: палец вместо мыши или узкое окно (в т. ч. телефон в альбомной ориентации — по высоте). */
-function usePhoneLayout(): boolean {
-  const q = '(pointer: coarse), (max-width: 760px), (max-height: 520px)';
-  const [on, setOn] = useState(() => typeof window !== 'undefined' && !!window.matchMedia?.(q).matches);
-  useEffect(() => {
-    const m = window.matchMedia?.(q);
-    if (!m) return;
-    const upd = () => setOn(m.matches);
-    m.addEventListener('change', upd);
-    return () => m.removeEventListener('change', upd);
-  }, []);
-  return on;
 }

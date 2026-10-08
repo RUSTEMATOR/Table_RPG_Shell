@@ -14,7 +14,8 @@ let lastSent: string | null = null;
 let timer: number | null = null;
 
 function current(): PlayerActivity {
-  const a = actions.findLast((x) => x.tab === tab);
+  // бросок в полёте виден с любого раздела: на компьютере лоток всегда справа
+  const a = actions.findLast((x) => x.tab === tab || x.action.kind === 'roll');
   return { tab, visible, action: a?.action ?? null };
 }
 
