@@ -18,6 +18,8 @@ render() {
       -e "s|{{NODE_BIN}}|$NODE_BIN|g" -e "s|{{NODE_DIR}}|$(dirname "$NODE_BIN")|g" -e "s|{{NGINX_BIN}}|$NGINX_BIN|g" "$1"
 }
 for f in "$templates"/*; do render "$f" > "$out/$(basename "$f")"; done
+# Наблюдатель за веткой deploy живёт в etc (не в релизе): его не заменит выкладка, которую он сам запускает.
+cp "$here/deploy-watch.sh" "$here/common.sh" "$out/"
 for f in "$out"/*.plist; do plutil -lint "$f" >/dev/null; done
 
 # Списки адресов Cloudflare нужны nginx до первого запуска.
@@ -46,7 +48,7 @@ cat <<MSG
   ZG_ENV_FILE="$ENV_FILE" "$NODE_BIN" "$ZG_ROOT/current/server/dist/setup.mjs"
 
 Запуск служб:
-  for s in server nginx backup backup-daily cfips logs; do sudo launchctl bootstrap system /Library/LaunchDaemons/com.zelenogorye.\$s.plist; done
+  for s in server nginx backup backup-daily cfips logs deploy-watch; do sudo launchctl bootstrap system /Library/LaunchDaemons/com.zelenogorye.\$s.plist; done
   # DDNS — только если внешний IP не статический:
   sudo launchctl bootstrap system /Library/LaunchDaemons/com.zelenogorye.ddns.plist
 

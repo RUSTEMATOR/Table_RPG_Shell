@@ -1,0 +1,40 @@
+# Кнопка «Выложить»: проверка типов и сборка на GitHub, затем ветка deploy = выбранный коммит.
+# Mac mini раз в минуту смотрит ветку deploy (ops/scripts/deploy-watch.sh) и выкладывает новый коммит сам.
+# Запуск: Actions → «Выложить» → Run workflow (с телефона тоже). Без кнопки: git push origin main:deploy
+name: Выложить
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Ветка или коммит для выкладки
+        default: main
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm run build
+      - name: Ветка deploy → этот коммит
+        run: |
+          git push origin "HEAD:refs/heads/deploy" --force
+          echo "Выкладывается $(git rev-parse --short HEAD). Mac mini заберёт его в течение минуты; лог — ~/srv/zelenogorye/logs/deploy.log" >> "$GITHUB_STEP_SUMMARY"
