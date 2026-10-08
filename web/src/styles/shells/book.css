@@ -1,0 +1,307 @@
+/* Оболочка «Книга» (этап 38): раскрытая книга на столе. Темы: «Зеленогорье» (и мастер), Пергамент, Письмо из школы,
+   Медальон, Созвездия. Стол — тёмный оттенок акцента темы, страницы — панель темы с зерном набора, закладки-ленты,
+   подписи капителью, заголовки шрифтом темы. Всё на переменных темы (--ct-*). */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+SC:wght@500;700&family=Cormorant+Garamond:ital,wght@1,500&display=swap');
+
+html:root[data-shell='book'][data-skin] {
+  --sh-desk: color-mix(in oklab, var(--ct-accent) 26%, #0d100d);
+  --sh-page: var(--ct-panel);
+  --sh-gold: var(--ct-accent2, var(--ct-accent));
+  --sh-sc: 'Cormorant SC', var(--ct-display), serif;
+  --sh-it: 'Cormorant Garamond', var(--ct-body), serif;
+  background-color: var(--sh-desk);
+  background-image: radial-gradient(ellipse at 50% 30%, rgb(255 255 255 / 0.05), rgb(0 0 0 / 0.38) 80%), var(--pk-tex, none);
+  background-size:
+    auto,
+    512px 512px;
+  background-blend-mode: normal, soft-light;
+  background-attachment: fixed;
+}
+
+/* Шапка — на столе: светлый текст */
+html[data-shell='book'][data-skin] .topbar {
+  background: transparent;
+  color: color-mix(in oklab, var(--sh-page) 92%, #fff);
+}
+html[data-shell='book'][data-skin] .topbar .muted {
+  color: color-mix(in oklab, var(--sh-page) 70%, var(--sh-desk));
+  font-family: var(--sh-sc);
+  letter-spacing: 0.06em;
+}
+html[data-shell='book'][data-skin] .topbar :is(strong, button, .zg-btn) {
+  color: inherit;
+}
+html[data-shell='book'][data-skin] .topbar .zg-btn {
+  background: transparent;
+  color: inherit;
+  border-color: color-mix(in oklab, var(--sh-page) 35%, transparent);
+}
+
+/* Панели — листы бумаги на столе */
+html[data-shell='book'][data-skin] .card {
+  background-color: var(--sh-page);
+  background-image: var(--pk-tex, none);
+  background-size: 512px 512px;
+  background-blend-mode: soft-light;
+  border: 0;
+  border-radius: 3px;
+  box-shadow:
+    0 1px 0 rgb(0 0 0 / 0.08),
+    0 14px 30px -10px rgb(0 0 0 / 0.55),
+    inset 0 0 0 1px color-mix(in oklab, var(--sh-gold) 30%, transparent);
+}
+html[data-shell='book'][data-skin] .card::before,
+html[data-shell='book'][data-skin] .card::after {
+  display: none;
+}
+html[data-shell='book'][data-skin] .card-title {
+  font-family: var(--ct-name);
+  letter-spacing: 0.01em;
+}
+
+/* Разворот (компьютер): середина и правая колонка — две страницы книги, корешок между ними */
+html[data-shell='book'][data-skin] .zg-spread {
+  grid-template-areas: 'nav nav' 'main aside';
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 400px);
+  gap: 0;
+  filter: drop-shadow(0 18px 28px rgb(0 0 0 / 0.5));
+}
+html[data-shell='book'][data-skin] .zg-spread.zg-spread-wide {
+  grid-template-areas: 'nav' 'main';
+  grid-template-columns: minmax(0, 1fr);
+}
+html[data-shell='book'][data-skin] .zg-spread > .zg-main,
+html[data-shell='book'][data-skin] .zg-spread > .zg-aside {
+  background-color: var(--sh-page);
+  background-image: var(--pk-tex, none);
+  background-size: 512px 512px;
+  background-blend-mode: soft-light;
+  padding: 28px 34px 0;
+}
+html[data-shell='book'][data-skin] .zg-spread > .zg-main {
+  border-radius: 4px 0 0 4px;
+  box-shadow:
+    inset -40px 0 34px -30px rgb(0 0 0 / 0.38),
+    inset 0 0 0 1px color-mix(in oklab, var(--sh-gold) 25%, transparent);
+}
+html[data-shell='book'][data-skin] .zg-spread > .zg-aside {
+  border-radius: 0 4px 4px 0;
+  box-shadow:
+    inset 40px 0 34px -30px rgb(0 0 0 / 0.38),
+    inset 0 0 0 1px color-mix(in oklab, var(--sh-gold) 25%, transparent);
+}
+html[data-shell='book'][data-skin] .zg-spread-wide > .zg-main {
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--sh-gold) 25%, transparent);
+}
+/* на странице книги панели — разделы текста, не отдельные листы */
+html[data-shell='book'][data-skin] :is(.zg-main, .zg-aside, .zg-pager) .card {
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+  padding-inline: 0;
+  border-bottom: 1px solid color-mix(in oklab, var(--sh-gold) 35%, transparent);
+}
+
+/* Закладки-ленты над книгой */
+html[data-shell='book'][data-skin] .zg-spread > .zg-tabbar-side {
+  display: flex;
+  gap: 10px;
+  padding: 0 0 0 64px;
+  margin-bottom: -6px;
+  position: relative;
+  z-index: 2;
+  filter: drop-shadow(0 4px 4px rgb(0 0 0 / 0.35));
+}
+html[data-shell='book'][data-skin] .zg-tabbar-side .zg-tab {
+  flex-direction: column;
+  justify-content: flex-start;
+  width: 104px;
+  min-height: 0;
+  height: 62px;
+  padding: 16px 6px 0;
+  gap: 0;
+  border-radius: 0;
+  background: var(--ct-accent);
+  color: var(--ct-on-link, #fff);
+  font-family: var(--sh-sc);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-align: center;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 84%, 0 100%);
+  transition: height 0.2s;
+}
+html[data-shell='book'][data-skin] .zg-tabbar-side .zg-tab > svg,
+html[data-shell='book'][data-skin] .zg-tabbar-side .zg-tab > kbd,
+html[data-shell='book'][data-skin] .zg-tabbar-side .zg-tab > span.absolute {
+  display: none;
+}
+html[data-shell='book'][data-skin] .zg-tabbar-side .zg-tab:hover {
+  height: 70px;
+  background: var(--ct-accent);
+}
+html[data-shell='book'][data-skin] .zg-tabbar-side .zg-tab[aria-current='page'] {
+  height: 84px;
+  padding-top: 26px;
+  background: var(--sh-gold);
+  color: color-mix(in oklab, var(--sh-page) 95%, #fff);
+}
+
+/* Телефон: страница на весь экран, ленты внизу на столе */
+html[data-shell='book'][data-skin] .zg-pager > section {
+  background-color: var(--sh-page);
+  background-image: var(--pk-tex, none);
+  background-size: 512px 512px;
+  background-blend-mode: soft-light;
+}
+html[data-shell='book'][data-skin] .zg-tabbar {
+  background: var(--sh-desk);
+  border-top: 0;
+  padding-top: 0;
+}
+html[data-shell='book'][data-skin] .zg-tabbar .zg-tab {
+  color: color-mix(in oklab, var(--sh-page) 80%, var(--sh-desk));
+  font-family: var(--sh-sc);
+  font-size: 13px;
+  letter-spacing: 0.03em;
+}
+html[data-shell='book'][data-skin] .zg-tabbar .zg-tab span.absolute {
+  display: none;
+}
+html[data-shell='book'][data-skin] .zg-tabbar .zg-tab[aria-current='page'] {
+  color: color-mix(in oklab, var(--sh-page) 95%, #fff);
+  background: var(--sh-gold);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 88%, 0 100%);
+  margin: 0 4px;
+  padding-bottom: 8px;
+}
+
+/* Кнопки, выбор, поля — чернила и капитель */
+html[data-shell='book'][data-skin] .zg-btn {
+  font-family: var(--sh-sc);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  border-radius: 3px;
+}
+html[data-shell='book'][data-skin] .zg-btn-primary {
+  background: var(--ct-accent);
+  border-color: var(--ct-accent);
+  box-shadow:
+    inset 0 0 0 2px var(--ct-accent),
+    inset 0 0 0 3px color-mix(in oklab, var(--sh-page) 55%, transparent);
+}
+html[data-shell='book'][data-skin] .zg-btn-default {
+  background: transparent;
+  border-color: color-mix(in oklab, var(--sh-gold) 70%, transparent);
+}
+html[data-shell='book'][data-skin] .zg-seg {
+  background: transparent;
+  border-color: color-mix(in oklab, var(--sh-gold) 70%, transparent);
+  border-radius: 3px;
+  padding: 0;
+  gap: 0;
+}
+html[data-shell='book'][data-skin] .zg-seg-item {
+  font-family: var(--sh-sc);
+  font-size: 16px;
+  font-weight: 700;
+  border-radius: 0;
+}
+html[data-shell='book'][data-skin] .zg-seg-ind {
+  border-radius: 0;
+}
+html[data-shell='book'][data-skin] .zg-field {
+  background: transparent;
+  border-width: 0 0 1px;
+  border-radius: 0;
+  border-color: color-mix(in oklab, var(--sh-gold) 80%, transparent);
+  padding-inline: 2px;
+}
+html[data-shell='book'][data-skin] .zg-field::placeholder {
+  font-family: var(--sh-it);
+  font-style: italic;
+  font-size: 17px;
+}
+html[data-shell='book'][data-skin] .zg-badge {
+  background: transparent;
+  color: var(--sh-gold);
+  font-family: var(--sh-sc);
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  text-transform: lowercase;
+  padding-inline: 0;
+}
+
+/* Лоток — гравированное блюдо */
+html[data-shell='book'][data-skin] .zg-tray {
+  border: 0;
+  border-radius: 46% / 40%;
+  background: radial-gradient(
+    circle at 50% 42%,
+    color-mix(in oklab, var(--sh-page) 88%, #fff) 0%,
+    color-mix(in oklab, var(--sh-page) 90%, #000) 62%,
+    color-mix(in oklab, var(--sh-page) 78%, #000) 100%
+  );
+  box-shadow:
+    inset 0 6px 18px rgb(0 0 0 / 0.3),
+    0 0 0 1px var(--sh-gold),
+    0 0 0 6px var(--sh-page),
+    0 0 0 7px color-mix(in oklab, var(--sh-gold) 60%, transparent);
+  margin: 10px 8px;
+}
+html[data-shell='book'][data-skin] .zg-tray-hint {
+  left: 0;
+  right: 0;
+  top: auto;
+  bottom: 18px;
+  text-align: center;
+  text-transform: none;
+  letter-spacing: 0;
+  font-family: var(--sh-it);
+  font-style: italic;
+  font-size: 15px;
+}
+html[data-shell='book'][data-skin] .zg-roll-result {
+  border-color: var(--sh-gold);
+  font-family: var(--ct-name);
+}
+
+/* Лента — строки книги */
+html[data-shell='book'][data-skin] .feed-row {
+  border-color: color-mix(in oklab, var(--sh-gold) 30%, transparent);
+}
+html[data-shell='book'][data-skin] .feed-value {
+  font-family: var(--ct-name);
+  background: transparent;
+  color: var(--sh-gold);
+  font-size: 1.5rem;
+}
+
+/* Листы и диалоги — тоже бумага */
+html[data-shell='book'][data-skin] :is(.zg-sheet, .zg-dialog) {
+  background-color: var(--sh-page);
+  background-image: var(--pk-tex, none);
+  background-size: 512px 512px;
+  background-blend-mode: soft-light;
+}
+
+/* Навигация мастера — ленты на столе */
+html[data-shell='book'][data-skin] nav[aria-label='Разделы мастера'] a {
+  font-family: var(--sh-sc);
+  font-size: 16px;
+  letter-spacing: 0.04em;
+  color: color-mix(in oklab, var(--sh-page) 85%, var(--sh-desk));
+}
+html[data-shell='book'][data-skin] nav[aria-label='Разделы мастера'] a[aria-current='page'] {
+  background: var(--sh-gold);
+  color: color-mix(in oklab, var(--sh-page) 96%, #fff);
+}
+html[data-shell='book'][data-skin] nav[aria-label='Разделы мастера'] a:hover:not([aria-current='page']) {
+  background: rgb(255 255 255 / 0.08);
+}
+html[data-shell='book'][data-skin] nav[aria-label='Разделы мастера'] p {
+  color: color-mix(in oklab, var(--sh-page) 60%, var(--sh-desk));
+}

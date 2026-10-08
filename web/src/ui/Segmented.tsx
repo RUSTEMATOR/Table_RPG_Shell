@@ -7,7 +7,19 @@ import { spring } from '../lib/motion.tsx';
 export type Option<V extends string> = { value: V; label: string };
 
 /** Выбор одного из 2–4 вариантов на месте (d10/d20, кто видит, «Все / Мои»). Индикатор перетекает. */
-export function Segmented<V extends string>({ value, onChange, options, label, className }: { value: V; onChange: (v: V) => void; options: Option<V>[]; label: string; className?: string }) {
+export function Segmented<V extends string>({
+  value,
+  onChange,
+  options,
+  label,
+  className,
+}: {
+  value: V;
+  onChange: (v: V) => void;
+  options: Option<V>[];
+  label: string;
+  className?: string;
+}) {
   const group = useId();
   return (
     <ToggleGroup.Root
@@ -15,15 +27,15 @@ export function Segmented<V extends string>({ value, onChange, options, label, c
       value={value}
       onValueChange={(v) => v && onChange(v as V)}
       aria-label={label}
-      className={cn('inline-grid auto-cols-fr grid-flow-col gap-0.5 rounded-[9px] border border-solid border-border bg-surface-2 p-[3px]', className)}
+      className={cn('zg-seg inline-grid auto-cols-fr grid-flow-col gap-0.5 rounded-[9px] border border-solid border-border bg-surface-2 p-[3px]', className)}
     >
       {options.map((o) => (
         <ToggleGroup.Item
           key={o.value}
           value={o.value}
-          className="relative min-h-[38px] cursor-pointer rounded-control border-0 bg-transparent px-4 font-ui text-sm font-semibold text-muted transition-colors data-[state=on]:text-on-primary focus-visible:outline-2 focus-visible:outline-accent"
+          className="zg-seg-item relative min-h-[38px] cursor-pointer rounded-control border-0 bg-transparent px-4 font-ui text-sm font-semibold text-muted transition-colors data-[state=on]:text-on-primary focus-visible:outline-2 focus-visible:outline-accent"
         >
-          {value === o.value && <m.span layoutId={group} transition={spring.snappy} className="absolute inset-0 rounded-control bg-primary" />}
+          {value === o.value && <m.span layoutId={group} transition={spring.snappy} className="zg-seg-ind absolute inset-0 rounded-control bg-primary" />}
           <span className="relative">{o.label}</span>
         </ToggleGroup.Item>
       ))}
@@ -48,7 +60,7 @@ export function Tabs<V extends string>({
   const group = useId();
   return (
     <T.Root value={value} onValueChange={(v) => onChange(v as V)} className="grid gap-4">
-      <T.List aria-label={label} className="flex gap-1 overflow-x-auto border-b border-solid border-border [scrollbar-width:none]">
+      <T.List aria-label={label} className="zg-tabs flex gap-1 overflow-x-auto border-b border-solid border-border [scrollbar-width:none]">
         {tabs.map((t) => (
           <T.Trigger
             key={t.value}

@@ -7,8 +7,7 @@ export const Dialog = D.Root;
 export const DialogTrigger = D.Trigger;
 export const DialogClose = D.Close;
 
-export const overlayClass =
-  'fixed inset-0 z-50 bg-[rgba(20,24,20,.5)] backdrop-blur-[2px] transition-opacity duration-200 starting:opacity-0 motion-reduce:transition-none';
+export const overlayClass = 'fixed inset-0 z-50 bg-[rgba(20,24,20,.5)] backdrop-blur-[2px] transition-opacity duration-200 starting:opacity-0 motion-reduce:transition-none';
 
 export function DialogContent({ title, description, children, className }: { title: ReactNode; description?: ReactNode; children?: ReactNode; className?: string }) {
   return (
@@ -16,6 +15,7 @@ export function DialogContent({ title, description, children, className }: { tit
       <D.Overlay className={overlayClass} />
       <D.Content
         className={cn(
+          'zg-dialog',
           'fixed left-1/2 top-1/2 z-50 grid w-[min(440px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 gap-3 rounded-sheet border border-solid border-border bg-surface p-6 text-text shadow-[0_24px_64px_rgba(20,26,21,.28)] transition-[opacity,scale] duration-200 starting:scale-95 starting:opacity-0 focus:outline-none motion-reduce:transition-none',
           className,
         )}

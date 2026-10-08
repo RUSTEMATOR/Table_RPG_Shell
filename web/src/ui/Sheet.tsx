@@ -41,7 +41,7 @@ export function Sheet({
               animate={{ x: 0 }}
               transition={spring.sheet}
               className={cn(
-                'fixed inset-y-0 right-0 z-50 grid w-[min(520px,100vw)] content-start gap-3 overflow-y-auto overscroll-contain rounded-l-sheet bg-surface px-6 pt-6 pb-8 text-text shadow-[-8px_0_32px_rgba(20,26,21,.18)] focus:outline-none',
+                'zg-sheet fixed inset-y-0 right-0 z-50 grid w-[min(520px,100vw)] content-start gap-3 overflow-y-auto overscroll-contain rounded-l-sheet bg-surface px-6 pt-6 pb-8 text-text shadow-[-8px_0_32px_rgba(20,26,21,.18)] focus:outline-none',
                 className,
               )}
             >
@@ -82,7 +82,7 @@ export function Sheet({
               if (info.offset.y > 110 || info.velocity.y > 600) onOpenChange(false);
             }}
             className={cn(
-              'fixed inset-x-0 bottom-0 z-50 mx-auto grid max-h-[88dvh] w-full max-w-[560px] gap-3 overflow-y-auto overscroll-contain rounded-t-sheet bg-surface px-4 pt-2.5 pb-[calc(24px+env(safe-area-inset-bottom,0px))] text-text shadow-[0_-8px_32px_rgba(20,26,21,.18)] focus:outline-none',
+              'zg-sheet fixed inset-x-0 bottom-0 z-50 mx-auto grid max-h-[88dvh] w-full max-w-[560px] gap-3 overflow-y-auto overscroll-contain rounded-t-sheet bg-surface px-4 pt-2.5 pb-[calc(24px+env(safe-area-inset-bottom,0px))] text-text shadow-[0_-8px_32px_rgba(20,26,21,.18)] focus:outline-none',
               className,
             )}
           >

@@ -45,7 +45,7 @@ export function TabBar<V extends string>({
               aria-controls={controls?.(t.value)}
               onClick={() => onChange(t.value)}
               className={cn(
-                'relative flex min-h-11 cursor-pointer items-center gap-3 rounded-control border-0 bg-transparent px-3 text-left font-ui text-[15px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-accent',
+                'zg-tab relative flex min-h-11 cursor-pointer items-center gap-3 rounded-control border-0 bg-transparent px-3 text-left font-ui text-[15px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-accent',
                 on ? 'text-accent' : 'text-text hover:bg-surface-2',
               )}
             >
@@ -90,7 +90,7 @@ export function TabBar<V extends string>({
             aria-controls={controls?.(t.value)}
             onClick={() => onChange(t.value)}
             className={cn(
-              'relative flex min-h-[54px] cursor-pointer flex-col items-center justify-center gap-0.5 border-0 bg-transparent font-ui text-xs font-semibold tracking-[.01em] transition-colors focus-visible:outline-2 focus-visible:outline-accent',
+              'zg-tab relative flex min-h-[54px] cursor-pointer flex-col items-center justify-center gap-0.5 border-0 bg-transparent font-ui text-xs font-semibold tracking-[.01em] transition-colors focus-visible:outline-2 focus-visible:outline-accent',
               on ? 'text-accent' : 'text-muted',
             )}
           >

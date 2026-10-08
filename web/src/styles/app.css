@@ -532,4 +532,21 @@
     gap: 12px;
     margin-left: 10px;
   }
+
+  /* Разворот игрока (этап 37): области — чтобы оболочка (этап 38) могла переставить навигацию */
+  .zg-spread {
+    grid-template-areas: "nav main aside";
+  }
+  .zg-spread.zg-spread-wide {
+    grid-template-areas: "nav main";
+  }
+  .zg-spread > .zg-tabbar-side {
+    grid-area: nav;
+  }
+  .zg-spread > .zg-main {
+    grid-area: main;
+  }
+  .zg-spread > .zg-aside {
+    grid-area: aside;
+  }
 }

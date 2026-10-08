@@ -1,0 +1,214 @@
+/* Оболочка «Тушь» (этап 38): бумага васи, мазки кистью, печати-ханко. Темы: Тушь (Цусима), Свиток (Наруто).
+   Без рамок и теней — воздух и мазок; разделы — красные печати справа; лоток — энсо, круг одним движением кисти. */
+@import url('https://fonts.googleapis.com/css2?family=Neucha&display=swap');
+
+html:root[data-shell='ink'][data-skin] {
+  --sh-paper: var(--ct-panel);
+  --sh-ink: var(--ct-ink);
+  --sh-seal: var(--ct-accent);
+  --sh-brush: 'Neucha', var(--ct-display), sans-serif;
+  background-color: var(--ct-bg);
+  background-image: radial-gradient(ellipse at 15% 10%, rgb(255 255 255 / 0.5), transparent 55%);
+}
+html[data-shell='ink'][data-skin][data-pk~='pat'] body::before {
+  inset: auto 0 0 0;
+  height: 140px;
+  opacity: 0.08;
+  background: var(--sh-ink);
+}
+html[data-shell='ink'][data-skin] .topbar {
+  background: transparent;
+}
+html[data-shell='ink'][data-skin] .topbar-title strong {
+  font-family: var(--sh-brush);
+}
+
+html[data-shell='ink'][data-skin] .card {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  border-radius: 0;
+  padding-inline: 4px;
+}
+html[data-shell='ink'][data-skin] .card::before,
+html[data-shell='ink'][data-skin] .card::after {
+  display: none;
+}
+html[data-shell='ink'][data-skin] .card-title {
+  font-family: var(--sh-brush);
+  font-size: 1.9rem;
+}
+/* мазок кистью под заголовком */
+html[data-shell='ink'][data-skin] .card-title::after {
+  content: '';
+  display: block;
+  width: 180px;
+  height: 5px;
+  margin-top: 6px;
+  background: var(--sh-ink);
+  clip-path: polygon(0 20%, 100% 0, 94% 100%, 2% 80%);
+  opacity: 0.85;
+}
+html[data-shell='ink'][data-skin] .card + .card {
+  border-top: 1px solid color-mix(in oklab, var(--sh-ink) 18%, transparent);
+  padding-top: 22px;
+}
+
+/* Разворот: печати справа, тонкая вертикальная черта между колонками */
+html[data-shell='ink'][data-skin] .zg-spread {
+  grid-template-areas: 'main aside nav';
+  grid-template-columns: minmax(0, 1fr) minmax(330px, 400px) 96px;
+  gap: 44px;
+}
+html[data-shell='ink'][data-skin] .zg-spread.zg-spread-wide {
+  grid-template-areas: 'main nav';
+  grid-template-columns: minmax(0, 1fr) 96px;
+}
+html[data-shell='ink'][data-skin] .zg-aside {
+  border-left: 1px solid color-mix(in oklab, var(--sh-ink) 20%, transparent);
+  padding-left: 36px;
+}
+html[data-shell='ink'][data-skin] .zg-tabbar-side {
+  justify-items: center;
+  gap: 16px;
+  padding-top: 24px;
+}
+html[data-shell='ink'][data-skin] .zg-tabbar-side .zg-tab {
+  width: 70px;
+  min-height: 70px;
+  padding: 6px;
+  flex-direction: column;
+  justify-content: center;
+  border: 2px solid var(--sh-seal);
+  border-radius: 6px;
+  color: var(--sh-seal);
+  font-family: var(--sh-brush);
+  font-size: 13px;
+  text-align: center;
+  gap: 2px;
+}
+html[data-shell='ink'][data-skin] .zg-tabbar-side .zg-tab :is(kbd, span.absolute) {
+  display: none;
+}
+html[data-shell='ink'][data-skin] .zg-tabbar-side .zg-tab > span.grow {
+  flex-grow: 0;
+}
+html[data-shell='ink'][data-skin] .zg-tabbar-side .zg-tab[aria-current='page'] {
+  background: var(--sh-seal);
+  color: var(--sh-paper);
+  box-shadow:
+    inset 0 0 0 3px var(--sh-seal),
+    inset 0 0 0 5px color-mix(in oklab, var(--sh-paper) 70%, transparent);
+}
+html[data-shell='ink'][data-skin] .zg-tabbar {
+  background: var(--sh-paper);
+  border-top: 1px solid color-mix(in oklab, var(--sh-ink) 20%, transparent);
+}
+html[data-shell='ink'][data-skin] .zg-tabbar .zg-tab {
+  font-family: var(--sh-brush);
+  color: color-mix(in oklab, var(--sh-ink) 60%, var(--sh-paper));
+}
+html[data-shell='ink'][data-skin] .zg-tabbar .zg-tab span.absolute {
+  background: var(--sh-seal);
+  border-radius: 4px;
+}
+html[data-shell='ink'][data-skin] .zg-tabbar .zg-tab[aria-current='page'] {
+  color: var(--sh-seal);
+}
+html[data-shell='ink'][data-skin] .zg-tabbar .zg-tab[aria-current='page'] svg {
+  color: var(--sh-paper);
+}
+
+html[data-shell='ink'][data-skin] .zg-btn {
+  font-family: var(--sh-brush);
+  font-size: 18px;
+  border-radius: 4px;
+}
+html[data-shell='ink'][data-skin] .zg-btn-primary {
+  background: var(--sh-seal);
+  border-color: var(--sh-seal);
+  color: var(--sh-paper);
+  box-shadow:
+    inset 0 0 0 3px var(--sh-seal),
+    inset 0 0 0 5px color-mix(in oklab, var(--sh-paper) 70%, transparent);
+}
+html[data-shell='ink'][data-skin] .zg-btn-default {
+  background: transparent;
+  border: 1.5px solid var(--sh-ink);
+}
+html[data-shell='ink'][data-skin] .zg-seg {
+  background: transparent;
+  border: 1.5px solid var(--sh-ink);
+  border-radius: 4px;
+  padding: 0;
+  gap: 0;
+}
+html[data-shell='ink'][data-skin] .zg-seg-item {
+  font-family: var(--sh-brush);
+  font-size: 17px;
+  border-radius: 0;
+}
+html[data-shell='ink'][data-skin] .zg-seg-ind {
+  border-radius: 0;
+  background: var(--sh-ink);
+}
+html[data-shell='ink'][data-skin] .zg-seg-item[data-state='on'] {
+  color: var(--sh-paper);
+}
+html[data-shell='ink'][data-skin] .zg-field {
+  background: transparent;
+  border-width: 0 0 1.5px;
+  border-radius: 0;
+  border-color: var(--sh-ink);
+}
+html[data-shell='ink'][data-skin] .zg-badge {
+  background: transparent;
+  color: var(--sh-seal);
+  border: 1.5px solid var(--sh-seal);
+  border-radius: 2px;
+  font-family: var(--sh-brush);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* Лоток — энсо */
+html[data-shell='ink'][data-skin] .zg-tray {
+  border: 0;
+  border-radius: 50%;
+  aspect-ratio: 1;
+  height: auto;
+  width: min(100%, 320px);
+  margin-inline: auto;
+  background: radial-gradient(circle, transparent 0 58%, var(--sh-ink) 59% 66%, transparent 67%);
+  -webkit-mask: conic-gradient(from 30deg, #000 0 330deg, rgb(0 0 0 / 0.25) 345deg, #000 360deg);
+}
+html[data-shell='ink'][data-skin] .zg-tray-hint {
+  left: 0;
+  right: 0;
+  top: auto;
+  bottom: 18%;
+  text-align: center;
+  font-family: var(--sh-brush);
+  text-transform: none;
+  letter-spacing: 0;
+}
+html[data-shell='ink'][data-skin] .zg-roll-result {
+  background: var(--sh-seal);
+  color: var(--sh-paper);
+  border-color: var(--sh-seal);
+  border-radius: 4px;
+  font-family: var(--sh-brush);
+}
+html[data-shell='ink'][data-skin] .zg-roll-result :is(span, b) {
+  color: inherit;
+}
+html[data-shell='ink'][data-skin] .feed-value {
+  background: transparent;
+  font-family: var(--sh-brush);
+  font-size: 1.6rem;
+  color: var(--sh-ink);
+}
+html[data-shell='ink'][data-skin] :is(.zg-sheet, .zg-dialog) {
+  background: var(--sh-paper);
+  border-radius: 2px;
+}

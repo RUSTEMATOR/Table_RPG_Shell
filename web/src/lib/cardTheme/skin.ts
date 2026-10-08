@@ -1,10 +1,14 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import { ensureTheme } from './index.ts';
 import { THEMES, isDarkTheme, isTheme, patPrims, patSpec, primsSvgBody, svgDoc, svgUrl, themeCmap, themeCss } from './engine.mjs';
+import { baseTheme } from './variant.ts';
+import { ensurePackFont, packCss, packOf, packParts } from './packs.ts';
+import { SHELL_PACK_PARTS, ensureShell, shellOf } from './shells.ts';
 
 // Оформление всего экрана по теме карточки («кожа»): тема задаёт токены приложения (styles/app-skin.css),
 // рамку всех .card и узор фона. Игроку — тема его персонажа, мастеру — «Зеленогорье» артефакта (id "other").
-// Атрибуты ставятся на <html>: data-skin (id темы), data-frame, data-dark.
+// Атрибуты ставятся на <html>: data-skin (id темы), data-frame, data-dark; data-shell — оболочка темы (этап 38),
+// data-pack и data-pk — набор украшений темы и те его части, что берёт оболочка.
 
 const done = new Set<string>();
 
@@ -34,7 +38,12 @@ function skinCss(id: string): string {
     if (k.startsWith('--ct-') || k.startsWith('--cc-')) out.push(`${k}:${v}`);
     else if (rename[k]) out.push(`${rename[k]}:${v}`);
   }
-  if (patSpec(id).mode === 'tile') out.push(`--ct-pat-size:${patSpec(id).tile.map((n) => `${n}px`).join(' ')}`);
+  if (patSpec(id).mode === 'tile')
+    out.push(
+      `--ct-pat-size:${patSpec(id)
+        .tile.map((n) => `${n}px`)
+        .join(' ')}`,
+    );
   return `html[data-skin="${id}"]{${out.join(';')}}`;
 }
 
@@ -48,6 +57,12 @@ function inject(id: string): void {
     document.head.appendChild(st);
   }
   st.appendChild(document.createTextNode(skinCss(id)));
+  // набор украшений — один на тему (общий у «День» / «Ночь»), правило после правила темы
+  const base = baseTheme(id);
+  if (!done.has(`pack:${base}`)) {
+    st.appendChild(document.createTextNode(packCss(base)));
+    done.add(`pack:${base}`);
+  }
   done.add(id);
 }
 
@@ -71,6 +86,9 @@ export function applySkin(id: string | null): void {
     delete html.dataset.skin;
     delete html.dataset.frame;
     delete html.dataset.dark;
+    delete html.dataset.pack;
+    delete html.dataset.pk;
+    delete html.dataset.shell;
     notify();
     return;
   }
@@ -85,6 +103,22 @@ export function applySkin(id: string | null): void {
   html.dataset.frame = String(T.frame);
   if (th !== 'other' && isDarkTheme(T)) html.dataset.dark = '1';
   else delete html.dataset.dark;
+  const base = baseTheme(th);
+  const shell = shellOf(base);
+  ensureShell(shell);
+  html.dataset.shell = shell;
+  const pack = packOf(base);
+  if (pack) {
+    ensurePackFont(base);
+    html.dataset.pack = base;
+    html.dataset.pk = packParts(pack)
+      .split(' ')
+      .filter((p) => SHELL_PACK_PARTS[shell].includes(p))
+      .join(' ');
+  } else {
+    delete html.dataset.pack;
+    delete html.dataset.pk;
+  }
   notify();
 }
 

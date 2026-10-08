@@ -285,16 +285,18 @@ function Spread({ tab, setTab, mounted, content, items, pickRef }: LayoutProps) 
     </section>
   );
   return (
-    <div className={cn('grid min-h-0 flex-1 gap-6 pt-1', wideMap ? 'grid-cols-[200px_minmax(0,1fr)]' : 'grid-cols-[200px_minmax(0,1fr)_minmax(320px,380px)]')}>
+    <div
+      className={cn('zg-spread grid min-h-0 flex-1 gap-6 pt-1', wideMap ? 'zg-spread-wide grid-cols-[200px_minmax(0,1fr)]' : 'grid-cols-[200px_minmax(0,1fr)_minmax(320px,380px)]')}
+    >
       <TabBar variant="side" value={tab} onChange={pick} controls={(v) => `pane-${v}`} items={items} />
-      <div className="min-h-0">
+      <div className="zg-main min-h-0">
         {pane('rolls', <FeedCard />)}
         {pane('card', content.card)}
         {pane('figure', content.figure)}
         {pane('diary', content.diary)}
         {pane('map', content.map)}
       </div>
-      <aside aria-label="Броски" className={cn('min-h-0 flex-col gap-4 overflow-y-auto overscroll-y-contain pb-6', wideMap ? 'hidden' : 'flex')}>
+      <aside aria-label="Броски" className={cn('zg-aside min-h-0 flex-col gap-4 overflow-y-auto overscroll-y-contain pb-6', wideMap ? 'hidden' : 'flex')}>
         <RollPanel role="player" />
         {tab !== 'rolls' && <FeedCard />}
       </aside>

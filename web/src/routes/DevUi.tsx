@@ -47,7 +47,8 @@ const THEME_OPTIONS = [{ value: 'none', label: 'Без оформления (п�
 
 export function DevUi() {
   const scheme = useScheme();
-  const [theme, setTheme] = useState('other');
+  // ?theme=<id> — открыть сразу с темой (снимки витрины по всем темам)
+  const [theme, setTheme] = useState(() => new URLSearchParams(location.search).get('theme') ?? 'other');
   useEffect(() => {
     applySkin(theme === 'none' ? null : themeVariant(theme, scheme));
     return () => applySkin(null);
@@ -98,8 +99,24 @@ export function DevUi() {
         <Card>
           <CardTitle>Выбор</CardTitle>
           <div className="flex flex-wrap items-center gap-3">
-            <Segmented label="Кубик" value={die} onChange={setDie} options={[{ value: 'd10', label: 'd10' }, { value: 'd20', label: 'd20' }]} />
-            <Segmented label="Кто видит" value={who} onChange={setWho} options={[{ value: 'public', label: 'Всем' }, { value: 'me', label: 'Мне и мастеру' }]} />
+            <Segmented
+              label="Кубик"
+              value={die}
+              onChange={setDie}
+              options={[
+                { value: 'd10', label: 'd10' },
+                { value: 'd20', label: 'd20' },
+              ]}
+            />
+            <Segmented
+              label="Кто видит"
+              value={who}
+              onChange={setWho}
+              options={[
+                { value: 'public', label: 'Всем' },
+                { value: 'me', label: 'Мне и мастеру' },
+              ]}
+            />
           </div>
           <Switch checked={sw} onCheckedChange={setSw} label="Показывать игроку ступень силы" />
           <Select
@@ -225,7 +242,15 @@ export function DevUi() {
       </main>
 
       <Sheet open={sheet} onOpenChange={setSheet} title="Новая запись">
-        <Segmented label="Вид записи" value={who} onChange={setWho} options={[{ value: 'public', label: 'Дневник' }, { value: 'me', label: 'Только мне' }]} />
+        <Segmented
+          label="Вид записи"
+          value={who}
+          onChange={setWho}
+          options={[
+            { value: 'public', label: 'Дневник' },
+            { value: 'me', label: 'Только мне' },
+          ]}
+        />
         <Textarea rows={4} defaultValue="В тумане у часовни кто-то повторяет моё имя." />
         <Button variant="primary" onClick={() => setSheet(false)}>
           Сохранить

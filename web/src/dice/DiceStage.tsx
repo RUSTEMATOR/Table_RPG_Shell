@@ -58,10 +58,12 @@ function Die({
   // Покой до первого броска: наибольшая грань вверх, кубик лежит на лотке.
   const rest = useMemo(() => {
     const top = model.labels.indexOf(model.faces.length);
-    const n = model.normals[top]!, c = model.centers[top]!;
+    const n = model.normals[top]!,
+      c = model.centers[top]!;
     const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(n[0], n[1], n[2]), new THREE.Vector3(0, 1, 0));
     const bottom = model.labels.indexOf(1);
-    const cb = model.centers[bottom]!, nb = model.normals[bottom]!;
+    const cb = model.centers[bottom]!,
+      nb = model.normals[bottom]!;
     return { q, y: Math.abs(cb[0] * nb[0] + cb[1] * nb[1] + cb[2] * nb[2]) || Math.hypot(c[0], c[1], c[2]) };
   }, [model]);
 
@@ -100,9 +102,12 @@ function Die({
     const duration = (n - 1) / traj.fps;
     const speed = Math.max(minSpeed, duration / budget);
     const f = Math.min(n - 1, (now - p.start) * speed * traj.fps);
-    const i = Math.floor(f), j = Math.min(n - 1, i + 1), a = f - i;
+    const i = Math.floor(f),
+      j = Math.min(n - 1, i + 1),
+      a = f - i;
     const F = traj.frames;
-    const o1 = i * 7, o2 = j * 7;
+    const o1 = i * 7,
+      o2 = j * 7;
     m.position.set(F[o1]! + (F[o2]! - F[o1]!) * a, F[o1 + 1]! + (F[o2 + 1]! - F[o1 + 1]!) * a, F[o1 + 2]! + (F[o2 + 2]! - F[o1 + 2]!) * a);
     const q1 = new THREE.Quaternion(F[o1 + 3], F[o1 + 4], F[o1 + 5], F[o1 + 6]);
     const q2 = new THREE.Quaternion(F[o2 + 3], F[o2 + 4], F[o2 + 5], F[o2 + 6]);
@@ -115,7 +120,8 @@ function Die({
         p.landed = true;
         const up = topFace(model, r);
         if (model.labels[up.face] !== roll.value) console.warn(`Кубик: вверху ${model.labels[up.face]}, сервер дал ${roll.value}`);
-        if (import.meta.env.DEV) (window as unknown as { __zgLastDie?: unknown }).__zgLastDie = { kind: roll.kind, up: model.labels[up.face], value: roll.value, dot: +up.dot.toFixed(3) };
+        if (import.meta.env.DEV)
+          (window as unknown as { __zgLastDie?: unknown }).__zgLastDie = { kind: roll.kind, up: model.labels[up.face], value: roll.value, dot: +up.dot.toFixed(3) };
         onLanded?.();
       }
       return;
@@ -152,6 +158,8 @@ function Tray() {
     const cs = getComputedStyle(document.documentElement);
     setColors({ felt: cs.getPropertyValue('--surface-2').trim() || '#ebefe6', rim: cs.getPropertyValue('--border').trim() || '#d5dccf' });
   }, [skin, scheme]);
+  // Оболочка (этап 38) рисует лоток сама (CSS): в сцене — только тень кубика, без круга и ободка.
+  if (skin && document.documentElement.dataset.shell) return <Floor />;
   return (
     <group>
       <mesh rotation-x={-Math.PI / 2} receiveShadow>
@@ -208,7 +216,16 @@ export default function DiceStage({
       }}
     >
       <ambientLight intensity={0.7} />
-      <directionalLight position={[-6, 12, 5]} intensity={1.6} castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-6} shadow-camera-right={6} shadow-camera-top={6} shadow-camera-bottom={-6} />
+      <directionalLight
+        position={[-6, 12, 5]}
+        intensity={1.6}
+        castShadow
+        shadow-mapSize={[1024, 1024]}
+        shadow-camera-left={-6}
+        shadow-camera-right={6}
+        shadow-camera-top={6}
+        shadow-camera-bottom={-6}
+      />
       {floor ? <Floor /> : <Tray />}
       <Die roll={roll} budget={budget} minSpeed={minSpeed} colors={colors} onImpact={onImpact} onLanded={onLanded} />
     </Canvas>

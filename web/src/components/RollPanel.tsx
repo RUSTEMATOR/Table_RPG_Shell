@@ -168,7 +168,7 @@ export function RollPanel({ role }: { role: 'gm' | 'player' }) {
       {role === 'gm' && <CardTitle>Бросок мастера</CardTitle>}
       <div className={cn('grid gap-3', role === 'gm' && '@xl/roll:grid-cols-2 @xl/roll:items-start')}>
         <div
-          className={cn('relative overflow-hidden rounded-sheet border border-solid border-border bg-surface-2 select-none', trayH, three && 'touch-none')}
+          className={cn('zg-tray relative overflow-hidden rounded-sheet border border-solid border-border bg-surface-2 select-none', trayH, three && 'touch-none')}
           onPointerDown={three ? onDown : undefined}
           onPointerUp={three ? onUp : undefined}
         >
@@ -189,14 +189,14 @@ export function RollPanel({ role }: { role: 'gm' | 'player' }) {
             </Suspense>
           )}
           {three && !busy && !shown && (
-            <span className="pointer-events-none absolute top-3 left-4 font-ui text-xs tracking-[.06em] text-muted uppercase">
+            <span className="zg-tray-hint pointer-events-none absolute top-3 left-4 font-ui text-xs tracking-[.06em] text-muted uppercase">
               {mouse ? 'Смахни мышью по лотку или нажми «Бросить»' : 'Смахни по лотку, чтобы бросить'}
             </span>
           )}
           <div aria-live="polite" className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center">
             {spin !== null && <span className="font-mono text-5xl font-medium tabular-nums text-muted">{spin}</span>}
             {spin === null && shown && (
-              <span className="flex items-baseline gap-3 rounded-full border border-solid border-border bg-surface px-5 py-1.5 shadow-card">
+              <span className="zg-roll-result flex items-baseline gap-3 rounded-full border border-solid border-border bg-surface px-5 py-1.5 shadow-card">
                 <b className="font-mono text-3xl font-medium tabular-nums">{shown.value}</b>
                 <span className={cn('font-ui text-base font-semibold', effectTone(shown.effect))}>
                   <GameIcon name={EFFECT_ICON[shown.effect]} className="mr-1.5" />

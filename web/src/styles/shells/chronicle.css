@@ -1,0 +1,238 @@
+/* Оболочка «Летопись» (этап 38): иллюминированная рукопись. Темы: Летопись, Крестовый поход, Руны, Драконий свиток,
+   Костёр, Империум. Тёмная стена, листы пергамента с полями, буквица-киноварь в заголовке, ярлыки разделов на полях
+   справа, жребий — сургучная печать. */
+@import url('https://fonts.googleapis.com/css2?family=Old+Standard+TT:ital,wght@0,400;0,700;1,400&display=swap');
+
+html:root[data-shell='chronicle'][data-skin] {
+  --sh-wall: color-mix(in oklab, var(--ct-ink) 70%, #1a120c);
+  --sh-page: var(--ct-panel);
+  --sh-red: var(--ct-accent);
+  --sh-gold: var(--ct-accent2, var(--ct-accent));
+  --sh-serif: 'Old Standard TT', var(--ct-body), serif;
+  background-color: var(--sh-wall);
+  background-image: radial-gradient(ellipse at 50% 25%, rgb(255 220 160 / 0.1), rgb(0 0 0 / 0.45) 80%), var(--pk-tex, none);
+  background-size:
+    auto,
+    512px 512px;
+  background-blend-mode: normal, soft-light;
+  background-attachment: fixed;
+}
+html[data-shell='chronicle'][data-skin] .topbar {
+  background: transparent;
+  color: color-mix(in oklab, var(--sh-page) 90%, #fff);
+}
+html[data-shell='chronicle'][data-skin] .topbar :is(strong, button, .zg-btn) {
+  color: inherit;
+}
+html[data-shell='chronicle'][data-skin] .topbar .muted {
+  color: color-mix(in oklab, var(--sh-page) 65%, var(--sh-wall));
+  font-family: var(--sh-serif);
+  font-style: italic;
+}
+html[data-shell='chronicle'][data-skin] .topbar .zg-btn {
+  background: transparent;
+  border-color: color-mix(in oklab, var(--sh-page) 30%, transparent);
+}
+
+/* Лист пергамента: края темнее, тонкая рамка с отступом */
+html[data-shell='chronicle'][data-skin] .card {
+  background-color: var(--sh-page);
+  background-image: radial-gradient(ellipse at 50% 50%, transparent 62%, color-mix(in oklab, var(--sh-gold) 30%, transparent) 100%), var(--pk-tex, none);
+  background-size:
+    auto,
+    512px 512px;
+  background-blend-mode: normal, soft-light;
+  border: 0;
+  border-radius: 1px;
+  box-shadow:
+    0 14px 32px -10px rgb(0 0 0 / 0.6),
+    inset 0 0 0 6px var(--sh-page),
+    inset 0 0 0 7px color-mix(in oklab, var(--sh-gold) 55%, transparent);
+  padding: 26px 30px;
+}
+html[data-shell='chronicle'][data-skin] .card::before,
+html[data-shell='chronicle'][data-skin] .card::after {
+  display: none;
+}
+html[data-shell='chronicle'][data-skin] .card-title {
+  font-family: var(--ct-name);
+}
+/* буквица: первая буква заголовка панели — киноварью и крупнее */
+html[data-shell='chronicle'][data-skin] .card-title::first-letter {
+  color: var(--sh-red);
+  font-size: 1.6em;
+  line-height: 0.9;
+}
+/* угол набора — только слева сверху, на поле листа */
+html[data-shell='chronicle'][data-skin][data-pk~='corner'] .card-deco::before {
+  top: 8px;
+  left: 8px;
+  right: auto;
+  width: 34px;
+  transform: none;
+  background: var(--sh-gold);
+  opacity: 0.8;
+}
+html[data-shell='chronicle'][data-skin][data-pk~='corner'] .card-deco::after {
+  display: none;
+}
+html[data-shell='chronicle'][data-skin][data-pk~='corner'] .card {
+  padding-left: 52px;
+}
+html[data-shell='chronicle'][data-skin][data-pk~='band'] .card-title::after {
+  background: var(--sh-red);
+}
+
+/* Разворот: ярлыки разделов на полях справа */
+html[data-shell='chronicle'][data-skin] .zg-spread {
+  grid-template-areas: 'main aside nav';
+  grid-template-columns: minmax(0, 1fr) minmax(330px, 390px) 150px;
+  gap: 22px;
+}
+html[data-shell='chronicle'][data-skin] .zg-spread.zg-spread-wide {
+  grid-template-areas: 'main nav';
+  grid-template-columns: minmax(0, 1fr) 150px;
+}
+html[data-shell='chronicle'][data-skin] .zg-tabbar-side {
+  gap: 10px;
+  padding-top: 40px;
+}
+html[data-shell='chronicle'][data-skin] .zg-tabbar-side .zg-tab {
+  min-height: 46px;
+  border-radius: 0;
+  padding-left: 18px;
+  background: color-mix(in oklab, var(--sh-gold) 55%, var(--sh-wall));
+  color: var(--sh-page);
+  font-family: var(--sh-serif);
+  font-size: 17px;
+  clip-path: polygon(0 0, 100% 0, 88% 50%, 100% 100%, 0 100%);
+}
+html[data-shell='chronicle'][data-skin] .zg-tabbar-side .zg-tab :is(svg, kbd, span.absolute) {
+  display: none;
+}
+html[data-shell='chronicle'][data-skin] .zg-tabbar-side .zg-tab[aria-current='page'] {
+  background: var(--sh-red);
+  color: color-mix(in oklab, var(--sh-page) 95%, #fff);
+  font-weight: 700;
+  margin-left: -16px;
+}
+html[data-shell='chronicle'][data-skin] .zg-tabbar {
+  background: color-mix(in oklab, var(--sh-wall) 90%, #000);
+  border-top: 2px solid var(--sh-gold);
+}
+html[data-shell='chronicle'][data-skin] .zg-tabbar .zg-tab {
+  color: color-mix(in oklab, var(--sh-page) 75%, var(--sh-wall));
+  font-family: var(--sh-serif);
+}
+html[data-shell='chronicle'][data-skin] .zg-tabbar .zg-tab span.absolute {
+  background: var(--sh-red);
+}
+html[data-shell='chronicle'][data-skin] .zg-tabbar .zg-tab[aria-current='page'] {
+  color: color-mix(in oklab, var(--sh-page) 95%, #fff);
+}
+
+/* Кнопки и поля — перо и киноварь */
+html[data-shell='chronicle'][data-skin] .zg-btn {
+  font-family: var(--sh-serif);
+  font-size: 17px;
+  border-radius: 0;
+}
+html[data-shell='chronicle'][data-skin] .zg-btn-primary {
+  background: var(--sh-red);
+  border-color: var(--sh-red);
+  color: color-mix(in oklab, var(--sh-page) 95%, #fff);
+  letter-spacing: 0.04em;
+}
+html[data-shell='chronicle'][data-skin] .zg-btn-default {
+  background: transparent;
+  border-color: var(--sh-gold);
+}
+html[data-shell='chronicle'][data-skin] .zg-seg {
+  background: transparent;
+  border-color: var(--sh-gold);
+  border-radius: 0;
+}
+html[data-shell='chronicle'][data-skin] .zg-seg-item {
+  font-family: var(--sh-serif);
+  font-size: 16px;
+  border-radius: 0;
+}
+html[data-shell='chronicle'][data-skin] .zg-seg-ind {
+  border-radius: 0;
+  background: var(--ct-ink);
+}
+html[data-shell='chronicle'][data-skin] .zg-seg-item[data-state='on'] {
+  color: var(--sh-page);
+}
+html[data-shell='chronicle'][data-skin] .zg-field {
+  background: transparent;
+  border-width: 0 0 1px;
+  border-radius: 0;
+  border-color: var(--sh-gold);
+  font-family: var(--sh-serif);
+}
+html[data-shell='chronicle'][data-skin] .zg-badge {
+  background: transparent;
+  color: var(--sh-red);
+  font-family: var(--sh-serif);
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  padding-inline: 0;
+}
+
+/* Жребий — сургучная печать */
+html[data-shell='chronicle'][data-skin] .zg-tray {
+  border: 0;
+  border-radius: 50%;
+  aspect-ratio: 1;
+  height: auto;
+  max-height: 300px;
+  justify-self: center;
+  width: min(100%, 300px);
+  margin-inline: auto;
+  background: radial-gradient(circle at 45% 40%, color-mix(in oklab, var(--sh-red) 80%, #fff 20%) 0%, var(--sh-red) 58%, color-mix(in oklab, var(--sh-red) 60%, #000) 100%);
+  box-shadow:
+    inset 0 -8px 16px rgb(0 0 0 / 0.35),
+    0 6px 14px rgb(60 25 10 / 0.45),
+    inset 0 0 0 18px rgb(0 0 0 / 0),
+    inset 0 0 0 20px rgb(255 225 190 / 0.25);
+}
+html[data-shell='chronicle'][data-skin] .zg-tray-hint {
+  left: 0;
+  right: 0;
+  top: auto;
+  bottom: 22%;
+  text-align: center;
+  text-transform: none;
+  letter-spacing: 0;
+  color: rgb(255 230 200 / 0.85);
+  font-family: var(--sh-serif);
+  font-style: italic;
+  font-size: 14px;
+}
+html[data-shell='chronicle'][data-skin] .zg-roll-result {
+  border-radius: 0;
+  border-color: var(--sh-gold);
+  font-family: var(--sh-serif);
+}
+html[data-shell='chronicle'][data-skin] .feed-value {
+  font-family: var(--sh-serif);
+  background: transparent;
+  color: var(--sh-red);
+  font-size: 1.4rem;
+}
+html[data-shell='chronicle'][data-skin] .zg-pager > section {
+  background: transparent;
+}
+html[data-shell='chronicle'][data-skin] :is(.zg-sheet, .zg-dialog) {
+  background-color: var(--sh-page);
+  background-image: var(--pk-tex, none);
+  background-size: 512px 512px;
+  background-blend-mode: soft-light;
+  border-radius: 1px;
+}
+/* кнопки прямо на стене (вне листа) — светлые */
+html[data-shell='chronicle'][data-skin] :is(.zg-main, .zg-pager) .zg-btn-default:not(.card .zg-btn-default) {
+  color: color-mix(in oklab, var(--sh-page) 92%, #fff);
+  border-color: color-mix(in oklab, var(--sh-page) 45%, transparent);
+}

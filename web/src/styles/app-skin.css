@@ -149,3 +149,82 @@ html[data-skin][data-frame="stripes"] .card::before{content:"";position:absolute
 html[data-skin][data-frame="brush"] .card{border-color:transparent;border-radius:0;margin-bottom:9px}
 html[data-skin][data-frame="brush"] .card::after{content:"";position:absolute;left:-4px;bottom:-9px;width:62%;height:12px;background:var(--ct-brush) left center/100% 100% no-repeat}
 html[data-skin][data-frame="glitch"] .card{border-radius:0;border-color:var(--ct-ink);box-shadow:-3px 0 0 var(--ct-accent),3px 0 0 var(--ct-accent2)}
+
+/* ---- Наборы украшений тем (этап 36, lib/cardTheme/packs.ts) ----
+   data-pack — тема набора, data-pk — какие части есть. Маски красятся цветом темы: углы и полоса — вторым акцентом,
+   узор и эмблема — первым. Зерно — серое, нейтральное в 50 %, ложится soft-light и на светлое, и на тёмное. */
+.card-deco { display: none; }
+html[data-pk~="corner"] .card { isolation: isolate; }
+html[data-pk~="corner"] .card-deco {
+  display: block;
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+html[data-pk~="corner"] .card-deco::before,
+html[data-pk~="corner"] .card-deco::after {
+  content: "";
+  position: absolute;
+  width: clamp(30px, 2.6vw, 38px);
+  aspect-ratio: var(--pk-car, 1);
+  background: var(--ct-accent2, var(--ct-accent));
+  -webkit-mask: var(--pk-corner) center / contain no-repeat;
+  mask: var(--pk-corner) center / contain no-repeat;
+  opacity: .78;
+}
+/* углы — справа сверху и слева снизу: слева сверху заголовок */
+/* угол заходит за край панели: внутри — только его половина, в поле отступа */
+html[data-pk~="corner"] .card-deco::before { top: -11px; right: -11px; transform: scaleX(-1); }
+html[data-pk~="corner"] .card-deco::after { bottom: -11px; left: -11px; transform: scaleY(-1); }
+
+html[data-pk~="band"] .card-title::after {
+  content: "";
+  display: block;
+  height: clamp(12px, 1.1em, 22px);
+  aspect-ratio: var(--pk-bar, 6);
+  max-width: 100%;
+  margin-top: .3em;
+  background: var(--ct-accent2, var(--ct-accent));
+  -webkit-mask: var(--pk-band) left center / contain no-repeat;
+  mask: var(--pk-band) left center / contain no-repeat;
+  opacity: .85;
+}
+
+html:root[data-skin][data-pk~="tex"] {
+  background-image: var(--pk-tex), var(--ct-pat, none), var(--ct-grad, none);
+  background-repeat: repeat, var(--ct-pat-rep, repeat), no-repeat;
+  background-position: 0 0, var(--ct-pat-pos, 0 0), 0 0;
+  background-size: 512px 512px, var(--ct-pat-size, auto), 100% 100%;
+  background-blend-mode: soft-light, normal, normal;
+}
+html[data-pk~="tex"] .card {
+  background-image: var(--pk-tex);
+  background-size: 512px 512px;
+  background-blend-mode: soft-light;
+}
+
+html[data-pk~="pat"] body::before,
+html[data-pk~="mark"] body::after {
+  content: "";
+  position: fixed;
+  pointer-events: none;
+  z-index: -1;
+}
+html[data-pk~="pat"] body::before {
+  inset: 0;
+  background: var(--ct-accent);
+  -webkit-mask: var(--pk-pat) 0 0 / var(--pk-ps) repeat;
+  mask: var(--pk-pat) 0 0 / var(--pk-ps) repeat;
+  opacity: .07;
+}
+html[data-pk~="mark"] body::after {
+  right: 2vw;
+  bottom: 2vh;
+  width: min(34vw, 340px);
+  aspect-ratio: var(--pk-mar, 1);
+  background: var(--ct-accent);
+  -webkit-mask: var(--pk-mark) center / contain no-repeat;
+  mask: var(--pk-mark) center / contain no-repeat;
+  opacity: .09;
+}
