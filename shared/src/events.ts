@@ -22,6 +22,7 @@ import type { MapId, OverloadSign } from './constants.ts';
 import type { DiaryEntryPlayer, GmDiaryEntry, GmOverload, GreenSuggestion } from './gm.ts';
 import type { GmPlayerPresence } from './presence.ts';
 import type { LetterPlayer } from './letters.ts';
+import type { ChapterPlayer } from './chronicle.ts';
 
 export interface ServerToClientEvents {
   'error:forbidden': (payload: { event: string }) => void;
@@ -71,6 +72,11 @@ export interface ServerToClientEvents {
   'letters:removed': (payload: { id: string }) => void;
   /** Мастеру: письма персонажа изменились (доставка, прочтение, ответ). */
   'gm:letters.changed': (payload: { characterId: string }) => void;
+  /** Игроку: глава летописи опубликована или изменилась (этап 43). */
+  'chronicle:changed': (payload: { chapter: ChapterPlayer }) => void;
+  'chronicle:removed': (payload: { id: string }) => void;
+  /** Мастеру: главы изменились (правка, публикация, ответ игрока). */
+  'gm:chronicle.changed': (payload: { id: string }) => void;
 }
 
 type Ack = (res: GmAck) => void;

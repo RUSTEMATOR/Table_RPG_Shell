@@ -120,6 +120,13 @@
       "when": 1791503001625,
       "tag": "0016_letters",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1791503521780,
+      "tag": "0017_chronicle",
+      "breakpoints": true
     }
   ]
 }

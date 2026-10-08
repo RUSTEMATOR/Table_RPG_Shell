@@ -218,6 +218,46 @@ export const letter = sqliteTable(
   (t) => [index('letter_room_char_idx').on(t.roomId, t.characterId), index('letter_due_idx').on(t.deliveredAt, t.deliverAt)],
 );
 
+// Летопись (этап 43): глава по сессии. Черновик игроки не видят; quiz — JSON вопросов с верными ответами (игроку — без них).
+export const chapter = sqliteTable(
+  'chapter',
+  {
+    id: text('id').primaryKey(),
+    roomId: text('room_id')
+      .notNull()
+      .references(() => room.id, { onDelete: 'cascade' }),
+    sessionId: text('session_id').references(() => gameSession.id, { onDelete: 'set null' }),
+    title: text('title').notNull(),
+    text: text('text').notNull(),
+    quiz: text('quiz'),
+    status: text('status', { enum: ['draft', 'published'] })
+      .notNull()
+      .default('draft'),
+    publishedAt: integer('published_at'),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  (t) => [index('chapter_room_idx').on(t.roomId, t.publishedAt)],
+);
+
+// Ответ игрока на викторину главы: один на участника.
+export const chapterAnswer = sqliteTable(
+  'chapter_answer',
+  {
+    id: text('id').primaryKey(),
+    chapterId: text('chapter_id')
+      .notNull()
+      .references(() => chapter.id, { onDelete: 'cascade' }),
+    memberId: text('member_id')
+      .notNull()
+      .references(() => member.id, { onDelete: 'cascade' }),
+    answers: text('answers').notNull(),
+    score: integer('score').notNull(),
+    createdAt: integer('created_at').notNull(),
+  },
+  (t) => [uniqueIndex('chapter_answer_once_idx').on(t.chapterId, t.memberId)],
+);
+
 // Заметки мастера к сессии.
 export const sessionNote = sqliteTable('session_note', {
   sessionId: text('session_id')
