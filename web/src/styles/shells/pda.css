@@ -1,1 +1,222 @@
-/* Оболочка «pda» (этап 38) — правила под html[data-shell="pda"]. */
+/* Оболочка «Полевой КПК» (этап 38): защищённый полевой прибор. Темы: Зона, Пустошь, Бункер, Ракета.
+   Экран в прорезиненном корпусе, полоса «опасность» сверху, кнопки разделов — справа, как на приборе,
+   надпись на скотче, лоток — счётчик. */
+@import url('https://fonts.googleapis.com/css2?family=Russo+One&display=swap');
+
+html:root[data-shell='pda'][data-skin] {
+  --sh-case: color-mix(in oklab, var(--ct-bg) 75%, #000);
+  --sh-screen: var(--ct-panel);
+  --sh-warn: var(--ct-accent);
+  --sh-alt: var(--ct-accent2, var(--ct-accent));
+  --sh-stencil: 'Russo One', var(--ct-display), sans-serif;
+  background-color: var(--sh-case);
+  background-image: var(--pk-tex, none);
+  background-size: 512px 512px;
+  background-blend-mode: soft-light;
+}
+/* корпус вокруг экрана приложения */
+html[data-shell='pda'][data-skin] .screen {
+  background: color-mix(in oklab, var(--ct-bg) 92%, #000);
+  border-radius: 22px;
+  box-shadow:
+    inset 0 0 0 3px #1c1f14,
+    inset 0 8px 18px rgb(0 0 0 / 0.4),
+    0 0 0 12px color-mix(in oklab, var(--ct-bg) 70%, #556);
+  margin: 22px auto;
+  width: calc(100% - 44px);
+}
+html[data-shell='pda'][data-skin] .screen.screen-fill {
+  height: calc(100dvh - 44px);
+}
+@media (max-width: 760px) {
+  html[data-shell='pda'][data-skin] .screen {
+    margin: 6px;
+    width: calc(100% - 12px);
+    border-radius: 14px;
+    box-shadow:
+      inset 0 0 0 2px #1c1f14,
+      0 0 0 5px color-mix(in oklab, var(--ct-bg) 70%, #556);
+  }
+  html[data-shell='pda'][data-skin] .screen.screen-fill {
+    height: calc(100dvh - 12px);
+  }
+}
+html[data-shell='pda'][data-skin] .topbar {
+  background: transparent;
+  border-top: 10px solid transparent;
+  border-image: repeating-linear-gradient(-45deg, var(--sh-warn) 0 12px, #1c1f14 12px 24px) 10;
+}
+html[data-shell='pda'][data-skin] .topbar-title strong {
+  font-family: var(--sh-stencil);
+  font-weight: 400;
+  background: color-mix(in oklab, #e8e0c0 85%, transparent);
+  color: #2c2f22;
+  padding: 2px 12px;
+  transform: rotate(-2deg);
+  width: fit-content;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.3);
+}
+html[data-shell='pda'][data-skin] .topbar-title strong::before {
+  display: none;
+}
+
+html[data-shell='pda'][data-skin] .card {
+  background-color: var(--sh-screen);
+  background-image: var(--pk-tex, none);
+  background-size: 512px 512px;
+  background-blend-mode: soft-light;
+  border: 2px solid color-mix(in oklab, var(--ct-ink) 25%, transparent);
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.4);
+}
+html[data-shell='pda'][data-skin] .card::before,
+html[data-shell='pda'][data-skin] .card::after {
+  display: none;
+}
+html[data-shell='pda'][data-skin] .card-title {
+  font-family: var(--sh-stencil);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Кнопки разделов — справа, как на корпусе */
+html[data-shell='pda'][data-skin] .zg-spread {
+  grid-template-areas: 'main aside nav';
+  grid-template-columns: minmax(0, 1fr) minmax(330px, 390px) 150px;
+  gap: 20px;
+}
+html[data-shell='pda'][data-skin] .zg-spread.zg-spread-wide {
+  grid-template-areas: 'main nav';
+  grid-template-columns: minmax(0, 1fr) 150px;
+}
+html[data-shell='pda'][data-skin] .zg-tabbar-side {
+  gap: 12px;
+}
+html[data-shell='pda'][data-skin] .zg-tabbar-side::before {
+  content: '';
+  height: 18px;
+  border-radius: 3px;
+  background: repeating-linear-gradient(-45deg, var(--sh-warn) 0 12px, #1c1f14 12px 24px);
+}
+html[data-shell='pda'][data-skin] .zg-tabbar-side .zg-tab {
+  justify-content: center;
+  min-height: 48px;
+  border-radius: 6px;
+  background: linear-gradient(color-mix(in oklab, var(--ct-bg) 80%, #fff 10%), color-mix(in oklab, var(--ct-bg) 85%, #000));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.15),
+    0 3px 0 #15170e;
+  color: var(--ct-ink);
+  font-family: var(--sh-stencil);
+  font-size: 14px;
+  text-transform: uppercase;
+}
+html[data-shell='pda'][data-skin] .zg-tabbar-side .zg-tab :is(svg, kbd, span.absolute) {
+  display: none;
+}
+html[data-shell='pda'][data-skin] .zg-tabbar-side .zg-tab > span.grow {
+  flex-grow: 0;
+}
+html[data-shell='pda'][data-skin] .zg-tabbar-side .zg-tab[aria-current='page'] {
+  background: var(--sh-warn);
+  color: #1c1f14;
+}
+html[data-shell='pda'][data-skin] .zg-tabbar {
+  background: color-mix(in oklab, var(--ct-bg) 85%, #000);
+  border-top: 6px solid transparent;
+  border-image: repeating-linear-gradient(-45deg, var(--sh-warn) 0 10px, #1c1f14 10px 20px) 6;
+}
+html[data-shell='pda'][data-skin] .zg-tabbar .zg-tab {
+  font-family: var(--sh-stencil);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+html[data-shell='pda'][data-skin] .zg-tabbar .zg-tab span.absolute {
+  background: var(--sh-warn);
+  border-radius: 4px;
+}
+html[data-shell='pda'][data-skin] .zg-tabbar .zg-tab[aria-current='page'] svg {
+  color: #1c1f14;
+}
+
+html[data-shell='pda'][data-skin] .zg-btn {
+  border-radius: 6px;
+  font-family: var(--sh-stencil);
+  font-weight: 400;
+  text-transform: uppercase;
+}
+html[data-shell='pda'][data-skin] .zg-btn-primary {
+  background: var(--sh-warn);
+  border: 0;
+  color: #1c1f14;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.35),
+    0 4px 0 color-mix(in oklab, var(--sh-warn) 50%, #000);
+}
+html[data-shell='pda'][data-skin] .zg-btn-default {
+  background: linear-gradient(color-mix(in oklab, var(--ct-bg) 80%, #fff 10%), color-mix(in oklab, var(--ct-bg) 85%, #000));
+  border-color: transparent;
+  box-shadow: 0 3px 0 #15170e;
+}
+html[data-shell='pda'][data-skin] .zg-seg {
+  border-radius: 6px;
+  background: color-mix(in oklab, var(--ct-bg) 85%, #000);
+}
+html[data-shell='pda'][data-skin] .zg-seg-item {
+  font-family: var(--sh-stencil);
+  font-weight: 400;
+  text-transform: uppercase;
+}
+html[data-shell='pda'][data-skin] .zg-seg-ind {
+  background: var(--sh-warn);
+}
+html[data-shell='pda'][data-skin] .zg-seg-item[data-state='on'] {
+  color: #1c1f14;
+}
+html[data-shell='pda'][data-skin] .zg-field {
+  border-radius: 4px;
+  background: color-mix(in oklab, var(--ct-bg) 85%, #000);
+}
+html[data-shell='pda'][data-skin] .zg-badge {
+  border-radius: 2px;
+  background: #1c1f14;
+  color: var(--sh-warn);
+}
+
+/* Лоток — счётчик: дисплей с делениями */
+html[data-shell='pda'][data-skin] .zg-tray {
+  border: 2px solid #1c1f14;
+  border-radius: 6px;
+  background: repeating-linear-gradient(0deg, rgb(0 0 0 / 0.08) 0 1px, transparent 1px 3px), color-mix(in oklab, var(--sh-alt) 30%, var(--ct-bg));
+  box-shadow: inset 0 6px 16px rgb(0 0 0 / 0.4);
+}
+html[data-shell='pda'][data-skin] .zg-tray::after {
+  content: '';
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 12px;
+  height: 14px;
+  background: repeating-linear-gradient(90deg, var(--sh-warn) 0 10px, transparent 10px 14px);
+  opacity: 0.6;
+  pointer-events: none;
+}
+html[data-shell='pda'][data-skin] .zg-tray-hint {
+  font-family: var(--sh-stencil);
+}
+html[data-shell='pda'][data-skin] .zg-roll-result {
+  border-radius: 4px;
+  border-color: var(--sh-warn);
+  font-family: var(--sh-stencil);
+}
+html[data-shell='pda'][data-skin] .feed-value {
+  border-radius: 2px;
+  background: #1c1f14;
+  color: var(--sh-warn);
+  font-family: var(--sh-stencil);
+}
+html[data-shell='pda'][data-skin] :is(.zg-sheet, .zg-dialog) {
+  background: var(--sh-screen);
+  border: 2px solid #1c1f14;
+}

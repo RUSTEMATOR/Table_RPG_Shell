@@ -1,1 +1,225 @@
-/* Оболочка «dossier» (этап 38) — правила под html[data-shell="dossier"]. */
+/* Оболочка «Досье» (этап 38): папка дела на тёмном столе. Темы: Ночь, Туман, Ловушка, Глубина, Гниль.
+   Панели — листы с машинописью, подклеенные скотчем и чуть сдвинутые; ярлыки папок сверху; пометки от руки;
+   главная кнопка — штамп; лоток — полароид. Зерно набора — только на столе и бумаге, мягко (soft-light). */
+@import url('https://fonts.googleapis.com/css2?family=PT+Mono&family=Marck+Script&display=swap');
+
+html:root[data-shell='dossier'][data-skin] {
+  --sh-desk: color-mix(in oklab, var(--ct-bg) 50%, #1b1714);
+  --sh-paper: var(--ct-panel);
+  --sh-ink: var(--ct-ink);
+  --sh-stamp: var(--ct-accent);
+  --sh-folder: color-mix(in oklab, #c9ad74 70%, var(--ct-accent2, #888));
+  --sh-type: 'PT Mono', ui-monospace, monospace;
+  --sh-hand: 'Marck Script', cursive;
+  background-color: var(--sh-desk);
+  background-image: radial-gradient(ellipse at 30% 15%, rgb(230 228 223 / 0.12), transparent 55%), var(--pk-tex, none);
+  background-size:
+    auto,
+    512px 512px;
+  background-blend-mode: normal, soft-light;
+  background-attachment: fixed;
+}
+html[data-shell='dossier'][data-skin] .topbar {
+  background: transparent;
+  color: color-mix(in oklab, #e6e4df 90%, var(--sh-desk));
+}
+html[data-shell='dossier'][data-skin] .topbar :is(strong, button, .zg-btn) {
+  color: inherit;
+}
+html[data-shell='dossier'][data-skin] .topbar .muted {
+  color: color-mix(in oklab, #e6e4df 60%, var(--sh-desk));
+  font-family: var(--sh-type);
+}
+html[data-shell='dossier'][data-skin] .topbar .zg-btn {
+  background: transparent;
+  border-color: rgb(230 228 223 / 0.3);
+}
+
+/* Лист с машинописью, скотч сверху */
+html[data-shell='dossier'][data-skin] .card {
+  background-color: var(--sh-paper);
+  background-image: var(--pk-tex, none);
+  background-size: 512px 512px;
+  background-blend-mode: soft-light;
+  border: 0;
+  border-radius: 1px;
+  box-shadow:
+    0 2px 6px rgb(0 0 0 / 0.3),
+    0 16px 30px -12px rgb(0 0 0 / 0.6);
+}
+html[data-shell='dossier'][data-skin] .card:nth-child(odd) {
+  transform: rotate(-0.5deg);
+}
+html[data-shell='dossier'][data-skin] .card:nth-child(even) {
+  transform: rotate(0.4deg);
+}
+html[data-shell='dossier'][data-skin] .card::after {
+  display: none;
+}
+html[data-shell='dossier'][data-skin] .card::before {
+  display: block;
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  width: 96px;
+  height: 22px;
+  inset: -10px auto auto calc(50% - 48px);
+  border: 0;
+  border-radius: 0;
+  background: rgb(232 225 200 / 0.75);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.2);
+  transform: rotate(-3deg);
+}
+html[data-shell='dossier'][data-skin] .card-title {
+  font-family: var(--ct-display);
+}
+html[data-shell='dossier'][data-skin] .zg-badge {
+  background: transparent;
+  color: var(--sh-stamp);
+  font-family: var(--sh-type);
+  letter-spacing: 0.1em;
+  padding-inline: 0;
+}
+
+/* Ярлыки папок сверху */
+html[data-shell='dossier'][data-skin] .zg-spread {
+  grid-template-areas: 'nav nav' 'main aside';
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 410px);
+  gap: 0 28px;
+}
+html[data-shell='dossier'][data-skin] .zg-spread.zg-spread-wide {
+  grid-template-areas: 'nav' 'main';
+  grid-template-columns: minmax(0, 1fr);
+}
+html[data-shell='dossier'][data-skin] .zg-spread > .zg-main {
+  background: var(--sh-folder);
+  padding: 22px;
+  border-radius: 0 4px 4px 4px;
+  box-shadow: 0 18px 40px rgb(0 0 0 / 0.55);
+}
+html[data-shell='dossier'][data-skin] .zg-spread > .zg-aside {
+  padding-top: 22px;
+}
+html[data-shell='dossier'][data-skin] .zg-tabbar-side {
+  display: flex;
+  gap: 6px;
+  align-items: flex-end;
+}
+html[data-shell='dossier'][data-skin] .zg-tabbar-side .zg-tab {
+  justify-content: center;
+  min-width: 140px;
+  min-height: 42px;
+  border-radius: 10px 10px 0 0;
+  background: color-mix(in oklab, var(--sh-folder) 82%, #000);
+  color: #3a2e1c;
+  font-family: var(--sh-type);
+  font-size: 15px;
+}
+html[data-shell='dossier'][data-skin] .zg-tabbar-side .zg-tab :is(svg, kbd, span.absolute) {
+  display: none;
+}
+html[data-shell='dossier'][data-skin] .zg-tabbar-side .zg-tab > span.grow {
+  flex-grow: 0;
+}
+html[data-shell='dossier'][data-skin] .zg-tabbar-side .zg-tab[aria-current='page'] {
+  background: var(--sh-folder);
+  min-height: 52px;
+  font-weight: 700;
+  color: #2a211c;
+}
+html[data-shell='dossier'][data-skin] .zg-tabbar {
+  background: var(--sh-folder);
+  border-top: 0;
+}
+html[data-shell='dossier'][data-skin] .zg-tabbar .zg-tab {
+  color: #3a2e1c;
+  font-family: var(--sh-type);
+}
+html[data-shell='dossier'][data-skin] .zg-tabbar .zg-tab span.absolute {
+  background: var(--sh-paper);
+  border-radius: 6px 6px 0 0;
+}
+html[data-shell='dossier'][data-skin] .zg-pager > section {
+  background: var(--sh-folder);
+}
+
+/* Кнопки — машинка и штамп */
+html[data-shell='dossier'][data-skin] .zg-btn {
+  border-radius: 0;
+  font-family: var(--sh-type);
+}
+html[data-shell='dossier'][data-skin] .zg-btn-primary {
+  background: var(--sh-stamp);
+  border-color: var(--sh-stamp);
+  color: #f4f2ee;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+html[data-shell='dossier'][data-skin] .zg-btn-default {
+  background: transparent;
+  border-color: color-mix(in oklab, var(--sh-ink) 30%, transparent);
+}
+html[data-shell='dossier'][data-skin] .zg-seg {
+  border-radius: 0;
+  background: transparent;
+  border-color: color-mix(in oklab, var(--sh-ink) 30%, transparent);
+}
+html[data-shell='dossier'][data-skin] .zg-seg-item {
+  border-radius: 0;
+  font-family: var(--sh-type);
+}
+html[data-shell='dossier'][data-skin] .zg-seg-ind {
+  border-radius: 0;
+  background: var(--sh-ink);
+}
+html[data-shell='dossier'][data-skin] .zg-seg-item[data-state='on'] {
+  color: var(--sh-paper);
+}
+html[data-shell='dossier'][data-skin] .zg-field {
+  background: transparent;
+  border-radius: 0;
+  border-width: 0 0 1px;
+  font-family: var(--sh-type);
+}
+
+/* Лоток — полароид: белая рамка, широкое поле снизу с подписью от руки */
+html[data-shell='dossier'][data-skin] .zg-tray {
+  border: 0;
+  border-radius: 0;
+  background: radial-gradient(ellipse at 50% 70%, rgb(255 255 255 / 0.85), rgb(190 186 178 / 0.6) 50%, #8f8a82 100%);
+  box-shadow:
+    0 0 0 12px #fff,
+    0 52px 0 12px #fff,
+    0 52px 22px 12px rgb(0 0 0 / 0.45);
+  margin: 12px 12px 64px;
+  transform: rotate(1.5deg);
+}
+html[data-shell='dossier'][data-skin] .zg-tray-hint {
+  top: auto;
+  bottom: -50px;
+  left: 4px;
+  color: #4a3f38;
+  font-family: var(--sh-hand);
+  font-size: 22px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+html[data-shell='dossier'][data-skin] .zg-roll-result {
+  border-radius: 0;
+  border-color: var(--sh-ink);
+  font-family: var(--sh-type);
+}
+html[data-shell='dossier'][data-skin] .feed-value {
+  background: transparent;
+  font-family: var(--sh-type);
+  color: var(--sh-stamp);
+}
+html[data-shell='dossier'][data-skin] .feed-row {
+  font-family: var(--sh-type);
+}
+html[data-shell='dossier'][data-skin] :is(.zg-sheet, .zg-dialog) {
+  background: var(--sh-paper);
+  border-radius: 1px;
+}

@@ -1,1 +1,222 @@
-/* Оболочка «pixel» (этап 38) — правила под html[data-shell="pixel"]. */
+/* Оболочка «Пиксель» (этап 38): 8-битная игра. Темы: Пиксель, Блоки. Пиксельные рамки (тени по 4 px),
+   звёздное небо, разделы — ячейки панели предметов с номерами, кнопки с «нажатием», лоток — пиксельный кубик. */
+@import url('https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&display=swap');
+
+html:root[data-shell='pixel'][data-skin] {
+  --sh-sky: var(--ct-bg);
+  --sh-panel: var(--ct-panel);
+  --sh-edge: color-mix(in oklab, var(--ct-bg) 55%, #000);
+  --sh-hi: var(--ct-line);
+  --sh-go: var(--ct-accent);
+  --sh-hot: var(--ct-accent2, var(--ct-accent));
+  --sh-px:
+    0 -4px 0 var(--sh-edge), 0 4px 0 var(--sh-edge), -4px 0 0 var(--sh-edge), 4px 0 0 var(--sh-edge), inset 0 4px 0 var(--sh-hi),
+    inset 0 -4px 0 color-mix(in oklab, var(--sh-panel) 70%, #000);
+  --sh-body: 'Pixelify Sans', var(--ct-body), monospace;
+  background-color: var(--sh-sky);
+  background-image:
+    radial-gradient(color-mix(in oklab, var(--ct-ink) 70%, transparent) 1px, transparent 1.5px),
+    radial-gradient(color-mix(in oklab, var(--ct-muted) 70%, transparent) 1px, transparent 1.5px);
+  background-size:
+    64px 64px,
+    96px 96px;
+  background-position:
+    0 0,
+    30px 40px;
+  image-rendering: pixelated;
+}
+html[data-shell='pixel'][data-skin] body {
+  font-family: var(--sh-body);
+}
+html[data-shell='pixel'][data-skin] .topbar {
+  background: transparent;
+}
+html[data-shell='pixel'][data-skin] .topbar-title strong {
+  color: var(--sh-go);
+}
+
+html[data-shell='pixel'][data-skin] .card {
+  background: var(--sh-panel);
+  border: 0;
+  border-radius: 0;
+  box-shadow: var(--sh-px);
+  margin: 4px;
+}
+html[data-shell='pixel'][data-skin] .card::before,
+html[data-shell='pixel'][data-skin] .card::after {
+  display: none;
+}
+html[data-shell='pixel'][data-skin] .card-title {
+  font-family: var(--ct-display);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  text-shadow: 3px 3px 0 var(--sh-hot);
+}
+
+/* Ячейки панели предметов */
+html[data-shell='pixel'][data-skin] .zg-spread {
+  grid-template-columns: 104px minmax(0, 1fr) minmax(340px, 400px);
+  gap: 26px;
+}
+html[data-shell='pixel'][data-skin] .zg-spread.zg-spread-wide {
+  grid-template-columns: 104px minmax(0, 1fr);
+}
+html[data-shell='pixel'][data-skin] .zg-tabbar-side {
+  gap: 18px;
+  padding: 6px;
+}
+html[data-shell='pixel'][data-skin] .zg-tabbar-side .zg-tab {
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  min-height: 80px;
+  padding: 4px;
+  border-radius: 0;
+  background: var(--sh-panel);
+  box-shadow: var(--sh-px);
+  color: var(--ct-muted);
+  font-family: var(--sh-body);
+  font-size: 14px;
+}
+html[data-shell='pixel'][data-skin] .zg-tabbar-side .zg-tab > span.grow {
+  flex-grow: 0;
+}
+html[data-shell='pixel'][data-skin] .zg-tabbar-side .zg-tab span.absolute {
+  display: none;
+}
+html[data-shell='pixel'][data-skin] .zg-tabbar-side .zg-tab > kbd {
+  order: -1;
+  font-family: var(--ct-display);
+  font-size: 10px;
+  color: #ffd66b;
+}
+html[data-shell='pixel'][data-skin] .zg-tabbar-side .zg-tab[aria-current='page'] {
+  background: var(--sh-go);
+  color: var(--sh-edge);
+  box-shadow:
+    0 -4px 0 var(--sh-edge),
+    0 4px 0 var(--sh-edge),
+    -4px 0 0 var(--sh-edge),
+    4px 0 0 var(--sh-edge),
+    inset 0 4px 0 color-mix(in oklab, var(--sh-go) 60%, #fff),
+    inset 0 -4px 0 color-mix(in oklab, var(--sh-go) 60%, #000);
+}
+html[data-shell='pixel'][data-skin] .zg-tabbar-side .zg-tab[aria-current='page'] > kbd {
+  color: var(--sh-edge);
+}
+html[data-shell='pixel'][data-skin] .zg-tabbar {
+  background: var(--sh-panel);
+  border-top: 4px solid var(--sh-edge);
+}
+html[data-shell='pixel'][data-skin] .zg-tabbar .zg-tab {
+  font-family: var(--sh-body);
+}
+html[data-shell='pixel'][data-skin] .zg-tabbar .zg-tab span.absolute {
+  background: var(--sh-go);
+  border-radius: 0;
+}
+html[data-shell='pixel'][data-skin] .zg-tabbar .zg-tab[aria-current='page'] {
+  color: var(--sh-go);
+}
+html[data-shell='pixel'][data-skin] .zg-tabbar .zg-tab[aria-current='page'] svg {
+  color: var(--sh-edge);
+}
+
+/* Кнопки с «нажатием» */
+html[data-shell='pixel'][data-skin] .zg-btn {
+  border: 0;
+  border-radius: 0;
+  font-family: var(--sh-body);
+  font-size: 16px;
+  box-shadow: var(--sh-px);
+  margin: 4px;
+}
+html[data-shell='pixel'][data-skin] .zg-btn-primary {
+  background: var(--sh-hot);
+  color: #fff;
+  font-family: var(--ct-display);
+  font-size: 13px;
+  box-shadow:
+    0 -4px 0 var(--sh-edge),
+    0 4px 0 var(--sh-edge),
+    -4px 0 0 var(--sh-edge),
+    4px 0 0 var(--sh-edge),
+    inset 0 -6px 0 color-mix(in oklab, var(--sh-hot) 65%, #000),
+    0 8px 0 var(--sh-edge);
+}
+html[data-shell='pixel'][data-skin] .zg-btn-primary:active {
+  transform: translateY(4px);
+  box-shadow:
+    0 -4px 0 var(--sh-edge),
+    0 4px 0 var(--sh-edge),
+    -4px 0 0 var(--sh-edge),
+    4px 0 0 var(--sh-edge);
+}
+html[data-shell='pixel'][data-skin] .zg-btn-default {
+  background: var(--sh-panel);
+}
+html[data-shell='pixel'][data-skin] .zg-seg {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  gap: 12px;
+  padding: 4px;
+}
+html[data-shell='pixel'][data-skin] .zg-seg-item {
+  border-radius: 0;
+  background: var(--sh-panel);
+  box-shadow: var(--sh-px);
+  font-family: var(--sh-body);
+}
+html[data-shell='pixel'][data-skin] .zg-seg-ind {
+  border-radius: 0;
+  background: var(--sh-go);
+}
+html[data-shell='pixel'][data-skin] .zg-seg-item[data-state='on'] {
+  color: var(--sh-edge);
+}
+html[data-shell='pixel'][data-skin] .zg-field {
+  border: 0;
+  border-radius: 0;
+  background: var(--sh-edge);
+  box-shadow: inset 0 4px 0 rgb(0 0 0 / 0.4);
+  font-family: var(--sh-body);
+}
+html[data-shell='pixel'][data-skin] .zg-badge {
+  border-radius: 0;
+  background: #ffd66b;
+  color: var(--sh-edge);
+  font-family: var(--ct-display);
+  font-size: 9px;
+}
+
+html[data-shell='pixel'][data-skin] .zg-tray {
+  border: 0;
+  border-radius: 0;
+  background: var(--sh-edge);
+  box-shadow: var(--sh-px);
+  margin: 4px;
+}
+html[data-shell='pixel'][data-skin] .zg-tray-hint {
+  font-family: var(--sh-body);
+  text-transform: none;
+  letter-spacing: 0;
+}
+html[data-shell='pixel'][data-skin] .zg-roll-result {
+  border: 0;
+  border-radius: 0;
+  box-shadow: var(--sh-px);
+  font-family: var(--sh-body);
+}
+html[data-shell='pixel'][data-skin] .feed-value {
+  border-radius: 0;
+  background: var(--sh-edge);
+  color: var(--sh-go);
+  font-family: var(--ct-display);
+  font-size: 0.9rem;
+}
+html[data-shell='pixel'][data-skin] :is(.zg-sheet, .zg-dialog) {
+  background: var(--sh-panel);
+  border-radius: 0;
+  box-shadow: var(--sh-px);
+}

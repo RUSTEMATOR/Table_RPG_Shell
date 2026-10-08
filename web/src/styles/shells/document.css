@@ -1,1 +1,200 @@
-/* Оболочка «document» (этап 38) — правила под html[data-shell="document"]. */
+/* Оболочка «Документ» (этап 38): бланк, паспорт, лабораторный журнал. Темы: Паспорт, Таблица.
+   Защитная бумага с гильошем, графы и подписи узким гротеском, поля — линия для заполнения, разделы — цветные
+   разделители справа, главная кнопка — отметка, лоток — круглый штамп. */
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600&display=swap');
+
+html:root[data-shell='document'][data-skin] {
+  --sh-desk: color-mix(in oklab, var(--ct-bg) 88%, #000);
+  --sh-paper: var(--ct-panel);
+  --sh-ink: var(--ct-ink);
+  --sh-blue: var(--ct-accent);
+  --sh-red: var(--ct-accent2, var(--ct-accent));
+  --sh-label: 'Oswald', var(--ct-display), sans-serif;
+  background-color: var(--sh-desk);
+}
+html[data-shell='document'][data-skin] .topbar {
+  background: transparent;
+}
+html[data-shell='document'][data-skin] .topbar-title strong {
+  font-family: var(--sh-label);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+html[data-shell='document'][data-skin] .card {
+  background-color: var(--sh-paper);
+  background-image:
+    repeating-radial-gradient(circle at 18% 30%, transparent 0 9px, color-mix(in oklab, var(--sh-blue) 7%, transparent) 9px 10px),
+    repeating-radial-gradient(circle at 82% 72%, transparent 0 11px, color-mix(in oklab, var(--sh-red) 6%, transparent) 11px 12px);
+  border: 0;
+  border-radius: 2px;
+  box-shadow:
+    0 1px 0 var(--ct-line),
+    0 12px 26px -10px rgb(31 47 71 / 0.35);
+}
+html[data-shell='document'][data-skin] .card::before,
+html[data-shell='document'][data-skin] .card::after {
+  display: none;
+}
+html[data-shell='document'][data-skin] .card-title {
+  font-family: var(--sh-label);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-bottom: 2px solid var(--sh-blue);
+  padding-bottom: 6px;
+}
+html[data-shell='document'][data-skin] .zg-badge {
+  background: transparent;
+  color: var(--ct-muted);
+  font-family: var(--sh-label);
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  padding-inline: 0;
+}
+html[data-shell='document'][data-skin] label,
+html[data-shell='document'][data-skin] .field-label {
+  font-family: var(--sh-label);
+}
+
+/* Разделители справа */
+html[data-shell='document'][data-skin] .zg-spread {
+  grid-template-areas: 'main aside nav';
+  grid-template-columns: minmax(0, 1fr) minmax(330px, 400px) 64px;
+  gap: 0 24px;
+}
+html[data-shell='document'][data-skin] .zg-spread.zg-spread-wide {
+  grid-template-areas: 'main nav';
+  grid-template-columns: minmax(0, 1fr) 64px;
+}
+html[data-shell='document'][data-skin] .zg-tabbar-side {
+  gap: 6px;
+  padding-top: 26px;
+  margin-left: -24px;
+}
+html[data-shell='document'][data-skin] .zg-tabbar-side .zg-tab {
+  writing-mode: vertical-rl;
+  justify-content: center;
+  min-height: 104px;
+  padding: 10px 0;
+  border-radius: 0 6px 6px 0;
+  background: color-mix(in oklab, var(--sh-blue) 14%, var(--sh-paper));
+  color: var(--sh-ink);
+  font-family: var(--sh-label);
+  font-size: 15px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+html[data-shell='document'][data-skin] .zg-tabbar-side .zg-tab:nth-child(2) {
+  background: color-mix(in oklab, var(--sh-red) 14%, var(--sh-paper));
+}
+html[data-shell='document'][data-skin] .zg-tabbar-side .zg-tab:nth-child(3) {
+  background: color-mix(in oklab, #6aa84f 16%, var(--sh-paper));
+}
+html[data-shell='document'][data-skin] .zg-tabbar-side .zg-tab:nth-child(4) {
+  background: color-mix(in oklab, #d4a017 18%, var(--sh-paper));
+}
+html[data-shell='document'][data-skin] .zg-tabbar-side .zg-tab :is(svg, kbd, span.absolute) {
+  display: none;
+}
+html[data-shell='document'][data-skin] .zg-tabbar-side .zg-tab > span.grow {
+  flex-grow: 0;
+}
+html[data-shell='document'][data-skin] .zg-tabbar-side .zg-tab[aria-current='page'] {
+  background: var(--sh-blue);
+  color: var(--sh-paper);
+  min-height: 120px;
+}
+html[data-shell='document'][data-skin] .zg-tabbar {
+  background: var(--sh-paper);
+  border-top: 2px solid var(--sh-blue);
+}
+html[data-shell='document'][data-skin] .zg-tabbar .zg-tab {
+  font-family: var(--sh-label);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+html[data-shell='document'][data-skin] .zg-tabbar .zg-tab span.absolute {
+  background: var(--sh-blue);
+  border-radius: 2px;
+}
+html[data-shell='document'][data-skin] .zg-tabbar .zg-tab[aria-current='page'] svg {
+  color: var(--sh-paper);
+}
+
+html[data-shell='document'][data-skin] .zg-btn {
+  border-radius: 0;
+  font-family: var(--sh-label);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+html[data-shell='document'][data-skin] .zg-btn-primary {
+  background: var(--sh-red);
+  border-color: var(--sh-red);
+  color: #fff;
+  letter-spacing: 0.14em;
+}
+html[data-shell='document'][data-skin] .zg-btn-default {
+  background: var(--sh-paper);
+  border-color: var(--ct-line);
+}
+html[data-shell='document'][data-skin] .zg-seg {
+  border-radius: 0;
+  background: var(--sh-paper);
+}
+html[data-shell='document'][data-skin] .zg-seg-item {
+  border-radius: 0;
+  font-family: var(--sh-label);
+  letter-spacing: 0.06em;
+}
+html[data-shell='document'][data-skin] .zg-seg-ind {
+  border-radius: 0;
+  background: var(--sh-blue);
+}
+html[data-shell='document'][data-skin] .zg-field {
+  background: transparent;
+  border-width: 0 0 1px;
+  border-radius: 0;
+  border-color: var(--ct-muted);
+}
+
+/* Лоток — круглый штамп с двойной каймой */
+html[data-shell='document'][data-skin] .zg-tray {
+  border: 4px double var(--sh-red);
+  border-radius: 50%;
+  aspect-ratio: 1;
+  height: auto;
+  width: min(100%, 260px);
+  margin-inline: auto;
+  background: transparent;
+  box-shadow:
+    inset 0 0 0 10px transparent,
+    inset 0 0 0 11px color-mix(in oklab, var(--sh-red) 60%, transparent);
+  transform: rotate(-10deg);
+}
+html[data-shell='document'][data-skin] .zg-tray-hint {
+  left: 0;
+  right: 0;
+  top: auto;
+  bottom: 16%;
+  text-align: center;
+  color: var(--sh-red);
+  font-family: var(--sh-label);
+}
+html[data-shell='document'][data-skin] .zg-roll-result {
+  border-radius: 0;
+  border-color: var(--sh-red);
+  color: var(--sh-red);
+  font-family: var(--sh-label);
+}
+html[data-shell='document'][data-skin] .feed-value {
+  background: transparent;
+  font-family: var(--sh-label);
+  color: var(--sh-blue);
+}
+html[data-shell='document'][data-skin] :is(.zg-sheet, .zg-dialog) {
+  background: var(--sh-paper);
+  border-radius: 2px;
+}
