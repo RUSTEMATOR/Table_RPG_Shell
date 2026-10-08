@@ -5,8 +5,12 @@ import { cn } from '../lib/cn.ts';
 import { spring } from '../lib/motion.tsx';
 import { overlayClass } from './Dialog.tsx';
 import { useKeyboardInset } from '../lib/keyboard.ts';
+import { DESKTOP_QUERY, useMedia } from '../lib/media.ts';
 
-/** Лист снизу (телефон): закрывается свайпом вниз, тапом по затемнению и «Назад». Учитывает безопасную зону и клавиатуру. */
+/**
+ * Лист снизу (телефон): закрывается свайпом вниз, тапом по затемнению и «Назад». Учитывает безопасную зону и клавиатуру.
+ * На компьютере (широкое окно и мышь) — панель справа: выезжает сбоку, закрывается Esc и щелчком по затемнению.
+ */
 export function Sheet({
   open,
   onOpenChange,
@@ -25,6 +29,40 @@ export function Sheet({
   const kb = useKeyboardInset(open);
   // Тянуть лист вниз можно только за ручку и заголовок: иначе жест перехватывает вертикальную прокрутку содержимого на телефоне.
   const controls = useDragControls();
+  const side = useMedia(DESKTOP_QUERY);
+  if (side)
+    return (
+      <D.Root open={open} onOpenChange={onOpenChange}>
+        <D.Portal>
+          <D.Overlay className={overlayClass} />
+          <D.Content asChild aria-describedby={undefined}>
+            <m.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              transition={spring.sheet}
+              className={cn(
+                'fixed inset-y-0 right-0 z-50 grid w-[min(520px,100vw)] content-start gap-3 overflow-y-auto overscroll-contain rounded-l-sheet bg-surface px-6 pt-6 pb-8 text-text shadow-[-8px_0_32px_rgba(20,26,21,.18)] focus:outline-none',
+                className,
+              )}
+            >
+              <div className="flex items-start gap-3">
+                <D.Title className="m-0 grow font-name text-[1.6rem] font-normal leading-tight">{title}</D.Title>
+                <D.Close
+                  className="grid size-9 shrink-0 cursor-pointer place-items-center rounded-control border-0 bg-transparent text-muted hover:bg-surface-2 hover:text-text"
+                  aria-label="Закрыть"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true" className="size-5 fill-none stroke-current stroke-2 [stroke-linecap:round]">
+                    <path d="M6 6l12 12M18 6L6 18" />
+                  </svg>
+                </D.Close>
+              </div>
+              {description && <D.Description className="m-0 text-muted">{description}</D.Description>}
+              {children}
+            </m.div>
+          </D.Content>
+        </D.Portal>
+      </D.Root>
+    );
   return (
     <D.Root open={open} onOpenChange={onOpenChange}>
       <D.Portal>
