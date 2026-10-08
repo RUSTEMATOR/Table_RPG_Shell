@@ -4,6 +4,7 @@ import { type ClientToServerEvents, type ServerToClientEvents } from '@zg/shared
 import { config } from '../config.ts';
 import { type AuthContext, SESSION_COOKIE, parseCookieHeader, resolveSession } from '../auth/sessions.ts';
 import { registerGmTraitHandlers } from './handlers/gmTraits.ts';
+import { registerPresenceHandlers } from './handlers/presence.ts';
 import { registerRollHandlers } from './handlers/rolls.ts';
 import { registerSyncHandlers } from './handlers/sync.ts';
 import { setLogger } from './log.ts';
@@ -68,6 +69,7 @@ export function attachSocketIo(app: FastifyInstance): ZgServer {
     registerSyncHandlers(socket);
     registerGmTraitHandlers(socket);
     registerRollHandlers(socket);
+    registerPresenceHandlers(socket);
   });
 
   setIo(io);

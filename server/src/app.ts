@@ -8,6 +8,7 @@ import { jevRoutes } from './ai/jev/routes.ts';
 import { gmCharacterRoutes } from './routes/gmCharacters.ts';
 import { playerRoutes } from './routes/player.ts';
 import { gmSessionRoutes } from './routes/gmSession.ts';
+import { gmPresenceRoutes } from './routes/gmPresence.ts';
 import { gmScreenRoutes } from './routes/gmScreen.ts';
 import { playerDiaryRoutes } from './routes/playerDiary.ts';
 import { gmNpcRoutes } from './routes/npcs.ts';
@@ -59,6 +60,7 @@ export async function buildApp() {
   await app.register(gmCharacterRoutes);
   await app.register(playerRoutes);
   await app.register(gmSessionRoutes);
+  await app.register(gmPresenceRoutes);
   await app.register(gmScreenRoutes);
   await app.register(playerDiaryRoutes);
   await app.register(gmSceneRoutes);
