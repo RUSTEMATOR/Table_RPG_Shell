@@ -60,7 +60,7 @@ function TvMapBody({ id, focus, still, lite }: { id: MapId; focus: MapFocus | nu
     <>
       <MapStage
         look={focus?.look === '3d' && !lite && can3d() ? '3d' : '2d'}
-        data={map}
+        data={{ ...map, party: map.parties[0] ?? null }}
         mode="table"
         camera={setCamera}
         instant={still}

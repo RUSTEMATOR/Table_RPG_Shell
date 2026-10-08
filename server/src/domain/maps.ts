@@ -15,7 +15,6 @@ import {
   type GmMapView,
   type MapFocus,
   type MapId,
-  type PartyFigure,
   type PartyMove,
   type UnitId,
 } from '@zg/shared';
@@ -24,6 +23,7 @@ import { db, schema } from '../db/client.ts';
 import { SERVER_ROOT } from '../paths.ts';
 import { listNpcs, npcFigure, npcModel } from './npc.ts';
 import { listCharacters } from './repo.ts';
+import { figuresOf, listParties, namesOf } from './parties.ts';
 
 // Карты мира. Неизменная часть (контуры, имена, подписи регионов, исходные места и дороги) — из server/src/maps/json
 // (tools/extract-maps). В базе — что открыто, места (их можно править), заметки мастера, маркер партии, заметки игроков.
@@ -273,11 +273,6 @@ export function roads(mapId: MapId, places: PlaceRow[]): { d: string; open: bool
   });
 }
 
-/** Отряд на карте — фигурки персонажей игроков (у кого собрана фигурка): имя и внешность, по алфавиту. */
-export function partyFigures(all: Piece[]): PartyFigure[] {
-  return all.flatMap((p) => (p.kind === 'pc' && p.owner && p.figure ? [{ name: p.name, figure: p.figure }] : [])).slice(0, 12);
-}
-
 /** Последний поход отряда из базы; неверный JSON — похода нет. */
 export function partyMove(row: { move: string | null } | null): PartyMove | null {
   if (!row?.move) return null;
@@ -384,8 +379,6 @@ export function gmMapView(roomId: string, mapId: MapId): GmMapView {
   const src = MAPS[mapId];
   const rows = new Map(regionRows(roomId, mapId).map((r) => [r.key, r]));
   const places = placeRows(roomId, mapId);
-  const party = getParty(roomId);
-  const partyMap = MAP_IDS.find((m) => m === party?.mapId);
   const all = pieces(roomId);
   const byRef = new Map(all.map((p) => [pieceKey(p), p]));
   return {
@@ -426,7 +419,18 @@ export function gmMapView(roomId: string, mapId: MapId): GmMapView {
       noteGm: p.noteGm,
     })),
     roads: roads(mapId, places),
-    party: party && partyMap ? { mapId: partyMap, x: party.x, y: party.y, visible: party.visible, move: partyMove(party), figures: partyFigures(all) } : null,
+    parties: listParties(roomId).map((p) => ({
+      id: p.id,
+      main: p.main,
+      mapId: p.mapId,
+      x: p.x,
+      y: p.y,
+      visible: p.visible,
+      move: partyMove(p),
+      figures: figuresOf(all, p.members),
+      names: namesOf(all, p.members),
+      members: all.flatMap((x) => (x.kind === 'pc' && p.members.includes(x.refId) ? [{ characterId: x.refId, name: x.name }] : [])),
+    })),
     table: tableMap(roomId),
     tokens: tokenRows(roomId, mapId).flatMap((t) => {
       const p = byRef.get(refOf(t));

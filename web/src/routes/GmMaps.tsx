@@ -76,7 +76,7 @@ export function GmMaps() {
         regions: view.regions,
         places: view.places,
         roads: view.roads,
-        party: view.party && view.party.mapId === view.id ? view.party : null,
+        party: view.parties.find((p) => p.mapId === view.id) ?? null,
         tokens: view.tokens,
         notes: [],
       },
@@ -351,19 +351,21 @@ function Lists({ view, onSelect, onSelectToken, post }: { view: GmMapView; onSel
             </li>
           ))}
         </ul>
-        {view.party && (
-          <div className="flex items-center gap-2 border-t border-solid border-border pt-2">
+        {view.parties.slice(0, 1).map((p) => (
+          <div key={p.id} className="flex items-center gap-2 border-t border-solid border-border pt-2">
             <span className="grow">
-              Партия: {TITLES[view.party.mapId]}
-              {view.party.mapId !== view.id && <span className="text-muted"> (другая карта)</span>}
+              Партия: {TITLES[p.mapId]}
+              {p.mapId !== view.id && <span className="text-muted"> (другая карта)</span>}
             </span>
             <Switch
-              checked={view.party.visible}
-              onCheckedChange={(v) => void post('/api/gm/maps/party', { ...view.party!, visible: v }, v ? 'Маркер партии виден' : 'Маркер партии спрятан')}
+              checked={p.visible}
+              onCheckedChange={(v) =>
+                void post('/api/gm/maps/party', { party: p.id, mapId: p.mapId, x: p.x, y: p.y, visible: v }, v ? 'Маркер партии виден' : 'Маркер партии спрятан')
+              }
               label="видна"
             />
           </div>
-        )}
+        ))}
       </Card>
       <Card className="gap-2">
         <h3 className="m-0">Фигурки</h3>

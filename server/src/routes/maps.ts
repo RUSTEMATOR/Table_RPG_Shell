@@ -3,6 +3,8 @@ import { and, eq } from 'drizzle-orm';
 import {
   MapIdSchema,
   NoteWriteSchema,
+  PartyMergeSchema,
+  PartySplitSchema,
   PartyWriteSchema,
   PlaceWriteSchema,
   ProposalDecideSchema,
@@ -14,7 +16,8 @@ import {
   TravelSchema,
   type MapId,
 } from '@zg/shared';
-import { cancelProposal, decideProposal, getProposal, gmProposals, ownProposal, propose, publicRoute, travelTo } from '../domain/travel.ts';
+import { cancelProposal, decideProposal, getProposal, gmProposals, ownProposal, propose, publicRoute, sameParty, travelTo } from '../domain/travel.ts';
+import { getPartyById, listParties, mergeParties, partyIdOfMember, placeParty, splitParty } from '../domain/parties.ts';
 import { requireGm } from '../auth/requireGm.ts';
 import { newId } from '../auth/tokens.ts';
 import { db, schema } from '../db/client.ts';
@@ -29,7 +32,6 @@ import {
   gmMapView,
   pieceKey,
   pieces,
-  setParty,
   setTableMap,
   updatePlace,
   updateRegion,
@@ -123,15 +125,18 @@ export async function gmMapRoutes(app: FastifyInstance) {
     return gmMapView(roomId, mapId);
   });
 
+  // Отряды (этап 39): у каждого своя карта. Перестановка, поход, разделение и соединение сообщают всем затронутым картам.
+  const touch = (roomId: string, maps: (MapId | undefined)[]) => new Set(maps.filter((m): m is MapId => !!m)).forEach((m) => notifyMapChanged(roomId, m));
+  const mapsOfParties = (roomId: string) => listParties(roomId).map((p) => p.mapId);
+
   app.post('/api/gm/maps/party', async (request, reply) => {
     const b = PartyWriteSchema.safeParse(request.body);
     if (!b.success) return reply.code(400).send({ error: 'bad_request' });
     const roomId = request.auth!.room.id;
-    const before = db.select({ mapId: schema.mapParty.mapId }).from(schema.mapParty).where(eq(schema.mapParty.roomId, roomId)).get();
-    setParty(roomId, b.data);
-    // Маркер мог уйти с одной карты на другую: сообщаем обеим.
-    const touched = new Set([before?.mapId, b.data?.mapId].filter((m): m is MapId => MapIdSchema.safeParse(m).success));
-    touched.forEach((m) => notifyMapChanged(roomId, m));
+    const { party, ...v } = b.data;
+    const before = getPartyById(roomId, party)?.mapId;
+    if (!placeParty(roomId, party, v)) return reply.code(404).send({ error: 'not_found' });
+    touch(roomId, [before, v.mapId]);
     return { ok: true };
   });
 
@@ -141,11 +146,30 @@ export async function gmMapRoutes(app: FastifyInstance) {
     if (!b.success) return reply.code(400).send({ error: 'bad_request' });
     const roomId = request.auth!.room.id;
     const place = getPlace(roomId, b.data.placeId);
-    if (!place || place.kind === 'deleted' || place.mapId !== b.data.mapId) return reply.code(404).send({ error: 'not_found' });
-    const before = db.select({ mapId: schema.mapParty.mapId }).from(schema.mapParty).where(eq(schema.mapParty.roomId, roomId)).get();
-    travelTo(roomId, b.data.mapId, place);
-    const touched = new Set([before?.mapId, b.data.mapId].filter((m): m is MapId => MapIdSchema.safeParse(m).success));
-    touched.forEach((m) => notifyMapChanged(roomId, m));
+    const party = getPartyById(roomId, b.data.party);
+    if (!place || !party || place.kind === 'deleted' || place.mapId !== b.data.mapId) return reply.code(404).send({ error: 'not_found' });
+    travelTo(roomId, party, b.data.mapId, place);
+    touch(roomId, [party.mapId, b.data.mapId]);
+    return { ok: true };
+  });
+
+  app.post('/api/gm/maps/party/split', async (request, reply) => {
+    const b = PartySplitSchema.safeParse(request.body);
+    if (!b.success) return reply.code(400).send({ error: 'bad_request' });
+    const roomId = request.auth!.room.id;
+    const r = splitParty(roomId, b.data.from, b.data.characterIds);
+    if ('error' in r) return reply.code(r.error === 'not_found' ? 404 : 400).send({ error: r.error });
+    touch(roomId, mapsOfParties(roomId));
+    return r;
+  });
+
+  app.post('/api/gm/maps/party/merge', async (request, reply) => {
+    const b = PartyMergeSchema.safeParse(request.body);
+    if (!b.success) return reply.code(400).send({ error: 'bad_request' });
+    const roomId = request.auth!.room.id;
+    const before = mapsOfParties(roomId);
+    if (!mergeParties(roomId, b.data.from, b.data.into)) return reply.code(404).send({ error: 'not_found' });
+    touch(roomId, [...before, ...mapsOfParties(roomId)]);
     return { ok: true };
   });
 
@@ -162,19 +186,15 @@ export async function gmMapRoutes(app: FastifyInstance) {
     const p = getProposal(roomId, request.params.id);
     if (!p || p.status !== 'pending') return reply.code(404).send({ error: 'not_found' });
     const mapId = MapIdSchema.parse(p.mapId);
-    // принятое закрывает и остальные ожидающие — их авторы тоже узнают
-    const affected = db
-      .select({ m: schema.mapProposal.memberId })
-      .from(schema.mapProposal)
-      .where(and(eq(schema.mapProposal.roomId, roomId), eq(schema.mapProposal.mapId, mapId), eq(schema.mapProposal.status, 'pending')))
-      .all()
-      .map((r) => r.m);
+    // принятое закрывает и остальные ожидающие этого отряда — их авторы тоже узнают
+    const affected = b.data.status === 'accepted' ? sameParty(p).map((x) => x.memberId) : [p.memberId];
+    const party = getPartyById(roomId, partyIdOfMember(roomId, p.memberId));
     decideProposal(p, b.data.status);
-    if (b.data.status === 'accepted') {
+    if (b.data.status === 'accepted' && party) {
       const place = getPlace(roomId, p.placeId);
       if (place && place.kind !== 'deleted') {
-        travelTo(roomId, mapId, place);
-        notifyMapChanged(roomId, mapId);
+        travelTo(roomId, party, mapId, place);
+        touch(roomId, [party.mapId, mapId]);
       }
     }
     new Set(affected).forEach((memberId) => publish(roomId, { kind: 'member', memberId }, 'map:proposal.changed', { mapId }));
@@ -274,7 +294,7 @@ export async function playerMapRoutes(app: FastifyInstance) {
     if (!b.success) return reply.code(400).send({ error: 'bad_request' });
     const place = getPlace(auth.room.id, b.data.placeId);
     if (!place || !place.visible || place.kind === 'deleted' || place.mapId !== mapId) return reply.code(404).send({ error: 'not_found' });
-    const route = publicRoute(auth.room.id, mapId, place.id);
+    const route = publicRoute(auth.room.id, mapId, place.id, getPartyById(auth.room.id, partyIdOfMember(auth.room.id, auth.member.id)));
     propose(auth.room.id, auth.member.id, mapId, place, Math.round((route?.days.foot ?? 0) * 10) / 10);
     publish(auth.room.id, { kind: 'gm' }, 'gm:map.proposal', { mapId, who: auth.member.name, placeName: place.name });
     publish(auth.room.id, { kind: 'member', memberId: auth.member.id }, 'map:proposal.changed', { mapId });

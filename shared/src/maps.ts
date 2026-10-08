@@ -88,6 +88,22 @@ export type PartyMove = z.infer<typeof PartyMoveSchema>;
 export const PartyFigureSchema = z.strictObject({ name: z.string(), figure: FigureSchema });
 export type PartyFigure = z.infer<typeof PartyFigureSchema>;
 
+/** Отряд на карте (этап 39: отряд может разделиться). id — `main` у основного, nanoid у отделившихся; mine — отряд этого игрока. */
+export const PARTY_MAIN = 'main';
+export const PARTY_MAX = 6;
+export const PartyIdSchema = z.string().min(1).max(64);
+export const PartyPublicSchema = z.strictObject({
+  id: PartyIdSchema,
+  x: Num,
+  y: Num,
+  move: PartyMoveSchema.nullable(),
+  figures: z.array(PartyFigureSchema).max(12),
+  /** имена персонажей отряда — подпись, когда отрядов на карте несколько */
+  names: z.array(z.string()).max(24),
+  mine: z.boolean(),
+});
+export type PartyPublic = z.infer<typeof PartyPublicSchema>;
+
 /** Карта для игрока и стола: только открытое. notes — личные заметки игрока (столу — пусто). */
 export const MapPublicSchema = z.strictObject({
   id: MapIdSchema,
@@ -97,8 +113,8 @@ export const MapPublicSchema = z.strictObject({
   places: z.array(MapPlacePublicSchema),
   /** открытые дороги: путь и концы (id открытых мест) — для маршрута (этап 28) */
   roads: z.array(z.strictObject({ d: z.string(), a: z.string(), b: z.string() })),
-  /** отряд; move — последний поход по дороге (этап 28): путь, длительность анимации, отметка похода (не время) */
-  party: z.strictObject({ x: Num, y: Num, move: PartyMoveSchema.nullable(), figures: z.array(PartyFigureSchema).max(12) }).nullable(),
+  /** открытые отряды на этой карте; move — последний поход по дороге (этап 28): путь, длительность анимации, отметка похода (не время) */
+  parties: z.array(PartyPublicSchema).max(PARTY_MAX),
   tokens: z.array(MapTokenPublicSchema),
   notes: z.array(MapNoteSchema),
 });
@@ -133,6 +149,19 @@ export interface GmMapToken {
   visible: boolean;
 }
 /** Кого можно поставить на карту: все персонажи и противники комнаты. */
+/** Отряд у мастера: все, и скрытые, и на других картах; members — состав (персонажи). */
+export interface GmMapParty {
+  id: string;
+  main: boolean;
+  mapId: MapId;
+  x: number;
+  y: number;
+  visible: boolean;
+  move: PartyMove | null;
+  figures: PartyFigure[];
+  names: string[];
+  members: { characterId: string; name: string }[];
+}
 export interface GmMapPiece {
   kind: 'pc' | 'npc';
   refId: string;
@@ -147,7 +176,8 @@ export interface GmMapView {
   places: GmMapPlace[];
   /** Все дороги; open — открыты оба конца (игрок её видит). */
   roads: { d: string; open: boolean; a: string; b: string }[];
-  party: { mapId: MapId; x: number; y: number; visible: boolean; move: PartyMove | null; figures: PartyFigure[] } | null;
+  /** все отряды комнаты, основной первым */
+  parties: GmMapParty[];
   table: { mapId: MapId; focus: MapFocus | null } | null;
   tokens: GmMapToken[];
   pieces: GmMapPiece[];
@@ -170,7 +200,17 @@ export const PlaceWriteSchema = z.strictObject({
   noteGm: z.string().max(4000).optional(),
 });
 export const RegionWriteSchema = z.strictObject({ visible: z.boolean().optional(), noteGm: z.string().max(4000).optional() });
-export const PartyWriteSchema = z.strictObject({ mapId: MapIdSchema, x: z.number().min(0).max(MAP_W), y: z.number().min(0).max(MAP_H), visible: z.boolean() }).nullable();
+export const PartyWriteSchema = z.strictObject({
+  party: PartyIdSchema.default(PARTY_MAIN),
+  mapId: MapIdSchema,
+  x: z.number().min(0).max(MAP_W),
+  y: z.number().min(0).max(MAP_H),
+  visible: z.boolean(),
+});
+/** Разделить (этап 39): от отряда from отходят персонажи characterIds — новый отряд в той же точке. */
+export const PartySplitSchema = z.strictObject({ from: PartyIdSchema, characterIds: z.array(z.string().min(1).max(64)).min(1).max(24) });
+/** Соединить: отряд from вливается в into и встаёт на его место. */
+export const PartyMergeSchema = z.strictObject({ from: PartyIdSchema, into: PartyIdSchema });
 export const TableMapWriteSchema = z.strictObject({ mapId: MapIdSchema.nullable(), focus: MapFocusSchema.nullable().default(null) });
 
 const X = z.number().min(0).max(MAP_W);
@@ -311,9 +351,11 @@ export interface GmProposal {
   placeName: string;
   /** кто предложил: имя игрока и его персонажа */
   who: string;
+  /** какой отряд поведёт (этап 39): имена его персонажей, когда отрядов больше одного */
+  party: string | null;
   days: number;
   status: 'pending' | 'accepted' | 'declined';
   createdAt: number;
 }
 export const ProposalDecideSchema = z.strictObject({ status: z.enum(['accepted', 'declined']) });
-export const TravelSchema = z.strictObject({ mapId: MapIdSchema, placeId: z.string().min(1).max(64) });
+export const TravelSchema = z.strictObject({ party: PartyIdSchema.default(PARTY_MAIN), mapId: MapIdSchema, placeId: z.string().min(1).max(64) });

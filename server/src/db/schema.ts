@@ -415,6 +415,42 @@ export const mapParty = sqliteTable('map_party', {
   updatedAt: integer('updated_at').notNull(),
 });
 
+// Отделившиеся отряды (этап 39): у каждого своя карта, точка, видимость и поход. Основной отряд — map_party.
+export const mapGroup = sqliteTable(
+  'map_group',
+  {
+    id: text('id').primaryKey(),
+    roomId: text('room_id')
+      .notNull()
+      .references(() => room.id, { onDelete: 'cascade' }),
+    mapId: text('map_id').notNull(),
+    x: real('x').notNull(),
+    y: real('y').notNull(),
+    visible: integer('visible', { mode: 'boolean' }).notNull().default(true),
+    move: text('move'),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  (t) => [index('map_group_room_idx').on(t.roomId)],
+);
+
+// Кто в отделившемся отряде. Персонажа здесь нет — он в основном отряде.
+export const mapGroupMember = sqliteTable(
+  'map_group_member',
+  {
+    characterId: text('character_id')
+      .primaryKey()
+      .references(() => character.id, { onDelete: 'cascade' }),
+    roomId: text('room_id')
+      .notNull()
+      .references(() => room.id, { onDelete: 'cascade' }),
+    groupId: text('group_id')
+      .notNull()
+      .references(() => mapGroup.id, { onDelete: 'cascade' }),
+  },
+  (t) => [index('map_group_member_group_idx').on(t.groupId)],
+);
+
 // Предложения игроков «идём туда» (этап 28). Видит мастер и сам предложивший; решает мастер.
 export const mapProposal = sqliteTable(
   'map_proposal',

@@ -28,7 +28,9 @@ export function PlayerMap({ active, full = false }: { active: boolean; full?: bo
     return MAP_IDS.find((m) => m === v) ?? 'world';
   });
   useEffect(() => save('zg:player:map', mapId), [mapId]);
-  const [map, setMap] = useState<MapPublic | null>(null);
+  const [raw, setMap] = useState<MapPublic | null>(null);
+  // этап 39: свой отряд (иначе первый открытый)
+  const map = useMemo(() => raw && { ...raw, party: raw.parties.find((p) => p.mine) ?? raw.parties[0] ?? null }, [raw]);
   const [camera, setCamera] = useState<MapCamera | null>(null);
   const [noteMode, setNoteMode] = useState(false);
   const [look, setLook, can3d] = useMapLook();

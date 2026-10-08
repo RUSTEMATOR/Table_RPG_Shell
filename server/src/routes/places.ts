@@ -203,7 +203,7 @@ export async function publicPlaceRoutes(app: FastifyInstance) {
     const auth = request.auth;
     if (!auth) return reply.code(401).send({ error: 'unauthorized' });
     if (auth.member.role !== 'player') return reply.code(403).send({ error: 'forbidden' });
-    const d = projectPlaceDetail(auth.room.id, request.params.id, 'player');
+    const d = projectPlaceDetail(auth.room.id, request.params.id, 'player', auth.member.id);
     return d ?? reply.code(404).send({ error: 'not_found' });
   });
   app.get<{ Params: { id: string } }>('/api/table/maps/places/:id', async (request, reply) => {

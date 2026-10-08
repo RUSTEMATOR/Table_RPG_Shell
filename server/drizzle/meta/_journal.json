@@ -92,6 +92,13 @@
       "when": 1791415357741,
       "tag": "0012_npc_model3d",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1791494250269,
+      "tag": "0013_party_groups",
+      "breakpoints": true
     }
   ]
 }

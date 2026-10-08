@@ -13,7 +13,8 @@ import {
   type PlaceDetailPublic,
 } from '@zg/shared';
 import { db, schema } from '../db/client.ts';
-import { MAPS, ensureMaps, getParty, getPlace, partyFigures, partyMove, type PlaceRow, pieceKey, pieces, placeRows, refOf, regionRows, roads, tokenRows } from '../domain/maps.ts';
+import { MAPS, ensureMaps, getPlace, partyMove, type PlaceRow, pieceKey, pieces, placeRows, refOf, regionRows, roads, tokenRows } from '../domain/maps.ts';
+import { figuresOf, listParties, namesOf, partyIdOfMember } from '../domain/parties.ts';
 import { imageUrl } from '../domain/media.ts';
 import { npcFigure } from '../domain/npc.ts';
 import { presenceRows, rumorRows, spotRows } from '../domain/places.ts';
@@ -21,9 +22,9 @@ import { presenceRows, rumorRows, spotRows } from '../domain/places.ts';
 // Единственное место, где карта превращается в то, что видят игрок и стол.
 // Уходят только открытые регионы (контур, имя, подпись) и открытые места, без note_gm и без ключей исходных данных.
 // Скрытые регионы не оставляют ни контура, ни счётчика: закрытое на клиенте — общий туман.
-// Дорога — только если открыты оба её конца (с id этих мест — для маршрута). Маркер партии — если он на этой карте
-// и не спрятан; с последним походом (путь только по открытым дорогам и местам, domain/travel.ts) и фигурками персонажей
-// игроков (имя и внешность, без id).
+// Дорога — только если открыты оба её конца (с id этих мест — для маршрута). Отряды (этап 39) — те, что на этой карте
+// и не спрятаны; скрытый не оставляет ни следа, ни счётчика. У отряда — последний поход (путь только по открытым дорогам
+// и местам, domain/travel.ts), фигурки и имена персонажей игроков (без id персонажей), mine — отряд этого игрока.
 // Фигурки — только видимые: имя и внешность (FigureSchema), без id персонажа или противника, без силы и заметок.
 // На выходе — MapPublicSchema.parse (strictObject на всех уровнях): лишнее поле — исключение.
 
@@ -37,9 +38,11 @@ export function projectMapPublic(roomId: string, mapId: MapId, memberId?: string
   );
   const ids = new Map(regionRows(roomId, mapId).map((r) => [r.key, r.id]));
   const places = placeRows(roomId, mapId);
-  const party = getParty(roomId);
+  const parties = listParties(roomId).filter((p) => p.visible && p.mapId === mapId);
+  const mine = memberId && parties.length ? partyIdOfMember(roomId, memberId) : null;
   const tokens = tokenRows(roomId, mapId).filter((t) => t.visible);
-  const byRef = tokens.length ? new Map(pieces(roomId).map((p) => [pieceKey(p), p])) : new Map();
+  const all = tokens.length || parties.length ? pieces(roomId) : [];
+  const byRef = new Map(all.map((p) => [pieceKey(p), p]));
   return MapPublicSchema.parse({
     id: mapId,
     title: src.title,
@@ -72,7 +75,15 @@ export function projectMapPublic(roomId: string, mapId: MapId, memberId?: string
     roads: roads(mapId, places)
       .filter((r) => r.open)
       .map((r) => ({ d: r.d, a: r.a, b: r.b })),
-    party: party && party.visible && party.mapId === mapId ? { x: party.x, y: party.y, move: partyMove(party), figures: partyFigures(pieces(roomId)) } : null,
+    parties: parties.map((p) => ({
+      id: p.id,
+      x: p.x,
+      y: p.y,
+      move: partyMove(p),
+      figures: figuresOf(all, p.members),
+      names: namesOf(all, p.members),
+      mine: p.id === mine,
+    })),
     tokens: tokens.flatMap((t) => {
       const p = byRef.get(refOf(t));
       return p ? [{ id: t.id, kind: p.kind, name: p.name, figure: p.figure, model: p.model, x: t.x, y: t.y, mine: !!memberId && p.owner === memberId }] : [];
@@ -106,12 +117,13 @@ export function projectMapForTable(roomId: string, mapId: MapId): MapPublic {
  * (имя и фигурка противника из библиотеки, роль от мастера; без id противника, силы, заметок, портрета).
  * Скрытое не оставляет ни следа, ни счётчика; note_gm не читается. На выходе — PlaceDetailPublicSchema.parse.
  */
-export function projectPlaceDetail(roomId: string, placeId: string, viewer: 'player' | 'table'): PlaceDetailPublic | null {
+export function projectPlaceDetail(roomId: string, placeId: string, viewer: 'player' | 'table', memberId?: string): PlaceDetailPublic | null {
   const p = getPlace(roomId, placeId);
   if (!p || !p.visible || p.kind === 'deleted') return null;
-  // войти в город игрок может, только когда отряд рядом (и виден игрокам); иначе — лишь карточка снаружи
-  const party = getParty(roomId);
-  const inside = viewer === 'table' || (!!party && party.visible && party.mapId === p.mapId && partyNear(p, party));
+  // войти в город игрок может, только когда его отряд рядом (и виден игрокам); иначе — лишь карточка снаружи.
+  // Без memberId (сравнение для сигнала об изменении) — когда рядом любой видимый отряд.
+  const own = memberId ? partyIdOfMember(roomId, memberId) : null;
+  const inside = viewer === 'table' || listParties(roomId).some((q) => (own === null || q.id === own) && q.visible && q.mapId === p.mapId && partyNear(p, q));
   if (!inside) return outside(p);
   const spots = spotRows(p.id).filter((s) => s.visible);
   const spotIds = new Set(spots.map((s) => s.id));
