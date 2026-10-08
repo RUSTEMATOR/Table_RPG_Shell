@@ -38,6 +38,7 @@ import {
   updateToken,
 } from '../domain/maps.ts';
 import { notifyMapChanged, notifyPlaceChanged } from '../realtime/maps.ts';
+import { pushToGm, pushToMember } from '../push/send.ts';
 import { publish } from '../realtime/publish.ts';
 import { projectMapForPlayer, projectMapForTable } from '../visibility/map.ts';
 import { pushTable } from './scenes.ts';
@@ -199,6 +200,13 @@ export async function gmMapRoutes(app: FastifyInstance) {
     }
     new Set(affected).forEach((memberId) => publish(roomId, { kind: 'member', memberId }, 'map:proposal.changed', { mapId }));
     publish(roomId, { kind: 'gm' }, 'gm:map.proposal', { mapId });
+    // push (этап 41): имя места игрок видит и так — предложение было по открытому месту
+    const placeName = getPlace(roomId, p.placeId)?.name ?? '';
+    const note =
+      b.data.status === 'accepted'
+        ? { title: 'Отряд идёт', body: placeName ? `Идём в ${placeName}` : 'Мастер принял предложение', tag: 'proposal' }
+        : { title: 'Предложение отклонено', body: placeName, tag: 'proposal' };
+    new Set(affected).forEach((memberId) => pushToMember(roomId, memberId, { ...note, url: '/?tab=map' }));
     return gmProposals(roomId, mapId);
   });
 
@@ -298,6 +306,7 @@ export async function playerMapRoutes(app: FastifyInstance) {
     propose(auth.room.id, auth.member.id, mapId, place, Math.round((route?.days.foot ?? 0) * 10) / 10);
     publish(auth.room.id, { kind: 'gm' }, 'gm:map.proposal', { mapId, who: auth.member.name, placeName: place.name });
     publish(auth.room.id, { kind: 'member', memberId: auth.member.id }, 'map:proposal.changed', { mapId });
+    pushToGm(auth.room.id, { title: 'Предложение', body: `${auth.member.name} предлагает идти в ${place.name}`, url: '/gm/maps', tag: `proposal:${auth.member.id}` });
     return { proposal: ownProposal(auth.room.id, auth.member.id, mapId) };
   });
 

@@ -34,6 +34,11 @@ const ConfigSchema = z.object({
   ANTHROPIC_API_KEY: z.string().optional(),
   ANTHROPIC_MODEL_SUMMARY: z.string().default('claude-sonnet-5-5'),
   ANTHROPIC_MODEL_DRAFT: z.string().default('claude-haiku-4-5'),
+  // Push-уведомления (этап 41), VAPID. Без пары ключей уведомления выключены. Ключи делает npm run vapid.
+  VAPID_PUBLIC_KEY: z.string().optional(),
+  VAPID_PRIVATE_KEY: z.string().optional(),
+  // Контакт для push-служб: https-адрес (не почта). По умолчанию PUBLIC_ORIGIN.
+  VAPID_SUBJECT: z.string().url().optional(),
 });
 
 const parsed = ConfigSchema.safeParse(process.env);
@@ -50,6 +55,14 @@ export const config = {
   // Сюда скрипты ops пишут отметки: последний бэкап, обновление IP Cloudflare, DDNS.
   OPS_STATE_DIR: parsed.data.OPS_STATE_DIR ?? join(dirname(parsed.data.DB_PATH), 'ops-state'),
   HOST: '127.0.0.1',
+  push:
+    parsed.data.VAPID_PUBLIC_KEY && parsed.data.VAPID_PRIVATE_KEY
+      ? {
+          publicKey: parsed.data.VAPID_PUBLIC_KEY,
+          privateKey: parsed.data.VAPID_PRIVATE_KEY,
+          subject: parsed.data.VAPID_SUBJECT ?? parsed.data.PUBLIC_ORIGIN ?? 'https://github.com/RUSTEMATOR/Table_RPG_Shell',
+        }
+      : null,
   envFile,
   isDev: parsed.data.NODE_ENV === 'development',
 };

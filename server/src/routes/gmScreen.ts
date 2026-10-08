@@ -10,6 +10,7 @@ import { getNote, pastNotes, saveNote } from '../domain/notes.ts';
 import { changeOverload, overloadView } from '../domain/overload.ts';
 import { listCharacters } from '../domain/repo.ts';
 import { activeSession } from '../domain/session.ts';
+import { pushToMember } from '../push/send.ts';
 import { publish } from '../realtime/publish.ts';
 
 export async function gmScreenRoutes(app: FastifyInstance) {
@@ -17,9 +18,7 @@ export async function gmScreenRoutes(app: FastifyInstance) {
 
   // ---- Перегрузка ----
 
-  app.get('/api/gm/overload', async (request) =>
-    listCharacters(request.auth!.room.id).map(({ row }) => overloadView(row)),
-  );
+  app.get('/api/gm/overload', async (request) => listCharacters(request.auth!.room.id).map(({ row }) => overloadView(row)));
 
   app.post<{ Params: { id: string } }>('/api/gm/overload/:id', async (request, reply) => {
     const b = OverloadChangeSchema.safeParse(request.body);
@@ -58,11 +57,11 @@ export async function gmScreenRoutes(app: FastifyInstance) {
       requestState: e.request ? (b.data.close ? ('answered' as const) : ('open' as const)) : e.requestState,
       updatedAt: Date.now(),
     };
-    db.update(schema.diaryEntry)
-      .set({ reply: next.reply, requestState: next.requestState, updatedAt: next.updatedAt })
-      .where(eq(schema.diaryEntry.id, e.id))
-      .run();
+    db.update(schema.diaryEntry).set({ reply: next.reply, requestState: next.requestState, updatedAt: next.updatedAt }).where(eq(schema.diaryEntry.id, e.id)).run();
     publish(roomId, { kind: 'member', memberId: e.memberId }, 'diary:changed', { entry: diaryForPlayer(next) });
+    // push (этап 41): без текста ответа
+    if (next.reply && next.reply !== e.reply)
+      pushToMember(roomId, e.memberId, { title: 'Мастер ответил', body: 'Ответ на запись в дневнике', url: '/?tab=diary', tag: `reply:${e.id}` });
     const gm = diaryForGm(next);
     publish(roomId, { kind: 'gm' }, 'gm:diary.changed', { entry: gm });
     return gm;

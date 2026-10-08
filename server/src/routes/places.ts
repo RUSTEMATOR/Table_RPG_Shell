@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import { PlaceDraftSchema, PresenceAddSchema, PresenceWriteSchema, RumorWriteSchema, SpotWriteSchema } from '@zg/shared';
+import { PlaceDraftSchema, PresenceAddSchema, PresenceWriteSchema, RumorKindSchema, RumorWriteSchema, SpotWriteSchema, type RumorKind } from '@zg/shared';
 import { generateText, type ClaudeFailure } from '../ai/claude/client.ts';
 import { requireGm } from '../auth/requireGm.ts';
 import { getPlace, type PlaceRow } from '../domain/maps.ts';
@@ -25,6 +25,7 @@ import {
   updateRumor,
   updateSpot,
 } from '../domain/places.ts';
+import { pushToPlayers } from '../push/send.ts';
 import { notifyPlaceChanged } from '../realtime/maps.ts';
 import { projectPlaceDetail } from '../visibility/map.ts';
 
@@ -41,6 +42,12 @@ const FAILURE_TEXT: Record<ClaudeFailure, string> = {
   too_long: 'Ответ не поместился, попробуйте ещё раз.',
   error: 'Claude API вернул ошибку.',
 };
+
+/** Слух или задание стало открытым в открытом месте — push игрокам (этап 41): только вид и имя места, без текста. */
+function rumorRevealed(p: PlaceRow, kind: RumorKind): void {
+  if (!p.visible || p.kind === 'deleted') return;
+  pushToPlayers(p.roomId, { title: p.name, body: kind === 'quest' ? 'Новое задание' : 'Новый слух', url: '/?tab=map', tag: `rumor:${p.id}` });
+}
 
 export async function gmPlaceRoutes(app: FastifyInstance) {
   app.addHook('onRequest', requireGm);
@@ -107,6 +114,7 @@ export async function gmPlaceRoutes(app: FastifyInstance) {
     const b = RumorWriteSchema.safeParse(request.body);
     if (!b.success || !b.data.text) return reply.code(400).send({ error: 'bad_request' });
     createRumor(p, { kind: b.data.kind ?? 'rumor', text: b.data.text, visible: b.data.visible ?? false, noteGm: b.data.noteGm ?? '' });
+    if (b.data.visible) rumorRevealed(p, b.data.kind ?? 'rumor');
     return done(p.roomId, p.id);
   });
   app.post<{ Params: { id: string } }>('/api/gm/maps/rumors/:id', async (request, reply) => {
@@ -117,6 +125,10 @@ export async function gmPlaceRoutes(app: FastifyInstance) {
     const patch: Parameters<typeof updateRumor>[1] = {};
     for (const k of ['kind', 'text', 'visible', 'noteGm'] as const) if (b.data[k] !== undefined) Object.assign(patch, { [k]: b.data[k] });
     updateRumor(r, patch);
+    if (patch.visible && !r.visible) {
+      const p = getPlace(r.roomId, r.placeId);
+      if (p) rumorRevealed(p, patch.kind ?? RumorKindSchema.catch('rumor').parse(r.kind));
+    }
     return done(r.roomId, r.placeId);
   });
   app.post<{ Params: { id: string } }>('/api/gm/maps/rumors/:id/delete', async (request, reply) => {

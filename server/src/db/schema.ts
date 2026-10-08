@@ -41,6 +41,28 @@ export const authSession = sqliteTable(
   (t) => [index('auth_session_member_idx').on(t.memberId)],
 );
 
+// Push-подписка (этап 41) = одно устройство участника. Внутренние данные сервера: наружу не уходят.
+export const pushSubscription = sqliteTable(
+  'push_subscription',
+  {
+    id: text('id').primaryKey(),
+    roomId: text('room_id')
+      .notNull()
+      .references(() => room.id, { onDelete: 'cascade' }),
+    memberId: text('member_id')
+      .notNull()
+      .references(() => member.id, { onDelete: 'cascade' }),
+    endpoint: text('endpoint').notNull().unique(),
+    p256dh: text('p256dh').notNull(),
+    auth: text('auth').notNull(),
+    label: text('label').notNull().default(''),
+    createdAt: integer('created_at').notNull(),
+    lastOkAt: integer('last_ok_at'),
+    fails: integer('fails').notNull().default(0),
+  },
+  (t) => [index('push_subscription_member_idx').on(t.memberId)],
+);
+
 // Персонаж: здесь только то, что нужно для списков и привязки к игроку.
 export const character = sqliteTable(
   'character',

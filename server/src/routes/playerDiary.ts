@@ -7,6 +7,7 @@ import { newId } from '../auth/tokens.ts';
 import { db, schema } from '../db/client.ts';
 import { diaryForGm, diaryForPlayer, getDiary, listOwnDiary, type DiaryRow } from '../domain/diary.ts';
 import { loadOwnedCharacter } from '../domain/repo.ts';
+import { pushToGm } from '../push/send.ts';
 import { publish } from '../realtime/publish.ts';
 import { findGmLeak } from '../visibility/guard.ts';
 
@@ -25,9 +26,7 @@ function broadcast(roomId: string, e: DiaryRow, wasPublic: boolean) {
 export async function playerDiaryRoutes(app: FastifyInstance) {
   app.addHook('onRequest', requirePlayer);
 
-  app.get('/api/player/diary', async (request) =>
-    DiaryListPlayerSchema.parse({ entries: listOwnDiary(request.auth!.room.id, request.auth!.member.id).map(diaryForPlayer) }),
-  );
+  app.get('/api/player/diary', async (request) => DiaryListPlayerSchema.parse({ entries: listOwnDiary(request.auth!.room.id, request.auth!.member.id).map(diaryForPlayer) }));
 
   app.post('/api/player/diary', async (request, reply) => {
     const b = DiaryWriteSchema.safeParse(request.body);
@@ -52,6 +51,7 @@ export async function playerDiaryRoutes(app: FastifyInstance) {
     };
     db.insert(schema.diaryEntry).values(row).run();
     broadcast(room.id, row, false);
+    if (row.request) pushToGm(room.id, { title: 'Вопрос мастеру', body: `Вопрос от ${member.name}`, url: '/gm/requests', tag: `request:${member.id}` });
     matchDiaryInBackground(room.id, row);
     return diaryForPlayer(row);
   });
@@ -78,6 +78,9 @@ export async function playerDiaryRoutes(app: FastifyInstance) {
       .run();
     if (next.private && !e.private) forgetJudgments(room.id, e.id);
     broadcast(room.id, next, !e.private);
+    // новый вопрос (запись стала вопросом или открытый вопрос переписан) — мастеру
+    if (next.request && (!e.request || (next.text !== e.text && next.requestState === 'open')))
+      pushToGm(room.id, { title: 'Вопрос мастеру', body: `Вопрос от ${member.name}`, url: '/gm/requests', tag: `request:${member.id}` });
     if (next.text !== e.text || (e.private && !next.private)) matchDiaryInBackground(room.id, next);
     return diaryForPlayer(next);
   });
