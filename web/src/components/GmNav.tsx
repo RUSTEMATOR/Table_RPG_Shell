@@ -18,6 +18,7 @@ export const GM_SECTIONS = [
   { to: '/gm/requests', label: 'Запросы', key: 'r', icon: 'M6 3h9l3 3v15H6zM15 3v3h3M9 10h6M9 14h6M9 18h4' },
   { to: '/gm/notes', label: 'Заметки', key: 'n', icon: 'M20 3c-6 1-11 5-13 11l-2 6 6-2c6-2 10-7 11-13zM7 17l6-6M5 21h6' },
   { to: '/gm/letters', label: 'Письма', key: 'l', icon: 'M3 7h18v12H3zM3 7l9 7 9-7' },
+  { to: '/gm/chronicle', label: 'Летопись', key: 'c', icon: 'M4 5h6a2 2 0 0 1 2 2v13a2 2 0 0 0-2-2H4zM20 5h-6a2 2 0 0 0-2 2v13a2 2 0 0 1 2-2h6zM12 7v13' },
   { to: '/gm/activity', label: 'Активность', key: 'a', icon: 'M3 12h4l3-7l4 14l3-7h4' },
   { to: '/gm/members', label: 'Участники', key: 'u', icon: 'M12 4a8 8 0 1 0 0 16a8 8 0 0 0 0-16zM13 7l-3 5h4l-3 5' },
 ] as const;
