@@ -22,7 +22,7 @@ import { useHotkeys } from '../lib/hotkeys.ts';
 import { cn } from '../lib/cn.ts';
 import { Card, CardTitle, EmptyState, Segmented, Skeleton } from '../ui/index.ts';
 import { useSkin } from '../lib/cardTheme/skin.ts';
-import { noteCardChange, noteDiaryChange, rememberCard, setActiveTab, useUnread } from '../lib/unread.ts';
+import { noteCardChange, noteDiaryChange, noteLetter, rememberCard, setActiveTab, useUnread } from '../lib/unread.ts';
 
 export function Player() {
   useWakeLock();
@@ -145,6 +145,7 @@ function PlayerTabs() {
   useSkin(theme);
   // Значки ставятся здесь, а не во вкладках: вкладки слушают события, только чтобы обновить себя.
   useSocketEvent('diary:changed', ({ entry }) => noteDiaryChange(entry));
+  useSocketEvent('letters:changed', ({ letter }) => noteLetter(letter));
   useSocketEvent('character:updated', ({ character }) => noteCardChange(character));
 
   const content: Record<Exclude<Tab, 'rolls'>, ReactNode> = {

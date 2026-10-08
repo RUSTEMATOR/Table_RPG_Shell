@@ -7,6 +7,7 @@ import { useConnection, useSocketEvent } from '../lib/socket.ts';
 import { load as loadPref, remove as removePref, save as savePref } from '../lib/storage.ts';
 import { rememberReplies } from '../lib/unread.ts';
 import { useActivity } from '../lib/activity.ts';
+import { Letters } from './Letters.tsx';
 import { spring } from '../lib/motion.tsx';
 import { Button, Card, CardTitle, EmptyState, Field, Segmented, Sheet, Textarea } from '../ui/index.ts';
 
@@ -82,6 +83,7 @@ export function Diary({ active = true }: { active?: boolean }) {
   const editing = sheet && sheet !== 'new' ? sheet : null;
   return (
     <>
+      <Letters active={active} />
       <div className="flex items-center justify-between gap-3">
         <CardTitle className="text-[1.7rem]">Дневник</CardTitle>
         <Button variant="primary" onClick={() => setSheet('new')}>

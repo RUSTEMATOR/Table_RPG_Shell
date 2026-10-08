@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import type { DiaryEntryPlayer, PlayerCharacter } from '@zg/shared';
+import type { DiaryEntryPlayer, LetterPlayer, PlayerCharacter } from '@zg/shared';
 import { setAppBadge } from './push.ts';
 import { load, save } from './storage.ts';
 
@@ -76,6 +76,26 @@ export function noteDiaryChange(entry: DiaryEntryPlayer) {
   if (reply && reply !== (replies[entry.id] ?? '')) {
     mark('diary');
     if (active === 'diary') rememberReplies([entry]);
+  }
+}
+
+// ---- Письма (этап 42): значок на «Дневнике», пока есть непрочитанное письмо ----
+
+const LETTERS = 'zg:unread:letters';
+let lettersSeen: string[] = read(LETTERS, []);
+
+/** Вкладка дневника на экране: письма из списка считаются увиденными (прочитанность хранит сервер — readAt). */
+export function rememberLetters(list: LetterPlayer[]) {
+  const ids = list.map((l) => l.id);
+  if (ids.length === lettersSeen.length && ids.every((id) => lettersSeen.includes(id))) return;
+  lettersSeen = ids;
+  save(LETTERS, JSON.stringify(lettersSeen));
+}
+
+export function noteLetter(l: LetterPlayer) {
+  if (!l.readAt && !lettersSeen.includes(l.id)) {
+    mark('diary');
+    if (active === 'diary') rememberLetters([...lettersSeen.map((id) => ({ id }) as LetterPlayer), l]);
   }
 }
 
