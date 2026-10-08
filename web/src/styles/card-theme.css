@@ -310,3 +310,6 @@
 .card-theme[data-frame="brush"] .ctc{border-color:transparent;border-radius:0;margin-bottom:9px}
 .card-theme[data-frame="brush"] .ct-fr::after{content:"";position:absolute;left:-4px;bottom:-9px;width:62%;height:12px;background:var(--ct-brush) left center/100% 100% no-repeat}
 .card-theme[data-frame="glitch"] .ctc{border-radius:0;border-color:var(--ct-ink);box-shadow:-3px 0 0 var(--ct-accent),3px 0 0 var(--ct-accent2)}
+/* Своё (этап 37): широкая карточка — разворот в две колонки, блоки не рвутся между колонками. */
+.card-theme.p-card{container-type:inline-size}
+@container (min-width:860px){.p-card>.result{display:block;columns:2;column-gap:16px}.p-card>.result>*{break-inside:avoid;margin-bottom:16px}}

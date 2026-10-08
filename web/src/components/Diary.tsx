@@ -90,7 +90,7 @@ export function Diary({ active = true }: { active?: boolean }) {
       </div>
       {entries === null && <p className="muted">Загрузка…</p>}
       {entries?.length === 0 && <EmptyState icon="quill-ink">Записей пока нет. Здесь можно вести дневник персонажа и задавать вопросы мастеру.</EmptyState>}
-      <ul className="m-0 grid list-none gap-3 p-0">
+      <ul className="m-0 grid max-w-[72ch] list-none gap-3 p-0">
         <AnimatePresence initial={false}>
           {entries?.map((e) => (
             <m.li key={e.id} layout="position" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.97 }} transition={spring.soft}>

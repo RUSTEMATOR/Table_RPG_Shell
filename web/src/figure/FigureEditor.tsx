@@ -110,151 +110,167 @@ export function FigureEditor({
   };
 
   return (
-    <div className="grid gap-3">
-      <section
-        aria-label="Фигурка"
-        className="relative grid h-[268px] items-end justify-items-center overflow-hidden rounded-sheet border border-solid border-border bg-surface-2 pb-3 [background-image:linear-gradient(45deg,color-mix(in_srgb,var(--accent)_7%,transparent)_25%,transparent_25%,transparent_75%,color-mix(in_srgb,var(--accent)_7%,transparent)_75%),linear-gradient(45deg,color-mix(in_srgb,var(--accent)_7%,transparent)_25%,transparent_25%,transparent_75%,color-mix(in_srgb,var(--accent)_7%,transparent)_75%)] [background-position:0_0,12px_12px] [background-size:24px_24px]"
-      >
-        <div aria-hidden="true" className="absolute bottom-[62px] left-1/2 h-[18px] w-[120px] -translate-x-1/2 rounded-[50%] bg-black/15" />
-        <div className="relative mb-6 grid place-items-center">
-          <FigureSprite figure={draft} pose={pose} dir={DIRS[dir]} size={192} label="Фигурка" />
-        </div>
-        <Button variant="ghost" size="icon" aria-label="Повернуть влево" className="absolute top-[104px] left-2.5 bg-surface/75" onClick={() => setDir((d) => (d + 1) % 4)}>
-          <svg viewBox="0 0 24 24" aria-hidden="true" className="size-5 fill-none stroke-current stroke-2">
-            <path d="M15 5l-7 7 7 7" />
-          </svg>
-        </Button>
-        <Button variant="ghost" size="icon" aria-label="Повернуть вправо" className="absolute top-[104px] right-2.5 bg-surface/75" onClick={() => setDir((d) => (d + 3) % 4)}>
-          <svg viewBox="0 0 24 24" aria-hidden="true" className="size-5 fill-none stroke-current stroke-2">
-            <path d="M9 5l7 7-7 7" />
-          </svg>
-        </Button>
-        <Segmented
-          label="Поза"
-          value={pose}
-          onChange={setPose}
-          className="relative"
-          options={[
-            { value: 'idle', label: 'Стоит' },
-            { value: 'walk', label: 'Идёт' },
-            { value: 'attack', label: 'Удар' },
-            { value: 'hurt', label: 'Ранен' },
-          ]}
-        />
-      </section>
+    // широко (компьютер, страница персонажа) — превью слева и стоит на месте, части и варианты справа
+    <div className="@container/fig">
+      <div className="grid gap-3 @3xl/fig:grid-cols-[minmax(260px,340px)_minmax(0,1fr)] @3xl/fig:items-start @3xl/fig:gap-5">
+        <section
+          aria-label="Фигурка"
+          className="relative grid h-[268px] items-end @3xl/fig:sticky @3xl/fig:top-0 @3xl/fig:h-[340px] justify-items-center overflow-hidden rounded-sheet border border-solid border-border bg-surface-2 pb-3 [background-image:linear-gradient(45deg,color-mix(in_srgb,var(--accent)_7%,transparent)_25%,transparent_25%,transparent_75%,color-mix(in_srgb,var(--accent)_7%,transparent)_75%),linear-gradient(45deg,color-mix(in_srgb,var(--accent)_7%,transparent)_25%,transparent_25%,transparent_75%,color-mix(in_srgb,var(--accent)_7%,transparent)_75%)] [background-position:0_0,12px_12px] [background-size:24px_24px]"
+        >
+          <div aria-hidden="true" className="absolute bottom-[62px] left-1/2 h-[18px] w-[120px] -translate-x-1/2 rounded-[50%] bg-black/15" />
+          <div className="relative mb-6 grid place-items-center">
+            <FigureSprite figure={draft} pose={pose} dir={DIRS[dir]} size={192} label="Фигурка" />
+          </div>
+          <Button variant="ghost" size="icon" aria-label="Повернуть влево" className="absolute top-[104px] left-2.5 bg-surface/75" onClick={() => setDir((d) => (d + 1) % 4)}>
+            <svg viewBox="0 0 24 24" aria-hidden="true" className="size-5 fill-none stroke-current stroke-2">
+              <path d="M15 5l-7 7 7 7" />
+            </svg>
+          </Button>
+          <Button variant="ghost" size="icon" aria-label="Повернуть вправо" className="absolute top-[104px] right-2.5 bg-surface/75" onClick={() => setDir((d) => (d + 3) % 4)}>
+            <svg viewBox="0 0 24 24" aria-hidden="true" className="size-5 fill-none stroke-current stroke-2">
+              <path d="M9 5l7 7-7 7" />
+            </svg>
+          </Button>
+          <Segmented
+            label="Поза"
+            value={pose}
+            onChange={setPose}
+            className="relative"
+            options={[
+              { value: 'idle', label: 'Стоит' },
+              { value: 'walk', label: 'Идёт' },
+              { value: 'attack', label: 'Удар' },
+              { value: 'hurt', label: 'Ранен' },
+            ]}
+          />
+        </section>
 
-      {creatures && (
-        <Segmented
-          label="Кто"
-          value={kind}
-          onChange={setKind}
-          className="justify-self-start"
-          options={[
-            { value: 'human', label: 'Человек' },
-            { value: 'creature', label: 'Существо' },
-          ]}
-        />
-      )}
-
-      {kind === 'creature' ? (
-        <div role="radiogroup" aria-label="Существо" className="grid grid-cols-4 gap-2 min-[480px]:grid-cols-6">
-          {CREATURES.map((c) => (
-            <Option key={c.id} on={beast.creature === c.id} label={c.label} sub={c.ranged ? 'издали' : undefined} onPick={() => setBeast({ v: 1, creature: c.id })}>
-              <FigureSprite figure={{ v: 1, creature: c.id }} pose="idle" size={c.cell > 64 ? 32 : 64} paused />
-            </Option>
-          ))}
-        </div>
-      ) : (
-        <>
-          <nav aria-label="Части фигурки" className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
-            {FIGURE_SLOTS.map((s) => (
-              <Button key={s} size="sm" variant={s === slot ? 'primary' : 'ghost'} aria-current={s === slot || undefined} className="shrink-0" onClick={() => setSlot(s)}>
-                {SLOT_LABELS[s]}
-              </Button>
-            ))}
-          </nav>
-
-          {slot === 'body' && (
+        <div className="grid min-w-0 content-start gap-3">
+          {creatures && (
             <Segmented
-              label="Телосложение"
-              value={human.body}
-              onChange={(b) =>
-                setHuman((f) => ({
-                  ...f,
-                  body: b,
-                  parts: { ...f.parts, head: f.parts.head?.id?.startsWith('human_') ? { id: b === 'male' ? 'human_male' : 'human_female' } : f.parts.head },
-                }))
-              }
-              options={[
-                { value: 'female', label: 'Женское' },
-                { value: 'male', label: 'Мужское' },
-              ]}
+              label="Кто"
+              value={kind}
+              onChange={setKind}
               className="justify-self-start"
+              options={[
+                { value: 'human', label: 'Человек' },
+                { value: 'creature', label: 'Существо' },
+              ]}
             />
           )}
 
-          <div role="radiogroup" aria-label={SLOT_LABELS[slot]} className="grid grid-cols-4 gap-2 min-[480px]:grid-cols-6">
-            {OPTIONAL.includes(slot) && (
-              <Option on={!current} label="Нет" onPick={() => choose(null)}>
-                <FigureSprite figure={withItem(null)} pose="idle" size={64} paused />
-              </Option>
-            )}
-            {items.map((it) => (
-              <Option key={it.id} on={current?.id === it.id} label={it.label} sub={slot === 'weapon' && it.attack ? ATTACK_LABEL[it.attack] : undefined} onPick={() => choose(it)}>
-                <FigureSprite figure={withItem(it)} pose={slot === 'weapon' ? 'attack' : 'idle'} dir={slot === 'weapon' ? 'right' : 'down'} size={64} paused />
-              </Option>
-            ))}
-          </div>
-
-          {(slot === 'body' || slot === 'head' || colors.length > 0) && (
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="w-12 font-ui text-xs tracking-[.06em] text-muted uppercase">{slot === 'body' || slot === 'head' ? 'Кожа' : 'Цвет'}</span>
-              <div role="radiogroup" aria-label={slot === 'body' || slot === 'head' ? 'Цвет кожи' : 'Цвет'} className="flex flex-wrap gap-2">
-                {(slot === 'body' || slot === 'head' ? SKINS : colors).map((c) => {
-                  const on =
-                    slot === 'body' || slot === 'head' ? human.skin === c : current?.color === c || (!current?.color && cur?.colors?.kind === 'palette' && cur.colors.base === c);
-                  return (
-                    <button
-                      key={c}
-                      type="button"
-                      role="radio"
-                      aria-checked={on}
-                      aria-label={COLOR_LABELS[c] ?? c}
-                      title={COLOR_LABELS[c] ?? c}
-                      onClick={() => (slot === 'body' || slot === 'head' ? setHuman((f) => ({ ...f, skin: c })) : current && setPart(slot, { ...current, color: c }))}
-                      className={cn(
-                        'size-8 cursor-pointer rounded-full border-[3px] border-solid border-surface',
-                        on ? 'shadow-[0_0_0_2px_var(--accent)]' : 'shadow-[0_0_0_1px_var(--border)]',
-                      )}
-                      style={{ background: swatch(slot === 'body' || slot === 'head' ? 'body' : material, c) }}
-                    />
-                  );
-                })}
-              </div>
+          {kind === 'creature' ? (
+            <div role="radiogroup" aria-label="Существо" className="grid grid-cols-[repeat(auto-fill,minmax(76px,1fr))] gap-2">
+              {CREATURES.map((c) => (
+                <Option key={c.id} on={beast.creature === c.id} label={c.label} sub={c.ranged ? 'издали' : undefined} onPick={() => setBeast({ v: 1, creature: c.id })}>
+                  <FigureSprite figure={{ v: 1, creature: c.id }} pose="idle" size={c.cell > 64 ? 32 : 64} paused />
+                </Option>
+              ))}
             </div>
-          )}
-        </>
-      )}
+          ) : (
+            <>
+              <nav
+                aria-label="Части фигурки"
+                className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] @3xl/fig:mx-0 @3xl/fig:flex-wrap @3xl/fig:overflow-visible @3xl/fig:px-0"
+              >
+                {FIGURE_SLOTS.map((s) => (
+                  <Button key={s} size="sm" variant={s === slot ? 'primary' : 'ghost'} aria-current={s === slot || undefined} className="shrink-0" onClick={() => setSlot(s)}>
+                    {SLOT_LABELS[s]}
+                  </Button>
+                ))}
+              </nav>
 
-      <div className="flex gap-2">
-        <Button
-          variant="ghost"
-          className="flex-1"
-          onClick={() => (kind === 'creature' ? setBeast({ v: 1, creature: CREATURES[Math.floor(Math.random() * CREATURES.length)]!.id }) : setHuman(randomFigure()))}
-        >
-          Случайно
-        </Button>
-        <Button variant="primary" className="flex-[2]" disabled={busy || !dirty} onClick={save}>
-          {busy ? 'Сохраняю…' : 'Сохранить фигурку'}
-        </Button>
+              {slot === 'body' && (
+                <Segmented
+                  label="Телосложение"
+                  value={human.body}
+                  onChange={(b) =>
+                    setHuman((f) => ({
+                      ...f,
+                      body: b,
+                      parts: { ...f.parts, head: f.parts.head?.id?.startsWith('human_') ? { id: b === 'male' ? 'human_male' : 'human_female' } : f.parts.head },
+                    }))
+                  }
+                  options={[
+                    { value: 'female', label: 'Женское' },
+                    { value: 'male', label: 'Мужское' },
+                  ]}
+                  className="justify-self-start"
+                />
+              )}
+
+              <div role="radiogroup" aria-label={SLOT_LABELS[slot]} className="grid grid-cols-[repeat(auto-fill,minmax(76px,1fr))] gap-2">
+                {OPTIONAL.includes(slot) && (
+                  <Option on={!current} label="Нет" onPick={() => choose(null)}>
+                    <FigureSprite figure={withItem(null)} pose="idle" size={64} paused />
+                  </Option>
+                )}
+                {items.map((it) => (
+                  <Option
+                    key={it.id}
+                    on={current?.id === it.id}
+                    label={it.label}
+                    sub={slot === 'weapon' && it.attack ? ATTACK_LABEL[it.attack] : undefined}
+                    onPick={() => choose(it)}
+                  >
+                    <FigureSprite figure={withItem(it)} pose={slot === 'weapon' ? 'attack' : 'idle'} dir={slot === 'weapon' ? 'right' : 'down'} size={64} paused />
+                  </Option>
+                ))}
+              </div>
+
+              {(slot === 'body' || slot === 'head' || colors.length > 0) && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="w-12 font-ui text-xs tracking-[.06em] text-muted uppercase">{slot === 'body' || slot === 'head' ? 'Кожа' : 'Цвет'}</span>
+                  <div role="radiogroup" aria-label={slot === 'body' || slot === 'head' ? 'Цвет кожи' : 'Цвет'} className="flex flex-wrap gap-2">
+                    {(slot === 'body' || slot === 'head' ? SKINS : colors).map((c) => {
+                      const on =
+                        slot === 'body' || slot === 'head'
+                          ? human.skin === c
+                          : current?.color === c || (!current?.color && cur?.colors?.kind === 'palette' && cur.colors.base === c);
+                      return (
+                        <button
+                          key={c}
+                          type="button"
+                          role="radio"
+                          aria-checked={on}
+                          aria-label={COLOR_LABELS[c] ?? c}
+                          title={COLOR_LABELS[c] ?? c}
+                          onClick={() => (slot === 'body' || slot === 'head' ? setHuman((f) => ({ ...f, skin: c })) : current && setPart(slot, { ...current, color: c }))}
+                          className={cn(
+                            'size-8 cursor-pointer rounded-full border-[3px] border-solid border-surface',
+                            on ? 'shadow-[0_0_0_2px_var(--accent)]' : 'shadow-[0_0_0_1px_var(--border)]',
+                          )}
+                          style={{ background: swatch(slot === 'body' || slot === 'head' ? 'body' : material, c) }}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          <div className="flex gap-2">
+            <Button
+              variant="ghost"
+              className="flex-1"
+              onClick={() => (kind === 'creature' ? setBeast({ v: 1, creature: CREATURES[Math.floor(Math.random() * CREATURES.length)]!.id }) : setHuman(randomFigure()))}
+            >
+              Случайно
+            </Button>
+            <Button variant="primary" className="flex-[2]" disabled={busy || !dirty} onClick={save}>
+              {busy ? 'Сохраняю…' : 'Сохранить фигурку'}
+            </Button>
+          </div>
+          {onClear && value && (
+            <Button variant="ghost" className="justify-self-start" disabled={busy} onClick={clear}>
+              Убрать фигурку
+            </Button>
+          )}
+          {note && <p className="m-0 text-[13.6px] text-muted">{note}</p>}
+          <FigureCredits />
+        </div>
       </div>
-      {onClear && value && (
-        <Button variant="ghost" className="justify-self-start" disabled={busy} onClick={clear}>
-          Убрать фигурку
-        </Button>
-      )}
-      {note && <p className="m-0 text-[13.6px] text-muted">{note}</p>}
-      <FigureCredits />
     </div>
   );
 }
