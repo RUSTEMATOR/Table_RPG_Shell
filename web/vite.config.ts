@@ -29,7 +29,11 @@ export default defineConfig({
           { src: '/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
+      // Сервис-воркер и в разработке: иначе push (этап 41) не проверить. Предкэша в dev нет, только правила ниже.
+      devOptions: { enabled: true, type: 'module', navigateFallback: 'index.html' },
       workbox: {
+        // Push-уведомления (этап 41): обработчики push и notificationclick — в public/push-sw.js.
+        importScripts: ['push-sw.js'],
         // Кэшируется только оболочка; данные всегда идут с сервера.
         // Шрифты (этап 40): в предкэш — только базовые Lora и Poppins; остальные ~40 семейств тем и оболочек
         // качаются при первом показе и дальше берутся из кэша zg-fonts.

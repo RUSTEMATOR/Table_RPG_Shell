@@ -55,6 +55,14 @@ function InviteBox({ invite, name }: { invite: InviteCreated; name: string }) {
 }
 
 /** «Игра»: противник сессии, бросок мастера, партия. Лента — в правой колонке; здесь — только пока колонка не помещается. */
+/** «Позвать за стол» (этап 41): push всем игрокам. */
+async function callPlayers(): Promise<void> {
+  const r = await api<{ ok: true; enabled: boolean }>('POST', '/api/gm/session/call');
+  if (!r.ok) toast.error(r.error === 'too_often' ? `Не чаще раза в минуту (ещё ${r.retryAfterSec ?? 60} с)` : 'Не получилось');
+  else if (!r.data.enabled) toast('На сервере нет ключей VAPID: npm run vapid, затем перезапуск');
+  else toast('Игроки позваны');
+}
+
 export function Gm() {
   return (
     <>
@@ -243,9 +251,13 @@ export function GmMembers() {
 
       <Card>
         <CardTitle>Инструменты</CardTitle>
-        <Link viewTransition className={cn(buttonVariants(), 'justify-self-start no-underline')} to="/gm/jev">
-          Песочница Jev
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={() => void callPlayers()}>Позвать за стол</Button>
+          <Link viewTransition className={cn(buttonVariants(), 'no-underline')} to="/gm/jev">
+            Песочница Jev
+          </Link>
+        </div>
+        <span className="text-[12.5px] text-muted">«Позвать за стол» — push-уведомление «Игра начинается» всем игрокам, у кого они включены; не чаще раза в минуту.</span>
       </Card>
       <StatusPanel />
     </>

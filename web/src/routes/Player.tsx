@@ -85,9 +85,20 @@ const isTab = (v: string | null | undefined): v is Tab => TABS.includes(v as Tab
  */
 function PlayerTabs() {
   const [tab, setTab] = useState<Tab>(() => {
+    // ?tab=… — из уведомления (этап 41); иначе — последняя открытая
+    const fromUrl = new URLSearchParams(location.search).get('tab');
     const saved = loadPref('zg:player:tab');
-    return isTab(saved) ? saved : 'rolls';
+    return isTab(fromUrl) ? fromUrl : isTab(saved) ? saved : 'rolls';
   });
+  useEffect(() => {
+    // нажатие по уведомлению при открытом приложении
+    const h = (e: Event) => {
+      const t = (e as CustomEvent<string>).detail;
+      if (isTab(t)) setTab(t);
+    };
+    window.addEventListener('zg:open-tab', h);
+    return () => window.removeEventListener('zg:open-tab', h);
+  }, []);
   const [mounted, setMounted] = useState<ReadonlySet<Tab>>(() => new Set([tab]));
   useEffect(() => {
     // карта (рельеф ~100 КБ и данные) — только когда игрок до неё дойдёт

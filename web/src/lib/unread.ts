@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import type { DiaryEntryPlayer, PlayerCharacter } from '@zg/shared';
+import { setAppBadge } from './push.ts';
 import { load, save } from './storage.ts';
 
 // Значки непрочитанного на вкладках игрока. Только из того, что игроку и так приходит; сервер ничего не знает.
@@ -25,6 +26,8 @@ const listeners = new Set<() => void>();
 const emit = () => {
   save(KEY, JSON.stringify(flags));
   listeners.forEach((l) => l());
+  // значок на иконке установленного приложения (этап 41)
+  setAppBadge(Object.values(flags).filter(Boolean).length);
 };
 
 function mark(tab: UnreadTab) {

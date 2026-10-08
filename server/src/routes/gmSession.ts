@@ -3,7 +3,7 @@ import { OpponentSchema } from '@zg/shared';
 import { requireGm } from '../auth/requireGm.ts';
 import { getNpc } from '../domain/npc.ts';
 import { activeSession, sessionView, setOpponent, startNewSession } from '../domain/session.ts';
-import { pushToPlayers } from '../push/send.ts';
+import { pushEnabled, pushToPlayers } from '../push/send.ts';
 import { publish } from '../realtime/publish.ts';
 import { pushTable } from './scenes.ts';
 
@@ -22,7 +22,7 @@ export async function gmSessionRoutes(app: FastifyInstance) {
     if (Date.now() - last < CALL_EVERY_MS) return reply.code(429).send({ error: 'too_often', retryAfterSec: Math.ceil((CALL_EVERY_MS - (Date.now() - last)) / 1000) });
     lastCall.set(roomId, Date.now());
     pushToPlayers(roomId, { title: 'Игра начинается', body: 'Мастер зовёт за стол', url: '/', tag: 'call' });
-    return { ok: true };
+    return { ok: true, enabled: pushEnabled() };
   });
 
   // Противник сессии: его сила попадает в броски игроков. Игрокам не отправляется.

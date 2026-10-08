@@ -6,6 +6,7 @@ import { homeFor, useMe } from '../lib/me.tsx';
 import { connectSocket, disconnectSocket, useConnection } from '../lib/socket.ts';
 import { ConnectionDot } from './ConnectionDot.tsx';
 import { useSkin } from '../lib/cardTheme/skin.ts';
+import { PushToggle } from './PushToggle.tsx';
 import { SchemeToggle } from './SchemeToggle.tsx';
 import { cn } from '../lib/cn.ts';
 import { Button, Dialog, DialogClose, DialogContent, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/index.ts';
@@ -57,6 +58,7 @@ export function RoleScreen({ role, children, wide, fill, actions }: { role: Role
         </div>
         {actions}
         <ConnectionDot />
+        {role !== 'table' && <PushToggle />}
         {role !== 'table' && <SchemeToggle />}
         {role !== 'table' && <MoreMenu role={role} onLogout={logout} />}
       </header>
