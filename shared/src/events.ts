@@ -20,6 +20,7 @@ import type { FeedEvent, RollGm, RollPublic } from './feed.ts';
 import type { TableState } from './table.ts';
 import type { MapId, OverloadSign } from './constants.ts';
 import type { DiaryEntryPlayer, GmDiaryEntry, GmOverload, GreenSuggestion } from './gm.ts';
+import type { GmPlayerPresence } from './presence.ts';
 
 export interface ServerToClientEvents {
   'error:forbidden': (payload: { event: string }) => void;
@@ -62,6 +63,8 @@ export interface ServerToClientEvents {
   'gm:scenes.changed': () => void;
   /** Мастеру: библиотека противников изменилась. */
   'gm:npcs.changed': () => void;
+  /** Мастеру: активность игрока изменилась (статус, вкладка, действие). */
+  'gm:presence.changed': (payload: GmPlayerPresence) => void;
 }
 
 type Ack = (res: GmAck) => void;
@@ -74,4 +77,6 @@ export interface ClientToServerEvents {
   'gm:trait.setFork': (payload: unknown, ack: Ack) => void;
   'roll:request': (payload: unknown, ack: (res: { ok: true; roll: RollPublic | RollGm } | { ok: false; error: string }) => void) => void;
   'gm:roll.override': (payload: unknown, ack: Ack) => void;
+  /** Игрок: что открыто в приложении (PlayerActivitySchema). Без ответа, можно потерять. */
+  'player:activity': (payload: unknown) => void;
 }
