@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import type { PlayerCharacter, PlayerTab } from '@zg/shared';
+import { PLAYER_TAB_LABELS, type PlayerCharacter, type PlayerTab } from '@zg/shared';
 import { Feed } from '../components/Feed.tsx';
 import { isOwnRoll, type FeedRoll } from '../lib/feed.ts';
 import { useMe } from '../lib/me.tsx';
@@ -233,7 +233,7 @@ function PlayerTabs() {
   );
 }
 
-const LABELS: Record<Tab, string> = { rolls: 'Броски', card: 'Карточка', figure: 'Фигурка', diary: 'Дневник', map: 'Карта' };
+const LABELS = PLAYER_TAB_LABELS;
 
 /** Лента игрока с фильтром «Все» / «Мои». Выбор запоминается на устройстве. */
 function FeedCard() {

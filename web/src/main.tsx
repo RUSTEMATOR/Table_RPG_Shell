@@ -31,6 +31,7 @@ const router = createBrowserRouter(
         { index: true, lazy: lazy(gm, 'Gm') },
         { path: 'party', lazy: lazy(gm, 'GmParty') },
         { path: 'members', lazy: lazy(gm, 'GmMembers') },
+        { path: 'activity', lazy: lazy(() => import('./routes/GmActivity.tsx'), 'GmActivity') },
         { path: 'requests', lazy: lazy(() => import('./routes/GmRequests.tsx'), 'GmRequests') },
         { path: 'notes', lazy: lazy(() => import('./routes/GmNotes.tsx'), 'GmNotes') },
         { path: 'table', lazy: lazy(() => import('./routes/GmTable.tsx'), 'GmTable') },

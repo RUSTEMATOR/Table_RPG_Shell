@@ -1,4 +1,4 @@
-import type { CreatureId, FigureSlot, HumanFigure } from '@zg/shared';
+import { FIGURE_SLOT_LABELS, type CreatureId, type FigureSlot, type HumanFigure } from '@zg/shared';
 import raw from './catalog.json';
 import palettesRaw from './palettes.json';
 import creaturesRaw from './creatures.json';
@@ -15,19 +15,7 @@ export type Material = 'body' | 'hair' | 'cloth' | 'metal';
 export const catalog = raw as unknown as { sha: string; anims: Anim[]; bodies: BodyType[]; slots: Partial<Record<FigureSlot, Item[]>> };
 export const palettes = palettesRaw as unknown as Record<Material, Record<string, string[]>>;
 
-export const SLOT_LABELS: Record<FigureSlot, string> = {
-  body: 'Тело',
-  head: 'Лицо',
-  hair: 'Волосы',
-  beard: 'Борода',
-  torso: 'Одежда',
-  armour: 'Броня',
-  cape: 'Плащ',
-  legs: 'Ноги',
-  feet: 'Обувь',
-  headwear: 'На голове',
-  weapon: 'Оружие',
-};
+export const SLOT_LABELS = FIGURE_SLOT_LABELS;
 /** Слоты, которые можно оставить пустыми (у тела и лица всегда что-то выбрано). */
 export const OPTIONAL: FigureSlot[] = ['hair', 'beard', 'torso', 'armour', 'cape', 'legs', 'feet', 'headwear', 'weapon'];
 

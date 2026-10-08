@@ -6,6 +6,19 @@ import { z } from 'zod';
 
 export const FIGURE_SLOTS = ['body', 'head', 'hair', 'beard', 'torso', 'armour', 'cape', 'legs', 'feet', 'headwear', 'weapon'] as const;
 export type FigureSlot = (typeof FIGURE_SLOTS)[number];
+export const FIGURE_SLOT_LABELS: Record<FigureSlot, string> = {
+  body: 'Тело',
+  head: 'Лицо',
+  hair: 'Волосы',
+  beard: 'Борода',
+  torso: 'Одежда',
+  armour: 'Броня',
+  cape: 'Плащ',
+  legs: 'Ноги',
+  feet: 'Обувь',
+  headwear: 'На голове',
+  weapon: 'Оружие',
+};
 
 const Key = z
   .string()
