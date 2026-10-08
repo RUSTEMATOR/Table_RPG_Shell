@@ -1,6 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router';
-import { MAP_IDS, PLACE_KINDS, PLACE_KIND_LABELS, daysText, type GmMapPlace, type GmMapToken, type GmMapView, type GmProposal, type MapId, type PlaceKind } from '@zg/shared';
+import {
+  MAP_IDS,
+  PARTY_MAIN,
+  PARTY_MAX,
+  PLACE_KINDS,
+  PLACE_KIND_LABELS,
+  daysText,
+  type GmMapParty,
+  type GmMapPlace,
+  type GmMapToken,
+  type GmMapView,
+  type GmProposal,
+  type MapId,
+  type PlaceKind,
+} from '@zg/shared';
 import { api } from '../lib/api.ts';
 import { useConnection, useSocketEvent } from '../lib/socket.ts';
 import { load, save } from '../lib/storage.ts';
@@ -17,6 +31,11 @@ import { GmPlaceCity } from './GmPlaceCity.tsx';
 const TITLES: Record<MapId, string> = { world: 'Мир', razdolye: 'Раздолье', frozen: 'Замёрзшие земли' };
 type Tool = 'select' | 'place' | 'party' | 'token';
 const pieceValue = (p: { kind: string; refId: string }) => `${p.kind}:${p.refId}`;
+/** Название отряда (этап 39): имена персонажей; без них — «Основной отряд» / «Отряд N». */
+const partyName = (p: GmMapParty, i: number) => p.names.join(', ') || (p.main ? 'Основной отряд' : `Отряд ${i + 1}`);
+
+/** Управление отрядами для боковой панели: выбранный отряд (для «Партия» и «Отряд — сюда»), показать, перечитать. */
+type PartyControl = { active: string; setActive: (id: string) => void; show: (p: GmMapParty) => void; after: () => void };
 
 /**
  * Карты у мастера: видно всё — скрытое заштриховано и бледнее. Открыть/закрыть регион и место, редактор мест
@@ -35,6 +54,8 @@ export function GmMaps() {
   const [selected, setSelected] = useState<string | null>(null);
   const [tool, setTool] = useState<Tool>('select');
   const [piece, setPiece] = useState('');
+  // выбранный отряд (этап 39); пропал (соединили) — основной, иначе первый
+  const [partyPick, setPartyPick] = useState<string>(PARTY_MAIN);
   const [token, setToken] = useState<string | null>(null);
   const [camera, setCamera] = useState<MapCamera | null>(null);
   const [look, setLook, can3d] = useMapLook();
@@ -82,6 +103,20 @@ export function GmMaps() {
       },
     [view],
   );
+  const parties = view?.parties ?? [];
+  const activeParty = parties.find((p) => p.id === partyPick) ?? parties[0] ?? null;
+  const activeId = activeParty?.id ?? PARTY_MAIN;
+  const activeName = activeParty && parties.length > 1 ? `«${partyName(activeParty, parties.indexOf(activeParty))}»` : 'партия';
+  const pc: PartyControl = {
+    active: activeId,
+    setActive: setPartyPick,
+    show: (p) => {
+      setPartyPick(p.id);
+      if (p.mapId !== mapId) void nav.go(p.mapId);
+      else camera?.flyTo(p.x, p.y, 2.6, { duration: 0.8 });
+    },
+    after: () => void reload(),
+  };
   const place = view?.places.find((p) => p.id === selected) ?? null;
   const tok = view?.tokens.find((t) => t.id === token) ?? null;
   const pieceOptions = (view?.pieces ?? []).map((p) => ({
@@ -125,7 +160,7 @@ export function GmMaps() {
         setToken(res.id);
       }
     } else if (tool === 'party') {
-      await post('/api/gm/maps/party', { mapId, x, y, visible: true }, 'Партия здесь');
+      await post('/api/gm/maps/party', { party: activeId, mapId, x, y, visible: activeParty?.visible ?? true }, parties.length > 1 ? 'Отряд здесь' : 'Партия здесь');
       void reload();
       setTool('select');
     } else {
@@ -174,7 +209,7 @@ export function GmMaps() {
             {tool === 'place'
               ? 'Нажмите на карту, где поставить место.'
               : tool === 'party'
-                ? 'Нажмите на карту, где сейчас партия.'
+                ? `Нажмите на карту, где сейчас ${activeName}.`
                 : tool === 'token'
                   ? pieceName
                     ? `Нажмите на карту, куда поставить «${pieceName}».`
@@ -243,6 +278,7 @@ export function GmMaps() {
           <aside aria-label="Регионы и места" className="sticky top-[76px] hidden max-h-[calc(100dvh-92px)] overflow-y-auto overscroll-contain @4xl/gmmap:block">
             {view && (
               <SidePanel
+                pc={pc}
                 view={view}
                 place={place}
                 token={tok}
@@ -262,6 +298,7 @@ export function GmMaps() {
       <Sheet open={panel} onOpenChange={setPanel} title={place ? place.name || PLACE_KIND_LABELS[place.kind] : tok ? tok.name || 'Фигурка' : 'Регионы и места'}>
         {view && (
           <SidePanel
+            pc={pc}
             view={view}
             place={place}
             token={tok}
@@ -298,6 +335,7 @@ export function GmMaps() {
 type Post = (path: string, body: unknown, ok?: string) => Promise<unknown>;
 
 function SidePanel({
+  pc,
   view,
   place,
   token,
@@ -307,6 +345,7 @@ function SidePanel({
   onDone,
   showOnTable,
 }: {
+  pc: PartyControl;
   view: GmMapView;
   place: GmMapPlace | null;
   token: GmMapToken | null;
@@ -319,15 +358,27 @@ function SidePanel({
   if (place)
     return (
       <div className="grid gap-3">
-        <PlaceEditor key={place.id} mapId={view.id} place={place} post={post} onDone={onDone} showOnTable={showOnTable} />
+        <PlaceEditor key={place.id} mapId={view.id} parties={view.parties} pc={pc} place={place} post={post} onDone={onDone} showOnTable={showOnTable} />
         {place.kind !== 'mark' && <GmPlaceCity placeId={place.id} />}
       </div>
     );
   if (token) return <TokenEditor key={token.id} token={token} post={post} onDone={onDone} showOnTable={showOnTable} />;
-  return <Lists view={view} onSelect={onSelect} onSelectToken={onSelectToken} post={post} />;
+  return <Lists pc={pc} view={view} onSelect={onSelect} onSelectToken={onSelectToken} post={post} />;
 }
 
-function Lists({ view, onSelect, onSelectToken, post }: { view: GmMapView; onSelect: (id: string) => void; onSelectToken: (id: string) => void; post: Post }) {
+function Lists({
+  pc,
+  view,
+  onSelect,
+  onSelectToken,
+  post,
+}: {
+  pc: PartyControl;
+  view: GmMapView;
+  onSelect: (id: string) => void;
+  onSelectToken: (id: string) => void;
+  post: Post;
+}) {
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState<'all' | 'open' | 'hidden'>('all');
   const places = view.places.filter(
@@ -351,22 +402,8 @@ function Lists({ view, onSelect, onSelectToken, post }: { view: GmMapView; onSel
             </li>
           ))}
         </ul>
-        {view.parties.slice(0, 1).map((p) => (
-          <div key={p.id} className="flex items-center gap-2 border-t border-solid border-border pt-2">
-            <span className="grow">
-              Партия: {TITLES[p.mapId]}
-              {p.mapId !== view.id && <span className="text-muted"> (другая карта)</span>}
-            </span>
-            <Switch
-              checked={p.visible}
-              onCheckedChange={(v) =>
-                void post('/api/gm/maps/party', { party: p.id, mapId: p.mapId, x: p.x, y: p.y, visible: v }, v ? 'Маркер партии виден' : 'Маркер партии спрятан')
-              }
-              label="видна"
-            />
-          </div>
-        ))}
       </Card>
+      <Parties pc={pc} view={view} post={post} />
       <Card className="gap-2">
         <h3 className="m-0">Фигурки</h3>
         {view.tokens.length === 0 ? (
@@ -430,14 +467,122 @@ function Lists({ view, onSelect, onSelectToken, post }: { view: GmMapView; onSel
   );
 }
 
+/**
+ * Отряды (этап 39): состав, карта, видимость, «К отряду», «Разделить» (выбрать, кто отходит — новый отряд в той же
+ * точке), «Соединить с…» (отряд встаёт на место другого). Выбранный отряд ставит инструмент «Партия» и ведёт «Отряд — сюда».
+ */
+function Parties({ pc, view, post }: { pc: PartyControl; view: GmMapView; post: Post }) {
+  const [splitting, setSplitting] = useState<string | null>(null);
+  const [take, setTake] = useState<string[]>([]);
+  const list = view.parties;
+  const many = list.length > 1;
+  const startSplit = (id: string) => {
+    setSplitting((v) => (v === id ? null : id));
+    setTake([]);
+  };
+  return (
+    <Card className="gap-2">
+      <h3 className="m-0">{many ? 'Отряды' : 'Отряд'}</h3>
+      {list.length === 0 && <p className="m-0 text-[13.6px] text-muted">Отряда на картах нет. Инструмент «Партия» → точка на карте.</p>}
+      <ul className="m-0 grid list-none gap-2 p-0">
+        {list.map((p, i) => (
+          <li key={p.id} className={cn('grid gap-2 rounded-control border border-solid p-2', many && pc.active === p.id ? 'border-accent' : 'border-border')}>
+            <div className="flex items-start gap-2">
+              <button
+                type="button"
+                aria-pressed={pc.active === p.id}
+                onClick={() => pc.show(p)}
+                title="Выбрать и показать на карте"
+                className={cn('grow cursor-pointer border-0 bg-transparent p-0 text-left font-ui text-[15px]', !p.visible && 'text-muted')}
+              >
+                <b>{partyName(p, i)}</b>
+                <span className="block text-[13px] text-muted">
+                  {TITLES[p.mapId]}
+                  {p.mapId !== view.id && ' · другая карта'}
+                  {p.members.length > 0 && ` · ${p.members.length} перс.`}
+                </span>
+              </button>
+              <Switch
+                checked={p.visible}
+                onCheckedChange={(v) =>
+                  void post('/api/gm/maps/party', { party: p.id, mapId: p.mapId, x: p.x, y: p.y, visible: v }, v ? 'Отряд виден игрокам и столу' : 'Отряд спрятан').then(pc.after)
+                }
+                label={`${partyName(p, i)}: виден игрокам и столу`}
+                hideLabel
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                size="sm"
+                variant={splitting === p.id ? 'primary' : 'default'}
+                disabled={p.members.length < 2 || list.length >= PARTY_MAX}
+                title={p.members.length < 2 ? 'Разделить можно отряд из двух и больше персонажей' : list.length >= PARTY_MAX ? `Не больше ${PARTY_MAX} отрядов` : undefined}
+                onClick={() => startSplit(p.id)}
+              >
+                Разделить
+              </Button>
+              {many && (
+                <Select
+                  aria-label={`Соединить «${partyName(p, i)}» с отрядом`}
+                  value=""
+                  placeholder="Соединить с…"
+                  onValueChange={(into) =>
+                    void post('/api/gm/maps/party/merge', { from: p.id, into }, 'Отряды соединились').then(() => {
+                      pc.setActive(into);
+                      pc.after();
+                    })
+                  }
+                  options={list.flatMap((q, j) => (q.id === p.id ? [] : [{ value: q.id, label: partyName(q, j) }]))}
+                  className="min-w-[150px]"
+                />
+              )}
+            </div>
+            {splitting === p.id && (
+              <div className="grid gap-2 border-t border-solid border-border pt-2">
+                <span className="text-[13.6px] text-muted">Кто отходит? Новый отряд встанет здесь же.</span>
+                {p.members.map((m) => (
+                  <Switch
+                    key={m.characterId}
+                    checked={take.includes(m.characterId)}
+                    onCheckedChange={(v) => setTake((t) => (v ? [...t, m.characterId] : t.filter((x) => x !== m.characterId)))}
+                    label={m.name || 'Без имени'}
+                  />
+                ))}
+                <Button
+                  size="sm"
+                  variant="primary"
+                  disabled={take.length === 0 || take.length >= p.members.length}
+                  onClick={async () => {
+                    const r = await post('/api/gm/maps/party/split', { from: p.id, characterIds: take }, 'Отряд разделился');
+                    if (r && typeof r === 'object' && 'id' in r && typeof r.id === 'string') pc.setActive(r.id);
+                    setSplitting(null);
+                    pc.after();
+                  }}
+                >
+                  Отделить {take.length > 0 ? `(${take.length})` : ''}
+                </Button>
+              </div>
+            )}
+          </li>
+        ))}
+      </ul>
+      {many && <p className="m-0 text-[13px] text-muted">Выбранный отряд (в рамке) ставит инструмент «Партия» и ведёт «Отряд — сюда».</p>}
+    </Card>
+  );
+}
+
 function PlaceEditor({
   mapId,
+  parties,
+  pc,
   place,
   post,
   onDone,
   showOnTable,
 }: {
   mapId: MapId;
+  parties: GmMapParty[];
+  pc: PartyControl;
   place: GmMapPlace;
   post: Post;
   onDone: () => void;
@@ -501,10 +646,19 @@ function PlaceEditor({
         <Button
           size="sm"
           title="Отряд пойдёт сюда по открытым дорогам — у игроков и на столе знамя пройдёт путь"
-          onClick={() => void post('/api/gm/maps/party/travel', { mapId, placeId: place.id }, 'Отряд в пути')}
+          onClick={() => void post('/api/gm/maps/party/travel', { party: pc.active, mapId, placeId: place.id }, 'Отряд в пути').then(pc.after)}
         >
           Отряд — сюда
         </Button>
+        {parties.length > 1 && (
+          <Select
+            aria-label="Какой отряд"
+            value={pc.active}
+            onValueChange={pc.setActive}
+            options={parties.map((p, i) => ({ value: p.id, label: partyName(p, i) }))}
+            className="min-w-[160px]"
+          />
+        )}
         {place.kind !== 'mark' && (
           <Button
             size="sm"
@@ -627,6 +781,7 @@ function Proposals({ mapId, onShow }: { mapId: MapId; onShow: (placeId: string) 
               {p.placeName || 'место'}
             </button>
             {p.days > 0 && <span className="text-muted"> · {daysText(p.days)} пешком</span>}
+            {p.party && <span className="text-muted"> · отряд: {p.party}</span>}
           </span>
           <Button size="sm" variant="primary" onClick={() => void decide(p.id, 'accepted')}>
             Вести отряд
