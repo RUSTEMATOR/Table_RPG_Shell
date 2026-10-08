@@ -1,1 +1,234 @@
-/* Оболочка «comic» (этап 38) — правила под html[data-shell="comic"]. */
+/* Оболочка «Комикс» (этап 38): американский комикс. Темы: Комикс, Корпорация. Точки Бен-Дэй, кадры с чёрной
+   рамкой и лёгким наклоном, жёлтые плашки-подписи, выпуски вместо вкладок, «БАМ» в лотке. */
+@import url('https://fonts.googleapis.com/css2?family=Comic+Relief:wght@400;700&display=swap');
+
+html:root[data-shell='comic'][data-skin] {
+  --sh-ink: color-mix(in oklab, var(--ct-ink) 95%, #000);
+  --sh-paper: var(--ct-panel);
+  --sh-yellow: var(--ct-accent);
+  --sh-red: var(--ct-accent2, var(--ct-accent));
+  --sh-hand: 'Comic Relief', var(--ct-body), sans-serif;
+  background-color: var(--ct-bg);
+  background-image: radial-gradient(color-mix(in oklab, var(--sh-red) 22%, transparent) 2.2px, transparent 2.6px);
+  background-size: 12px 12px;
+}
+html[data-shell='comic'][data-skin] .topbar {
+  background: transparent;
+}
+html[data-shell='comic'][data-skin] .topbar-title strong {
+  background: var(--sh-red);
+  color: #fff;
+  border: 3px solid var(--sh-ink);
+  padding: 2px 12px;
+  transform: rotate(-2deg);
+  display: inline-block;
+  width: fit-content;
+  justify-self: start;
+  align-self: flex-start;
+  font-family: var(--ct-display);
+}
+html[data-shell='comic'][data-skin] .topbar-title strong::before {
+  display: none;
+}
+html[data-shell='comic'][data-skin] body {
+  font-family: var(--sh-hand);
+}
+
+html[data-shell='comic'][data-skin] .card {
+  background: var(--sh-paper);
+  border: 4px solid var(--sh-ink);
+  border-radius: 0;
+  box-shadow: none;
+}
+html[data-shell='comic'][data-skin] .card:nth-child(odd) {
+  transform: rotate(-0.4deg);
+}
+html[data-shell='comic'][data-skin] .card:nth-child(even) {
+  transform: rotate(0.35deg);
+}
+html[data-shell='comic'][data-skin] .card::before,
+html[data-shell='comic'][data-skin] .card::after {
+  display: none;
+}
+/* заголовок — жёлтая плашка-подпись */
+html[data-shell='comic'][data-skin] .card-title {
+  justify-self: start;
+  align-self: flex-start;
+  background: var(--sh-yellow);
+  color: var(--sh-ink);
+  border: 3px solid var(--sh-ink);
+  box-shadow: 4px 4px 0 var(--sh-ink);
+  padding: 2px 12px;
+  font-family: var(--ct-display);
+  text-transform: uppercase;
+  font-size: 1.05rem;
+}
+
+/* Выпуски сверху */
+html[data-shell='comic'][data-skin] .zg-spread {
+  grid-template-areas: 'nav nav' 'main aside';
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 420px);
+  gap: 18px;
+}
+html[data-shell='comic'][data-skin] .zg-spread.zg-spread-wide {
+  grid-template-areas: 'nav' 'main';
+  grid-template-columns: minmax(0, 1fr);
+}
+html[data-shell='comic'][data-skin] .zg-tabbar-side {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 14px;
+}
+html[data-shell='comic'][data-skin] .zg-tabbar-side .zg-tab {
+  justify-content: center;
+  min-height: 52px;
+  border: 3px solid var(--sh-ink);
+  border-radius: 0;
+  background: var(--sh-paper);
+  color: var(--sh-ink);
+  font-family: var(--ct-display);
+  text-transform: uppercase;
+  font-size: 15px;
+}
+html[data-shell='comic'][data-skin] .zg-tabbar-side .zg-tab :is(svg, kbd, span.absolute) {
+  display: none;
+}
+html[data-shell='comic'][data-skin] .zg-tabbar-side .zg-tab > span.grow {
+  flex-grow: 0;
+}
+html[data-shell='comic'][data-skin] .zg-tabbar-side .zg-tab[aria-current='page'] {
+  background: var(--sh-red);
+  color: #fff;
+  box-shadow: 6px 6px 0 var(--sh-ink);
+  transform: translateY(-3px);
+}
+html[data-shell='comic'][data-skin] .zg-tabbar {
+  background: var(--sh-yellow);
+  border-top: 4px solid var(--sh-ink);
+}
+html[data-shell='comic'][data-skin] .zg-tabbar .zg-tab {
+  color: var(--sh-ink);
+  font-weight: 800;
+}
+html[data-shell='comic'][data-skin] .zg-tabbar .zg-tab span.absolute {
+  background: var(--sh-red);
+  border: 2px solid var(--sh-ink);
+  border-radius: 0;
+}
+html[data-shell='comic'][data-skin] .zg-tabbar .zg-tab[aria-current='page'] svg {
+  color: #fff;
+}
+
+html[data-shell='comic'][data-skin] .zg-btn {
+  border: 3px solid var(--sh-ink);
+  border-radius: 0;
+  font-family: var(--sh-hand);
+  font-weight: 700;
+}
+html[data-shell='comic'][data-skin] .zg-btn-primary {
+  background: var(--sh-yellow);
+  color: var(--sh-ink);
+  font-family: var(--ct-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  box-shadow: 5px 5px 0 var(--sh-ink);
+}
+html[data-shell='comic'][data-skin] .zg-btn-default {
+  background: var(--sh-paper);
+}
+html[data-shell='comic'][data-skin] .zg-seg {
+  border: 3px solid var(--sh-ink);
+  border-radius: 0;
+  background: var(--sh-paper);
+  padding: 0;
+  gap: 0;
+}
+html[data-shell='comic'][data-skin] .zg-seg-item {
+  border-radius: 0;
+  color: var(--sh-ink);
+  font-family: var(--sh-hand);
+  font-weight: 700;
+}
+html[data-shell='comic'][data-skin] .zg-seg-ind {
+  border-radius: 0;
+  background: var(--sh-ink);
+}
+html[data-shell='comic'][data-skin] .zg-seg-item[data-state='on'] {
+  color: var(--sh-yellow);
+}
+html[data-shell='comic'][data-skin] .zg-field {
+  border: 3px solid var(--sh-ink);
+  border-radius: 0;
+  background: var(--sh-paper);
+  font-family: var(--sh-hand);
+}
+html[data-shell='comic'][data-skin] .zg-badge {
+  background: var(--sh-yellow);
+  color: var(--sh-ink);
+  border: 2px solid var(--sh-ink);
+  border-radius: 0;
+  font-family: var(--sh-hand);
+}
+
+/* Лоток — «БАМ»: синий кадр, жёлто-красная вспышка */
+html[data-shell='comic'][data-skin] .zg-tray {
+  border: 4px solid var(--sh-ink);
+  border-radius: 0;
+  background: color-mix(in oklab, var(--sh-red) 20%, #2a6cff);
+}
+html[data-shell='comic'][data-skin] .zg-tray::before {
+  content: '';
+  position: absolute;
+  inset: 8% 10%;
+  background: var(--sh-yellow);
+  clip-path: polygon(
+    50% 0,
+    60% 18%,
+    80% 6%,
+    78% 28%,
+    100% 26%,
+    86% 44%,
+    100% 60%,
+    80% 64%,
+    88% 86%,
+    66% 76%,
+    56% 100%,
+    46% 80%,
+    26% 96%,
+    26% 74%,
+    4% 78%,
+    16% 58%,
+    0 42%,
+    20% 36%,
+    10% 14%,
+    32% 20%
+  );
+  pointer-events: none;
+}
+html[data-shell='comic'][data-skin] .zg-tray-hint {
+  background: var(--sh-paper);
+  border: 2px solid var(--sh-ink);
+  padding: 2px 8px;
+  color: var(--sh-ink);
+  z-index: 1;
+}
+html[data-shell='comic'][data-skin] .zg-roll-result {
+  border: 3px solid var(--sh-ink);
+  border-radius: 0;
+  background: var(--sh-yellow);
+  box-shadow: 4px 4px 0 var(--sh-ink);
+}
+html[data-shell='comic'][data-skin] .feed-value {
+  border: 3px solid var(--sh-ink);
+  border-radius: 0;
+  background: var(--sh-yellow);
+  color: var(--sh-ink);
+  font-family: var(--ct-display);
+}
+html[data-shell='comic'][data-skin] :is(.zg-sheet, .zg-dialog) {
+  border: 4px solid var(--sh-ink);
+  border-radius: 0;
+  background: var(--sh-paper);
+}

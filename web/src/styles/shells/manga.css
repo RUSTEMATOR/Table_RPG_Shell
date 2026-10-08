@@ -1,1 +1,201 @@
-/* Оболочка «manga» (этап 38) — правила под html[data-shell="manga"]. */
+/* Оболочка «Манга» (этап 38): страница манги. Темы: Сёнен, Агентство. Кадры с толстой чёрной рамкой, скринтон,
+   линии скорости в лотке, главы вместо вкладок, тень-сдвиг у выбранного. */
+@import url('https://fonts.googleapis.com/css2?family=Dela+Gothic+One&display=swap');
+
+html:root[data-shell='manga'][data-skin] {
+  --sh-ink: color-mix(in oklab, var(--ct-ink) 92%, #000);
+  --sh-paper: var(--ct-panel);
+  --sh-hot: var(--ct-accent);
+  --sh-cool: var(--ct-accent2, var(--ct-accent));
+  --sh-loud: 'Dela Gothic One', var(--ct-display), sans-serif;
+  background-color: var(--ct-bg);
+  background-image: radial-gradient(color-mix(in oklab, var(--sh-ink) 14%, transparent) 1px, transparent 1.4px);
+  background-size: 7px 7px;
+}
+html[data-shell='manga'][data-skin] .topbar {
+  background: transparent;
+}
+html[data-shell='manga'][data-skin] .topbar-title strong {
+  font-family: var(--sh-loud);
+  font-weight: 400;
+  background: var(--sh-ink);
+  color: var(--sh-paper);
+  padding: 2px 10px;
+  transform: skewX(-8deg);
+  display: inline-block;
+  width: fit-content;
+  justify-self: start;
+  align-self: flex-start;
+}
+html[data-shell='manga'][data-skin] .topbar-title strong::before {
+  display: none;
+}
+
+/* Кадры */
+html[data-shell='manga'][data-skin] .card {
+  background: var(--sh-paper);
+  border: 3px solid var(--sh-ink);
+  border-radius: 0;
+  box-shadow: none;
+}
+html[data-shell='manga'][data-skin] .card::before,
+html[data-shell='manga'][data-skin] .card::after {
+  display: none;
+}
+html[data-shell='manga'][data-skin] .card-title {
+  font-family: var(--sh-loud);
+  font-weight: 400;
+  text-transform: uppercase;
+  transform: skewX(-6deg);
+  transform-origin: left;
+}
+
+/* Главы */
+html[data-shell='manga'][data-skin] .zg-spread {
+  gap: 14px;
+}
+html[data-shell='manga'][data-skin] .zg-tabbar-side {
+  counter-reset: chapter;
+  gap: 10px;
+}
+html[data-shell='manga'][data-skin] .zg-tabbar-side .zg-tab {
+  counter-increment: chapter;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  padding: 8px 12px;
+  border: 3px solid var(--sh-ink);
+  border-radius: 0;
+  background: var(--sh-paper);
+  color: var(--sh-ink);
+  font-family: var(--sh-loud);
+  font-size: 16px;
+  font-weight: 400;
+}
+html[data-shell='manga'][data-skin] .zg-tabbar-side .zg-tab::before {
+  content: 'ГЛАВА ' counter(chapter);
+  font: 700 11px var(--ct-body);
+  letter-spacing: 0.12em;
+}
+html[data-shell='manga'][data-skin] .zg-tabbar-side .zg-tab :is(svg, kbd, span.absolute) {
+  display: none;
+}
+html[data-shell='manga'][data-skin] .zg-tabbar-side .zg-tab:hover {
+  background: color-mix(in oklab, var(--sh-paper) 85%, var(--sh-ink));
+}
+html[data-shell='manga'][data-skin] .zg-tabbar-side .zg-tab[aria-current='page'] {
+  background: var(--sh-hot);
+  color: #fff;
+  box-shadow: 6px 6px 0 var(--sh-ink);
+  transform: translateX(6px);
+}
+html[data-shell='manga'][data-skin] .zg-tabbar {
+  background: var(--sh-paper);
+  border-top: 3px solid var(--sh-ink);
+}
+html[data-shell='manga'][data-skin] .zg-tabbar .zg-tab {
+  color: var(--sh-ink);
+  font-weight: 800;
+}
+html[data-shell='manga'][data-skin] .zg-tabbar .zg-tab span.absolute {
+  background: var(--sh-hot);
+  border-radius: 0;
+  box-shadow: 3px 3px 0 var(--sh-ink);
+}
+html[data-shell='manga'][data-skin] .zg-tabbar .zg-tab[aria-current='page'] svg {
+  color: #fff;
+}
+
+/* Кнопки — рамка и тень-сдвиг */
+html[data-shell='manga'][data-skin] .zg-btn {
+  border: 3px solid var(--sh-ink);
+  border-radius: 0;
+  font-weight: 800;
+}
+html[data-shell='manga'][data-skin] .zg-btn-primary {
+  background: var(--sh-hot);
+  color: #fff;
+  font-family: var(--sh-loud);
+  font-weight: 400;
+  font-size: 18px;
+  box-shadow: 5px 5px 0 var(--sh-ink);
+}
+html[data-shell='manga'][data-skin] .zg-btn-primary:active {
+  transform: translate(3px, 3px);
+  box-shadow: 2px 2px 0 var(--sh-ink);
+}
+html[data-shell='manga'][data-skin] .zg-btn-default {
+  background: var(--sh-paper);
+}
+html[data-shell='manga'][data-skin] .zg-seg {
+  background: var(--sh-paper);
+  border: 3px solid var(--sh-ink);
+  border-radius: 0;
+  padding: 0;
+  gap: 0;
+}
+html[data-shell='manga'][data-skin] .zg-seg-item {
+  border-radius: 0;
+  color: var(--sh-ink);
+  font-weight: 800;
+}
+html[data-shell='manga'][data-skin] .zg-seg-ind {
+  border-radius: 0;
+  background: var(--sh-ink);
+}
+html[data-shell='manga'][data-skin] .zg-seg-item[data-state='on'] {
+  color: var(--sh-paper);
+}
+html[data-shell='manga'][data-skin] .zg-field {
+  border: 3px solid var(--sh-ink);
+  border-radius: 0;
+  background: var(--sh-paper);
+}
+html[data-shell='manga'][data-skin] .zg-badge {
+  background: var(--sh-paper);
+  color: var(--sh-ink);
+  border: 2px solid var(--sh-ink);
+  border-radius: 999px;
+}
+
+/* Лоток — кадр с линиями скорости */
+html[data-shell='manga'][data-skin] .zg-tray {
+  border: 3px solid var(--sh-ink);
+  border-radius: 0;
+  background: var(--sh-paper);
+}
+html[data-shell='manga'][data-skin] .zg-tray::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-conic-gradient(from 0deg at 50% 50%, var(--sh-ink) 0 0.8deg, transparent 0.8deg 5deg);
+  -webkit-mask: radial-gradient(circle at 50% 50%, transparent 0 32%, #000 72%);
+  mask: radial-gradient(circle at 50% 50%, transparent 0 32%, #000 72%);
+  opacity: 0.45;
+  pointer-events: none;
+}
+html[data-shell='manga'][data-skin] .zg-tray-hint {
+  background: var(--sh-paper);
+  border: 2px solid var(--sh-ink);
+  border-radius: 999px;
+  padding: 4px 12px;
+  color: var(--sh-ink);
+  font-weight: 800;
+  z-index: 1;
+}
+html[data-shell='manga'][data-skin] .zg-roll-result {
+  border: 3px solid var(--sh-ink);
+  border-radius: 999px;
+  box-shadow: 4px 4px 0 var(--sh-ink);
+}
+html[data-shell='manga'][data-skin] .feed-value {
+  border: 3px solid var(--sh-ink);
+  border-radius: 0;
+  background: var(--sh-paper);
+  font-family: var(--sh-loud);
+}
+html[data-shell='manga'][data-skin] :is(.zg-sheet, .zg-dialog) {
+  border: 3px solid var(--sh-ink);
+  border-radius: 0;
+  background: var(--sh-paper);
+}

@@ -1,1 +1,224 @@
-/* Оболочка «deco» (этап 38) — правила под html[data-shell="deco"]. */
+/* Оболочка «Ар-деко» (этап 38): отель «Континенталь». Тема: Ар-деко. Чёрный лак и золото, ступенчатые углы панелей,
+   двойная золотая кайма, веер лучей над шапкой, разделы — золотые таблички, жребий — монета. */
+@import url('https://fonts.googleapis.com/css2?family=Poiret+One&family=Playfair+Display+SC:wght@400;700&display=swap');
+
+html:root[data-shell='deco'][data-skin] {
+  --sh-black: var(--ct-bg);
+  --sh-lac: var(--ct-panel);
+  --sh-gold: var(--ct-accent);
+  --sh-thin: 'Poiret One', var(--ct-body), sans-serif;
+  --sh-caps: 'Playfair Display SC', var(--ct-display), serif;
+  background-color: var(--sh-black);
+  background-image:
+    radial-gradient(ellipse at 50% 0%, color-mix(in oklab, var(--sh-gold) 14%, transparent), transparent 55%),
+    repeating-conic-gradient(from -90deg at 50% -10%, color-mix(in oklab, var(--sh-gold) 18%, transparent) 0 0.6deg, transparent 0.6deg 9deg);
+  background-attachment: fixed;
+}
+html[data-shell='deco'][data-skin] .topbar {
+  background: transparent;
+}
+html[data-shell='deco'][data-skin] .topbar-title strong {
+  font-family: var(--sh-caps);
+  letter-spacing: 0.2em;
+  color: var(--sh-gold);
+}
+html[data-shell='deco'][data-skin] .topbar .muted {
+  font-family: var(--sh-thin);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+
+/* Лак со ступенчатыми углами и двойной каймой */
+html[data-shell='deco'][data-skin] .card {
+  background: var(--sh-lac);
+  border: 0;
+  border-radius: 0;
+  clip-path: polygon(
+    0 16px,
+    16px 16px,
+    16px 0,
+    calc(100% - 16px) 0,
+    calc(100% - 16px) 16px,
+    100% 16px,
+    100% calc(100% - 16px),
+    calc(100% - 16px) calc(100% - 16px),
+    calc(100% - 16px) 100%,
+    16px 100%,
+    16px calc(100% - 16px),
+    0 calc(100% - 16px)
+  );
+  box-shadow:
+    inset 0 0 0 1px var(--sh-gold),
+    inset 0 0 0 6px var(--sh-lac),
+    inset 0 0 0 7px color-mix(in oklab, var(--sh-gold) 50%, transparent);
+  padding: 26px 30px;
+}
+html[data-shell='deco'][data-skin] .card::before,
+html[data-shell='deco'][data-skin] .card::after {
+  display: none;
+}
+html[data-shell='deco'][data-skin] .card-title {
+  font-family: var(--sh-caps);
+  letter-spacing: 0.1em;
+  color: var(--sh-gold);
+}
+html[data-shell='deco'][data-skin] .card-title::after {
+  content: '';
+  display: block;
+  width: 120px;
+  height: 9px;
+  margin-top: 8px;
+  background:
+    linear-gradient(var(--sh-gold), var(--sh-gold)) left center / 52px 1px no-repeat,
+    linear-gradient(var(--sh-gold), var(--sh-gold)) right center / 52px 1px no-repeat,
+    conic-gradient(from 45deg at 50% 50%, var(--sh-gold) 0 25%, transparent 0 50%, var(--sh-gold) 0 75%, transparent 0) center / 9px 9px no-repeat;
+}
+
+/* Таблички сверху по центру */
+html[data-shell='deco'][data-skin] .zg-spread {
+  grid-template-areas: 'nav nav' 'main aside';
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 420px);
+  gap: 22px 30px;
+}
+html[data-shell='deco'][data-skin] .zg-spread.zg-spread-wide {
+  grid-template-areas: 'nav' 'main';
+  grid-template-columns: minmax(0, 1fr);
+}
+html[data-shell='deco'][data-skin] .zg-tabbar-side {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+html[data-shell='deco'][data-skin] .zg-tabbar-side .zg-tab {
+  border: 1px solid color-mix(in oklab, var(--sh-gold) 35%, transparent);
+  border-radius: 0;
+  padding: 0 22px;
+  color: color-mix(in oklab, var(--ct-ink) 78%, var(--sh-black));
+  font-family: var(--sh-thin);
+  font-size: 16px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+html[data-shell='deco'][data-skin] .zg-tabbar-side .zg-tab :is(svg, kbd, span.absolute) {
+  display: none;
+}
+html[data-shell='deco'][data-skin] .zg-tabbar-side .zg-tab[aria-current='page'] {
+  background: linear-gradient(180deg, color-mix(in oklab, var(--sh-gold) 70%, #fff), var(--sh-gold) 60%, color-mix(in oklab, var(--sh-gold) 75%, #000));
+  color: var(--sh-black);
+  font-family: var(--sh-caps);
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  border-color: var(--sh-gold);
+}
+html[data-shell='deco'][data-skin] .zg-tabbar {
+  background: var(--sh-black);
+  border-top: 1px solid var(--sh-gold);
+}
+html[data-shell='deco'][data-skin] .zg-tabbar .zg-tab {
+  font-family: var(--sh-thin);
+  letter-spacing: 0.06em;
+}
+html[data-shell='deco'][data-skin] .zg-tabbar .zg-tab span.absolute {
+  background: var(--sh-gold);
+  border-radius: 0;
+}
+html[data-shell='deco'][data-skin] .zg-tabbar .zg-tab[aria-current='page'] {
+  color: var(--sh-gold);
+}
+html[data-shell='deco'][data-skin] .zg-tabbar .zg-tab[aria-current='page'] svg {
+  color: var(--sh-black);
+}
+
+html[data-shell='deco'][data-skin] .zg-btn {
+  border-radius: 0;
+  font-family: var(--sh-thin);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+html[data-shell='deco'][data-skin] .zg-btn-primary {
+  background: linear-gradient(180deg, color-mix(in oklab, var(--sh-gold) 70%, #fff), var(--sh-gold) 60%, color-mix(in oklab, var(--sh-gold) 75%, #000));
+  border: 0;
+  color: var(--sh-black);
+  font-family: var(--sh-caps);
+  font-weight: 700;
+}
+html[data-shell='deco'][data-skin] .zg-btn-default {
+  background: transparent;
+  border-color: color-mix(in oklab, var(--sh-gold) 45%, transparent);
+}
+html[data-shell='deco'][data-skin] .zg-seg {
+  background: transparent;
+  border-color: color-mix(in oklab, var(--sh-gold) 45%, transparent);
+  border-radius: 0;
+  padding: 0;
+  gap: 0;
+}
+html[data-shell='deco'][data-skin] .zg-seg-item {
+  border-radius: 0;
+  font-family: var(--sh-thin);
+  letter-spacing: 0.14em;
+}
+html[data-shell='deco'][data-skin] .zg-seg-ind {
+  border-radius: 0;
+  background: var(--sh-gold);
+}
+html[data-shell='deco'][data-skin] .zg-seg-item[data-state='on'] {
+  color: var(--sh-black);
+}
+html[data-shell='deco'][data-skin] .zg-field {
+  background: transparent;
+  border-width: 0 0 1px;
+  border-radius: 0;
+  border-color: var(--sh-gold);
+}
+html[data-shell='deco'][data-skin] .zg-badge {
+  background: transparent;
+  color: var(--sh-gold);
+  font-family: var(--sh-thin);
+  letter-spacing: 0.28em;
+  padding-inline: 0;
+}
+
+/* Жребий — монета */
+html[data-shell='deco'][data-skin] .zg-tray {
+  border: 0;
+  border-radius: 50%;
+  aspect-ratio: 1;
+  height: auto;
+  width: min(100%, 280px);
+  margin-inline: auto;
+  background: radial-gradient(circle at 40% 35%, color-mix(in oklab, var(--sh-gold) 55%, #fff), var(--sh-gold) 45%, color-mix(in oklab, var(--sh-gold) 55%, #000) 100%);
+  box-shadow:
+    0 0 0 3px var(--sh-black),
+    0 0 0 4px var(--sh-gold),
+    0 10px 24px rgb(0 0 0 / 0.6),
+    inset 0 0 0 16px rgb(0 0 0 / 0),
+    inset 0 0 0 17px rgb(0 0 0 / 0.3);
+}
+html[data-shell='deco'][data-skin] .zg-tray-hint {
+  left: 0;
+  right: 0;
+  top: auto;
+  bottom: 14%;
+  text-align: center;
+  color: var(--sh-black);
+  font-family: var(--sh-thin);
+}
+html[data-shell='deco'][data-skin] .zg-roll-result {
+  border-radius: 0;
+  border-color: var(--sh-gold);
+  background: var(--sh-black);
+  font-family: var(--sh-caps);
+}
+html[data-shell='deco'][data-skin] .feed-value {
+  background: transparent;
+  color: var(--sh-gold);
+  font-family: var(--sh-caps);
+  font-size: 1.4rem;
+}
+html[data-shell='deco'][data-skin] :is(.zg-sheet, .zg-dialog) {
+  background: var(--sh-lac);
+  border-radius: 0;
+  box-shadow: inset 0 0 0 1px var(--sh-gold);
+}

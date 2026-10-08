@@ -1,1 +1,187 @@
-/* Оболочка «novel» (этап 38) — правила под html[data-shell="novel"]. */
+/* Оболочка «Визуальная новелла» (этап 38): ночное небо сцены, полупрозрачные окна диалога с золотой каймой,
+   меню новеллы сверху, лоток — магический круг. Тема: Командная печать (Fate). */
+html:root[data-shell='novel'][data-skin] {
+  --sh-sky: var(--ct-bg);
+  --sh-box: color-mix(in oklab, var(--ct-panel) 92%, transparent);
+  --sh-gold: var(--ct-accent);
+  --sh-rose: var(--ct-accent2, var(--ct-accent));
+  background-color: var(--sh-sky);
+  background-image:
+    radial-gradient(ellipse at 75% 15%, color-mix(in oklab, var(--sh-gold) 20%, transparent), transparent 45%),
+    radial-gradient(ellipse at 15% 85%, color-mix(in oklab, var(--sh-rose) 18%, transparent), transparent 50%),
+    radial-gradient(color-mix(in oklab, var(--ct-ink) 70%, transparent) 1px, transparent 1.4px),
+    radial-gradient(color-mix(in oklab, var(--ct-ink) 40%, transparent) 1px, transparent 1.4px);
+  background-size:
+    auto,
+    auto,
+    110px 110px,
+    170px 170px;
+  background-position:
+    0 0,
+    0 0,
+    20px 30px,
+    80px 90px;
+  background-attachment: fixed;
+}
+html[data-shell='novel'][data-skin] .topbar {
+  background: transparent;
+}
+
+/* Окна диалога */
+html[data-shell='novel'][data-skin] .card {
+  background: linear-gradient(180deg, var(--sh-box), color-mix(in oklab, var(--ct-panel) 96%, transparent));
+  border: 0;
+  border-radius: 4px;
+  box-shadow:
+    inset 0 0 0 1px var(--sh-gold),
+    inset 0 0 0 5px color-mix(in oklab, var(--ct-panel) 90%, transparent),
+    inset 0 0 0 6px color-mix(in oklab, var(--sh-gold) 45%, transparent),
+    0 10px 30px rgb(0 0 0 / 0.45);
+  backdrop-filter: blur(3px);
+}
+html[data-shell='novel'][data-skin] .card::before,
+html[data-shell='novel'][data-skin] .card::after {
+  display: none;
+}
+/* заголовок окна — плашка с именем говорящего */
+html[data-shell='novel'][data-skin] .card-title {
+  align-self: flex-start;
+  justify-self: start;
+  background: var(--sh-rose);
+  color: #fff;
+  padding: 4px 18px;
+  box-shadow: inset 0 0 0 1px var(--sh-gold);
+  margin-top: -32px;
+  font-size: 1.25rem;
+}
+html[data-shell='novel'][data-skin] .card {
+  margin-top: 16px;
+}
+
+/* Меню новеллы сверху */
+html[data-shell='novel'][data-skin] .zg-spread {
+  grid-template-areas: 'nav nav' 'main aside';
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 400px);
+  gap: 18px 26px;
+}
+html[data-shell='novel'][data-skin] .zg-spread.zg-spread-wide {
+  grid-template-areas: 'nav' 'main';
+  grid-template-columns: minmax(0, 1fr);
+}
+html[data-shell='novel'][data-skin] .zg-tabbar-side {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+}
+html[data-shell='novel'][data-skin] .zg-tabbar-side .zg-tab {
+  border-radius: 0;
+  padding: 0 18px;
+  color: var(--ct-muted);
+  font-family: var(--ct-display);
+  font-size: 18px;
+  font-weight: 600;
+  background: transparent;
+  border-bottom: 2px solid transparent;
+}
+html[data-shell='novel'][data-skin] .zg-tabbar-side .zg-tab :is(svg, kbd, span.absolute) {
+  display: none;
+}
+html[data-shell='novel'][data-skin] .zg-tabbar-side .zg-tab[aria-current='page'] {
+  color: var(--sh-gold);
+  border-bottom-color: var(--sh-gold);
+}
+html[data-shell='novel'][data-skin] .zg-tabbar {
+  background: color-mix(in oklab, var(--ct-panel) 92%, transparent);
+  border-top: 1px solid var(--sh-gold);
+}
+html[data-shell='novel'][data-skin] .zg-tabbar .zg-tab span.absolute {
+  background: color-mix(in oklab, var(--sh-gold) 22%, transparent);
+}
+html[data-shell='novel'][data-skin] .zg-tabbar .zg-tab[aria-current='page'] {
+  color: var(--sh-gold);
+}
+
+html[data-shell='novel'][data-skin] .zg-btn {
+  font-family: var(--ct-display);
+  font-size: 17px;
+  border-radius: 0;
+}
+html[data-shell='novel'][data-skin] .zg-btn-primary {
+  background: color-mix(in oklab, var(--sh-rose) 88%, transparent);
+  border-color: var(--sh-gold);
+  color: #fff;
+  letter-spacing: 0.04em;
+}
+html[data-shell='novel'][data-skin] .zg-btn-default {
+  background: transparent;
+  border-color: color-mix(in oklab, var(--sh-gold) 50%, transparent);
+}
+html[data-shell='novel'][data-skin] .zg-seg {
+  background: transparent;
+  border-color: color-mix(in oklab, var(--sh-gold) 45%, transparent);
+  border-radius: 0;
+}
+html[data-shell='novel'][data-skin] .zg-seg-item {
+  border-radius: 0;
+  font-family: var(--ct-display);
+  font-size: 16px;
+}
+html[data-shell='novel'][data-skin] .zg-seg-ind {
+  border-radius: 0;
+  background: var(--sh-gold);
+}
+html[data-shell='novel'][data-skin] .zg-field {
+  background: transparent;
+  border-width: 0 0 1px;
+  border-radius: 0;
+  border-color: color-mix(in oklab, var(--sh-gold) 60%, transparent);
+}
+html[data-shell='novel'][data-skin] .zg-badge {
+  background: transparent;
+  color: var(--sh-rose);
+  font-style: italic;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 14px;
+  padding-inline: 0;
+}
+
+/* Лоток — магический круг */
+html[data-shell='novel'][data-skin] .zg-tray {
+  border: 0;
+  border-radius: 50%;
+  aspect-ratio: 1;
+  height: auto;
+  width: min(100%, 300px);
+  margin-inline: auto;
+  background:
+    radial-gradient(circle, transparent 0 60%, color-mix(in oklab, var(--sh-gold) 70%, transparent) 60.5% 61.5%, transparent 62% 69%, var(--sh-gold) 69.5% 70.5%, transparent 71%),
+    radial-gradient(circle, color-mix(in oklab, var(--sh-gold) 14%, transparent), transparent 70%);
+  box-shadow: 0 0 30px color-mix(in oklab, var(--sh-gold) 25%, transparent);
+}
+html[data-shell='novel'][data-skin] .zg-tray-hint {
+  left: 0;
+  right: 0;
+  top: auto;
+  bottom: 12%;
+  text-align: center;
+  text-transform: none;
+  letter-spacing: 0;
+  font-style: italic;
+}
+html[data-shell='novel'][data-skin] .zg-roll-result {
+  border-color: var(--sh-gold);
+  border-radius: 0;
+  background: color-mix(in oklab, var(--ct-panel) 92%, transparent);
+}
+html[data-shell='novel'][data-skin] .feed-value {
+  background: transparent;
+  color: var(--sh-gold);
+  font-family: var(--ct-display);
+  font-size: 1.5rem;
+}
+html[data-shell='novel'][data-skin] :is(.zg-sheet, .zg-dialog) {
+  background: var(--ct-panel);
+  box-shadow: inset 0 0 0 1px var(--sh-gold);
+}
