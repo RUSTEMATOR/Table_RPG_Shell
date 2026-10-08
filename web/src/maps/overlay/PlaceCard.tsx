@@ -8,6 +8,7 @@ import { FigureSprite } from '../../figure/FigureSprite.tsx';
 import { PlaceIcon } from '../MapView.tsx';
 import { teamOf } from '../../maps3d/settlements.ts';
 import { GameIcon, RUMOR_ICON, SPOT_ICON, type GameIconName } from '../../ui/GameIcon.tsx';
+import { Pic } from '../../components/Pic.tsx';
 
 // Карточка места и экран города (этап 27) — у игрока и на столе. Данные — только открытое (projectPlaceDetail на сервере):
 // описание, правитель, фракция, население, места в городе, открытые слухи и задания, «кто здесь».
@@ -361,7 +362,7 @@ export function CityScreen({ d, onClose, table }: { d: PlaceDetailPublic; onClos
 function Backdrop({ d }: { d: PlaceDetailPublic }) {
   return d.image ? (
     <div aria-hidden="true" className="absolute inset-0 -z-0">
-      <img src={d.image.url} alt="" className="size-full object-cover" />
+      <Pic image={d.image} className="absolute inset-0" />
       <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(14,11,7,.75),rgba(14,11,7,.25)_60%,rgba(14,11,7,.55))]" />
     </div>
   ) : (

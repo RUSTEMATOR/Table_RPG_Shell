@@ -5,6 +5,7 @@ export * from './i18n.ts';
 export * from './character.ts';
 export * from './feed.ts';
 export * from './gm.ts';
+export * from './media.ts';
 export * from './table.ts';
 export * from './maps.ts';
 export * from './figure.ts';

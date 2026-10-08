@@ -2,7 +2,7 @@ import { and, desc, eq } from 'drizzle-orm';
 import { TableStateSchema, type GmScene, type TableState } from '@zg/shared';
 import { newId } from '../auth/tokens.ts';
 import { db, schema } from '../db/client.ts';
-import { imageUrl, removeImage, storeImage } from './media.ts';
+import { NO_IMAGE, imageGm, imagePublic, removeImage, storeImage } from './media.ts';
 import { tableMap } from './maps.ts';
 import { npcFigure } from './npc.ts';
 import { activeSession } from './session.ts';
@@ -15,7 +15,7 @@ export function gmScene(r: SceneRow, shownId: string | null): GmScene {
     title: r.title,
     textPublic: r.textPublic,
     textGm: r.textGm,
-    image: r.imageFile ? { url: imageUrl(r.imageFile), w: r.imageW ?? 0, h: r.imageH ?? 0, bytes: r.imageBytes ?? 0 } : null,
+    image: imageGm(r),
     shown: r.id === shownId,
     updatedAt: r.updatedAt,
   };
@@ -63,7 +63,14 @@ export function projectForTable(roomId: string): TableState {
   const r = shown?.sceneId ? getScene(roomId, shown.sceneId) : undefined;
   const n = shown?.npcId
     ? db
-        .select({ name: schema.npc.name, imageFile: schema.npc.imageFile, imageW: schema.npc.imageW, imageH: schema.npc.imageH, figure: schema.npc.figure })
+        .select({
+          name: schema.npc.name,
+          imageFile: schema.npc.imageFile,
+          imageW: schema.npc.imageW,
+          imageH: schema.npc.imageH,
+          imageHash: schema.npc.imageHash,
+          figure: schema.npc.figure,
+        })
         .from(schema.npc)
         .where(and(eq(schema.npc.roomId, roomId), eq(schema.npc.id, shown.npcId)))
         .get()
@@ -74,7 +81,7 @@ export function projectForTable(roomId: string): TableState {
     npc: n
       ? {
           name: n.name,
-          ...(n.imageFile ? { image: { url: imageUrl(n.imageFile), w: n.imageW ?? 0, h: n.imageH ?? 0 } } : {}),
+          ...(n.imageFile ? { image: imagePublic(n) } : {}),
           figure: npcFigure(n),
           opponent: activeSession(roomId).opponentNpcId === shown?.npcId,
         }
@@ -84,7 +91,7 @@ export function projectForTable(roomId: string): TableState {
           id: r.id,
           title: r.title,
           text: r.textPublic,
-          ...(r.imageFile ? { image: { url: imageUrl(r.imageFile), w: r.imageW ?? 0, h: r.imageH ?? 0 } } : {}),
+          ...(r.imageFile ? { image: imagePublic(r) } : {}),
         }
       : null,
   });
@@ -92,7 +99,7 @@ export function projectForTable(roomId: string): TableState {
 
 export function createScene(roomId: string, w: { title: string; textPublic: string; textGm: string }): SceneRow {
   const now = Date.now();
-  const row: SceneRow = { id: newId(), roomId, ...w, imageFile: null, imageW: null, imageH: null, imageBytes: null, createdAt: now, updatedAt: now };
+  const row: SceneRow = { id: newId(), roomId, ...w, ...NO_IMAGE, createdAt: now, updatedAt: now };
   db.insert(schema.scene).values(row).run();
   return row;
 }

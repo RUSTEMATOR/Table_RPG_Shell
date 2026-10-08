@@ -212,6 +212,8 @@ export const scene = sqliteTable(
     imageW: integer('image_w'),
     imageH: integer('image_h'),
     imageBytes: integer('image_bytes'),
+    /** thumbhash превью (этап 40), base64; null — ещё не посчитан. */
+    imageHash: text('image_hash'),
     createdAt: integer('created_at').notNull(),
     updatedAt: integer('updated_at').notNull(),
   },
@@ -247,6 +249,8 @@ export const npc = sqliteTable(
     imageW: integer('image_w'),
     imageH: integer('image_h'),
     imageBytes: integer('image_bytes'),
+    /** thumbhash превью (этап 40), base64; null — ещё не посчитан. */
+    imageHash: text('image_hash'),
     /** Пиксель-арт фигурка (этап 23), JSON по FigureSchema. Внешность — может уйти на стол и игрокам (карта, бой). */
     figure: text('figure'),
     /** 3D-модель на 3D-карте (этап 34): id из UNIT_IDS, null — фигурка как обычно. Внешность, как и фигурка. */
@@ -326,6 +330,8 @@ export const mapPlace = sqliteTable(
     imageW: integer('image_w'),
     imageH: integer('image_h'),
     imageBytes: integer('image_bytes'),
+    /** thumbhash превью (этап 40), base64; null — ещё не посчитан. */
+    imageHash: text('image_hash'),
     createdAt: integer('created_at').notNull(),
     updatedAt: integer('updated_at').notNull(),
   },

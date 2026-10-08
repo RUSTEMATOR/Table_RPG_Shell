@@ -15,7 +15,7 @@ import {
 import { db, schema } from '../db/client.ts';
 import { MAPS, ensureMaps, getPlace, partyMove, type PlaceRow, pieceKey, pieces, placeRows, refOf, regionRows, roads, tokenRows } from '../domain/maps.ts';
 import { figuresOf, listParties, namesOf, partyIdOfMember } from '../domain/parties.ts';
-import { imageUrl } from '../domain/media.ts';
+import { imagePublic } from '../domain/media.ts';
 import { npcFigure } from '../domain/npc.ts';
 import { presenceRows, rumorRows, spotRows } from '../domain/places.ts';
 
@@ -161,7 +161,7 @@ function card(p: PlaceRow) {
     ruler: p.ruler,
     faction: p.faction,
     population: p.population,
-    image: p.imageFile ? { url: imageUrl(p.imageFile), w: p.imageW ?? 0, h: p.imageH ?? 0 } : null,
+    image: imagePublic(p),
   };
 }
 

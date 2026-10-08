@@ -6,6 +6,8 @@ import { AnimatePresence, m } from 'motion/react';
 import { spring } from '../lib/motion.tsx';
 import { cn } from '../lib/cn.ts';
 import { Badge, Button, buttonVariants, Card, CardTitle, Field, Input, Textarea, toast } from '../ui/index.ts';
+import { Pic } from '../components/Pic.tsx';
+import { uploadImage } from '../lib/uploadImage.ts';
 
 export function GmTable() {
   return <Scenes />;
@@ -113,12 +115,7 @@ function SceneEditor({ s, onChange }: { s: GmScene; onChange: (s: GmScene) => vo
     setMsg('Загружаю…');
     let res: Response;
     try {
-      res = await fetch(`/api/gm/scenes/${s.id}/image`, {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: { 'content-type': file.type || 'image/jpeg' },
-        body: file,
-      });
+      res = await uploadImage(`/api/gm/scenes/${s.id}/image`, file);
     } catch {
       setBusy(false);
       return setMsg('Нет связи');
@@ -150,7 +147,7 @@ function SceneEditor({ s, onChange }: { s: GmScene; onChange: (s: GmScene) => vo
       <div className="flex flex-wrap items-end gap-3">
         {s.image && (
           <figure className="m-0 grid gap-1">
-            <img src={s.image.url} alt="" width={s.image.w} height={s.image.h} loading="lazy" className="h-auto max-h-40 w-auto max-w-[280px] rounded-control object-cover" />
+            <Pic image={s.image} size="thumb" className="inline-block rounded-control" imgClassName="h-auto max-h-40 w-auto max-w-[280px] object-cover" loading="lazy" />
             <figcaption className="text-xs text-muted">
               {s.image.w}×{s.image.h}, {Math.round(s.image.bytes / 1024)} КБ
             </figcaption>

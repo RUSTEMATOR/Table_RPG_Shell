@@ -16,6 +16,8 @@ import { api } from '../lib/api.ts';
 import { useSocketEvent } from '../lib/socket.ts';
 import { cn } from '../lib/cn.ts';
 import { Badge, Button, buttonVariants, Card, Field, GameIcon, Input, RUMOR_ICON, Select, SPOT_ICON, Switch, TabPanel, Tabs, Textarea, toast } from '../ui/index.ts';
+import { Pic } from '../components/Pic.tsx';
+import { uploadImage } from '../lib/uploadImage.ts';
 
 // Город у мастера (этап 27): карточка (описание, правитель, фракция, население, картинка), места в городе, слухи и
 // задания (открываются игрокам по одному), «кто здесь» (противники из библиотеки). «Набросать» — черновик Claude
@@ -112,7 +114,7 @@ function CardTab({ d, url, send, onImage }: { d: GmPlaceDetail; url: string; sen
     if (!file) return;
     setUploading(true);
     try {
-      const res = await fetch(`${url}/image`, { method: 'POST', credentials: 'same-origin', headers: { 'content-type': file.type || 'image/jpeg' }, body: file });
+      const res = await uploadImage(`${url}/image`, file);
       if (!res.ok) toast.error('Картинка не загрузилась');
       else onImage();
     } catch {
@@ -159,9 +161,7 @@ function CardTab({ d, url, send, onImage }: { d: GmPlaceDetail; url: string; sen
         </Button>
       )}
       <div className="flex flex-wrap items-end gap-3 border-t border-solid border-border pt-3">
-        {d.image && (
-          <img src={d.image.url} alt="" width={d.image.w} height={d.image.h} loading="lazy" className="h-auto max-h-32 w-auto max-w-[220px] rounded-control object-cover" />
-        )}
+        {d.image && <Pic image={d.image} size="thumb" className="inline-block rounded-control" imgClassName="h-auto max-h-32 w-auto max-w-[220px] object-cover" loading="lazy" />}
         <label className={cn(buttonVariants({ size: 'sm' }), uploading && 'pointer-events-none opacity-50')}>
           {d.image ? 'Заменить картинку' : 'Картинка города'}
           <input type="file" accept="image/*" className="sr-only" onChange={(e) => void upload(e.target.files?.[0])} disabled={uploading} />

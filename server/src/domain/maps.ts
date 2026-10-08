@@ -185,6 +185,7 @@ export function createPlace(
     imageW: null,
     imageH: null,
     imageBytes: null,
+    imageHash: null,
     createdAt: now,
     updatedAt: now,
     ...p,

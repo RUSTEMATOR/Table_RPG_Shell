@@ -3,7 +3,7 @@ import { FigureSchema, UnitIdSchema, type Figure, type GmNpc, type UnitId } from
 import { newId } from '../auth/tokens.ts';
 import { db, schema } from '../db/client.ts';
 import { powerBand } from './cards.ts';
-import { imageUrl, removeImage, storeImage } from './media.ts';
+import { NO_IMAGE, imageGm, removeImage, storeImage } from './media.ts';
 
 // Библиотека противников. Всё здесь — мастерские данные; столу уходит только projectForTable.
 
@@ -16,7 +16,7 @@ export function gmNpc(r: NpcRow, shownId: string | null, opponentId: string | nu
     power: r.power,
     band: r.power ? powerBand(r.power).label : '',
     notes: r.notesGm,
-    image: r.imageFile ? { url: imageUrl(r.imageFile), w: r.imageW ?? 0, h: r.imageH ?? 0, bytes: r.imageBytes ?? 0 } : null,
+    image: imageGm(r),
     figure: npcFigure(r),
     model3d: npcModel(r),
     shown: r.id === shownId,
@@ -78,6 +78,7 @@ export function createNpc(roomId: string, w: { name: string; power: number | nul
     imageW: null,
     imageH: null,
     imageBytes: null,
+    imageHash: null,
     figure: null,
     model3d: null,
     createdAt: now,

@@ -7,6 +7,8 @@ import { spring } from '../lib/motion.tsx';
 import { cn } from '../lib/cn.ts';
 import { Badge, Button, buttonVariants, Card, CardTitle, Field, Input, Select, Sheet, Textarea, toast } from '../ui/index.ts';
 import units from '../maps3d/units.json';
+import { Pic } from '../components/Pic.tsx';
+import { uploadImage } from '../lib/uploadImage.ts';
 
 // Фигурки — отдельный чанк (каталог деталей LPC и сборка листов), грузится, только если есть что показать.
 const FigureEditor = lazy(() => import('../figure/FigureEditor.tsx').then((m) => ({ default: m.FigureEditor })));
@@ -115,12 +117,7 @@ function NpcEditor({ n, onChange }: { n: GmNpc; onChange: (n: GmNpc) => void }) 
     setMsg('Загружаю…');
     let res: Response;
     try {
-      res = await fetch(`/api/gm/npcs/${n.id}/image`, {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: { 'content-type': file.type || 'image/jpeg' },
-        body: file,
-      });
+      res = await uploadImage(`/api/gm/npcs/${n.id}/image`, file);
     } catch {
       setBusy(false);
       return setMsg('Нет связи');
@@ -165,11 +162,7 @@ function NpcEditor({ n, onChange }: { n: GmNpc; onChange: (n: GmNpc) => void }) 
       <div className="grid items-start gap-4 @xl/main:grid-cols-[auto_minmax(0,1fr)]">
         <div className="grid justify-items-start gap-2">
           <div className="grid size-28 place-items-center overflow-hidden rounded-card border border-solid border-border bg-surface-2 text-muted">
-            {n.image ? (
-              <img src={n.image.url} alt="" width={n.image.w} height={n.image.h} loading="lazy" className="size-full object-cover" />
-            ) : (
-              <span className="text-xs">без портрета</span>
-            )}
+            {n.image ? <Pic image={n.image} size="thumb" className="size-full" loading="lazy" /> : <span className="text-xs">без портрета</span>}
           </div>
           <label className={cn(buttonVariants({ size: 'sm' }), busy && 'pointer-events-none opacity-50')}>
             {n.image ? 'Заменить' : 'Портрет'}

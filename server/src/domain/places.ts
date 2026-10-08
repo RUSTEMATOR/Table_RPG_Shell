@@ -21,7 +21,7 @@ import { db, schema } from '../db/client.ts';
 import { SUMMARY_LORE } from './data.ts';
 import { isDemoRoom } from './demo.ts';
 import { MAPS, type PlaceRow } from './maps.ts';
-import { imageUrl, removeImage, storeImage } from './media.ts';
+import { NO_IMAGE, imagePublic, removeImage, storeImage } from './media.ts';
 import { listNpcs, npcFigure } from './npc.ts';
 
 // Города (этап 27): карточка места, места в городе, слухи и задания, «кто здесь». Здесь — данные и правка мастера;
@@ -75,7 +75,7 @@ export function gmPlaceDetail(roomId: string, p: PlaceRow): GmPlaceDetail {
     faction: p.faction,
     population: p.population,
     noteGm: p.noteGm,
-    image: p.imageFile ? { url: imageUrl(p.imageFile), w: p.imageW ?? 0, h: p.imageH ?? 0 } : null,
+    image: imagePublic(p),
     spots: spotRows(p.id).map((s) => ({
       id: s.id,
       kind: SpotKindSchema.catch('other').parse(s.kind),
@@ -215,7 +215,10 @@ export async function setPlaceImage(p: PlaceRow, input: Buffer): Promise<void> {
   removeImage(p.imageFile);
 }
 export function clearPlaceImage(p: PlaceRow): void {
-  db.update(schema.mapPlace).set({ imageFile: null, imageW: null, imageH: null, imageBytes: null, updatedAt: Date.now() }).where(eq(schema.mapPlace.id, p.id)).run();
+  db.update(schema.mapPlace)
+    .set({ ...NO_IMAGE, updatedAt: Date.now() })
+    .where(eq(schema.mapPlace.id, p.id))
+    .run();
   removeImage(p.imageFile);
 }
 

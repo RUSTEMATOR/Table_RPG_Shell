@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ImagePublicSchema, type ImagePublic } from './media.ts';
 import { MAP_H, MAP_IDS, MAP_W, PLACE_KINDS, RUMOR_KINDS, SPOT_KINDS, type MapId, type RumorKind, type SpotKind } from './constants.ts';
 import { FigureSchema, type Figure } from './figure.ts';
 
@@ -226,7 +227,6 @@ export const NoteWriteSchema = z.strictObject({ x: z.number().min(0).max(MAP_W),
 
 export const SpotKindSchema = z.enum(SPOT_KINDS);
 export const RumorKindSchema = z.enum(RUMOR_KINDS);
-const ImageSchema = z.strictObject({ url: z.string(), w: z.number(), h: z.number() });
 
 /** Кто здесь: противник из библиотеки — только имя, внешность и роль, которую написал мастер («трактирщик»). Без id противника. */
 export const PresencePublicSchema = z.strictObject({ id: z.string(), name: z.string(), label: z.string(), figure: FigureSchema.nullable() });
@@ -249,7 +249,7 @@ export const PlaceDetailPublicSchema = z.strictObject({
   ruler: z.string(),
   faction: z.string(),
   population: z.string(),
-  image: ImageSchema.nullable(),
+  image: ImagePublicSchema.nullable(),
   spots: z.array(z.strictObject({ id: z.string(), kind: SpotKindSchema, name: z.string(), description: z.string(), here: z.array(PresencePublicSchema) })),
   rumors: z.array(z.strictObject({ id: z.string(), kind: RumorKindSchema, text: z.string() })),
   here: z.array(PresencePublicSchema),
@@ -296,7 +296,7 @@ export interface GmPlaceDetail {
   faction: string;
   population: string;
   noteGm: string;
-  image: { url: string; w: number; h: number } | null;
+  image: ImagePublic | null;
   spots: GmSpot[];
   rumors: GmRumor[];
   presence: GmPresence[];

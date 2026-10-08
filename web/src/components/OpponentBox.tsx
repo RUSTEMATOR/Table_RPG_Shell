@@ -3,6 +3,7 @@ import type { GmNpc, GmSessionView } from '@zg/shared';
 import { api } from '../lib/api.ts';
 import { useSocketEvent } from '../lib/socket.ts';
 import { Button, Card, CardTitle, Field, Input, Select, toast } from '../ui/index.ts';
+import { Pic } from './Pic.tsx';
 
 const when = (t: number) => new Date(t).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 
@@ -88,7 +89,7 @@ export function OpponentBox() {
         <div className="flex flex-wrap items-center gap-4">
           <div className="grid size-16 shrink-0 place-items-center overflow-hidden rounded-card border border-solid border-border bg-surface-2 text-accent">
             {npc?.image ? (
-              <img src={npc.image.url} alt="" className="size-full object-cover" />
+              <Pic image={npc.image} size="thumb" className="size-full" />
             ) : (
               <svg viewBox="0 0 24 24" aria-hidden="true" className="size-8 fill-none stroke-current stroke-[1.6] [stroke-linecap:round] [stroke-linejoin:round]">
                 <path d="M4 18h16M4 18L3 8l5 4 4-7 4 7 5-4-1 10" />

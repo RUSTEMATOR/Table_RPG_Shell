@@ -162,7 +162,7 @@ function OnTable({ onNavigate }: { onNavigate?: () => void }) {
       {shown === undefined ? null : shown ? (
         <div
           className="flex h-[120px] items-end rounded-control bg-[linear-gradient(160deg,#3d4a3f,#1a201b)] bg-cover bg-center px-3 py-2.5 font-name text-[1.35rem] leading-tight text-[#f5f7f2] [text-shadow:0_1px_3px_rgba(0,0,0,.6)]"
-          style={shown.image ? { backgroundImage: `linear-gradient(to top, rgba(0,0,0,.6), transparent 60%), url(${shown.image.url})` } : undefined}
+          style={shown.image ? { backgroundImage: `linear-gradient(to top, rgba(0,0,0,.6), transparent 60%), url(${shown.image.thumb})` } : undefined}
         >
           {shown.title}
         </div>

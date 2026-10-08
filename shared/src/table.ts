@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ImagePublicSchema, type GmImage } from './media.ts';
 import { MapFocusSchema, MapIdSchema, type UnitId } from './maps.ts';
 import { FigureSchema, type Figure } from './figure.ts';
 
@@ -8,7 +9,7 @@ export const TableSceneSchema = z.strictObject({
   id: z.string(),
   title: z.string(),
   text: z.string(),
-  image: z.strictObject({ url: z.string(), w: z.number(), h: z.number() }).optional(),
+  image: ImagePublicSchema.optional(),
 });
 export type TableScene = z.infer<typeof TableSceneSchema>;
 
@@ -18,7 +19,7 @@ export type TableScene = z.infer<typeof TableSceneSchema>;
  */
 export const TableNpcSchema = z.strictObject({
   name: z.string(),
-  image: z.strictObject({ url: z.string(), w: z.number(), h: z.number() }).optional(),
+  image: ImagePublicSchema.optional(),
   figure: FigureSchema.nullable(),
   opponent: z.boolean(),
 });
@@ -43,7 +44,7 @@ export interface GmScene {
   title: string;
   textPublic: string;
   textGm: string;
-  image: { url: string; w: number; h: number; bytes: number } | null;
+  image: GmImage | null;
   shown: boolean;
   updatedAt: number;
 }
@@ -63,7 +64,7 @@ export interface GmNpc {
   /** Ступень силы словом, пусто — сила не задана. */
   band: string;
   notes: string;
-  image: { url: string; w: number; h: number; bytes: number } | null;
+  image: GmImage | null;
   figure: Figure | null;
   /** 3D-модель на 3D-карте (этап 34), null — фигурка как обычно. */
   model3d: UnitId | null;
