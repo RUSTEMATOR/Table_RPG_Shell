@@ -8,6 +8,7 @@ import { PerfOverlay, perfOn } from '../perf.ts';
 // (3D: показывает, где север; нажать — повернуть на север), «К отряду», «Вся карта» и мини-карта с рамкой вида.
 
 export type HudPlace = { id: string; name: string; kind: PlaceKind; x: number; y: number; subtitle: string; visible?: boolean };
+export type HudParty = { x: number; y: number; mine?: boolean };
 export type HudRegion = { id: string; shape: number[][][]; fill: string | null; visible?: boolean };
 
 const btn =
@@ -18,7 +19,7 @@ export function MapHud({
   camera,
   places,
   regions,
-  party,
+  parties,
   onPlace,
   minimap = true,
   full = false,
@@ -27,7 +28,8 @@ export function MapHud({
   camera: MapCamera | null;
   places: HudPlace[];
   regions: HudRegion[];
-  party: { x: number; y: number } | null;
+  /** отряды на карте; «К отряду» — к своему (mine), иначе к первому */
+  parties: HudParty[];
   /** выбор места из поиска (карточка); перелёт камеры — здесь */
   onPlace?: (id: string) => void;
   minimap?: boolean;
@@ -35,6 +37,7 @@ export function MapHud({
   full?: boolean;
   className?: string;
 }) {
+  const party = parties.find((p) => p.mine) ?? parties[0] ?? null;
   return (
     <>
       {!full && <Search camera={camera} places={places} {...(onPlace ? { onPlace } : {})} />}
@@ -72,7 +75,7 @@ export function MapHud({
           </svg>
         </button>
       </div>
-      {minimap && <MiniMap camera={camera} places={places} regions={regions} party={party} full={full} />}
+      {minimap && <MiniMap camera={camera} places={places} regions={regions} parties={parties} full={full} />}
       {perfOn() && <PerfOverlay />}
     </>
   );
@@ -195,22 +198,11 @@ function Search({ camera, places, onPlace, inColumn }: { camera: MapCamera | nul
 const MW = 176,
   MH = Math.round((MW * MAP_H) / MAP_W);
 
-function MiniMap({
-  camera,
-  places,
-  regions,
-  party,
-  full,
-}: {
-  camera: MapCamera | null;
-  places: HudPlace[];
-  regions: HudRegion[];
-  party: { x: number; y: number } | null;
-  full?: boolean;
-}) {
+function MiniMap({ camera, places, regions, parties, full }: { camera: MapCamera | null; places: HudPlace[]; regions: HudRegion[]; parties: HudParty[]; full?: boolean }) {
   const [open, setOpen] = useState(() => typeof window !== 'undefined' && window.matchMedia?.('(min-width: 900px)').matches);
   const base = useRef<HTMLCanvasElement | null>(null);
   const ref = useRef<HTMLCanvasElement>(null);
+  const partyKey = parties.map((q) => `${q.x},${q.y},${q.mine ? 1 : 0}`).join(';');
 
   // подложка: земли, места, отряд — перерисовывается только при новых данных
   useEffect(() => {
@@ -240,17 +232,18 @@ function MiniMap({
       ctx.arc(p.x, p.y, p.kind === 'capital' || p.kind === 'bigtown' ? 14 : 9, 0, Math.PI * 2);
       ctx.fill();
     }
-    if (party) {
+    // свой отряд — в золотой обводке, поверх остальных
+    for (const q of [...parties].sort((a, b) => Number(!!a.mine) - Number(!!b.mine))) {
       ctx.fillStyle = '#1f7a4d';
-      ctx.strokeStyle = '#f3ecd9';
+      ctx.strokeStyle = q.mine && parties.length > 1 ? '#c9971f' : '#f3ecd9';
       ctx.lineWidth = 6;
       ctx.beginPath();
-      ctx.arc(party.x, party.y, 18, 0, Math.PI * 2);
+      ctx.arc(q.x, q.y, 18, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
     }
     base.current = c;
-  }, [places, regions, party?.x, party?.y]);
+  }, [places, regions, partyKey]);
 
   // рамка вида — по движению камеры, не чаще кадра
   useEffect(() => {
@@ -287,7 +280,7 @@ function MiniMap({
       off();
       if (raf) cancelAnimationFrame(raf);
     };
-  }, [camera, open, places, regions, party?.x, party?.y]);
+  }, [camera, open, places, regions, partyKey]);
 
   return (
     <div className={full ? 'absolute right-[max(10px,env(safe-area-inset-right))] bottom-[max(10px,env(safe-area-inset-bottom))] z-[2]' : 'absolute right-4 bottom-4'} {...stop}>

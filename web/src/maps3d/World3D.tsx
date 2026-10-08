@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as RPointerEvent, type ReactNode } from 'react';
 import { PLACE_KIND_LABELS, type MapNote, type PlaceKind } from '@zg/shared';
 import { useArt } from '../maps/MapArt.tsx';
-import { PlaceIcon, type MapViewProps, type ViewPlace, type ViewRegion } from '../maps/MapView.tsx';
+import { PartyLabel, PlaceIcon, ownParty, type MapViewProps, type ViewParty, type ViewPlace, type ViewRegion } from '../maps/MapView.tsx';
 import type { ViewToken } from '../maps/MapTokens.tsx';
 import type { MapCamera } from '../maps/camera.ts';
 import { ensureMapFonts } from '../maps/fonts.ts';
@@ -159,9 +159,10 @@ export function World3D({
         onClick={click}
         onKeyDown={(e) => {
           if (!scene) return;
-          if (e.code === 'Space' && data.party) {
+          const own = ownParty(data.parties);
+          if (e.code === 'Space' && own) {
             e.preventDefault();
-            scene.cam.flyTo(data.party.x, data.party.y, 3.2, { duration: 0.9, instant: scene.instant });
+            scene.cam.flyTo(own.x, own.y, 3.2, { duration: 0.9, instant: scene.instant });
           } else if (e.code === 'Home') scene.cam.flyTo(800, 550, 1, { duration: 0.9, instant: scene.instant });
           else if (e.code === 'KeyN') scene.cam.north();
         }}
@@ -183,7 +184,9 @@ export function World3D({
               {...(onPlaceMove ? { onPlaceMove } : {})}
             />
           ))}
-          {data.party && <PartyBanner scene={scene} party={data.party} instant={!!instant || reduced} follow={!!follow} />}
+          {data.parties.map((q) => (
+            <PartyBanner key={q.id} scene={scene} party={q} instant={!!instant || reduced} follow={!!follow} label={data.parties.length > 1} />
+          ))}
           {tokens.map((t) => (
             <Token3D
               key={t.id}
@@ -413,7 +416,7 @@ function RegionLabel({ scene, r, gm, onRegion }: { scene: MapScene; r: ViewRegio
   );
 }
 
-function PartyBanner({ scene, party, instant, follow }: { scene: MapScene; party: NonNullable<MapViewProps['data']['party']>; instant: boolean; follow: boolean }) {
+function PartyBanner({ scene, party, instant, follow, label }: { scene: MapScene; party: ViewParty; instant: boolean; follow: boolean; label: boolean }) {
   const at = useRef({ x: party.x, y: party.y });
   const walking = useRef(false);
   useEffect(() => {
@@ -456,7 +459,11 @@ function PartyBanner({ scene, party, instant, follow }: { scene: MapScene; party
   });
   return (
     <Anchored scene={scene} pos={() => ({ x: at.current.x, y: at.current.y, lift: 0 })} size={34} min={0.55} max={1.4}>
-      <div aria-label={figures.length ? `Отряд: ${figures.map((f) => f.name).join(', ')}` : 'Отряд здесь'} className="absolute bottom-0 left-0">
+      <div
+        aria-label={party.names?.length ? `Отряд: ${party.names.join(', ')}` : 'Отряд здесь'}
+        className="absolute bottom-0 left-0"
+        style={party.visible === false ? { opacity: 0.55 } : undefined}
+      >
         <span aria-hidden="true" className="zg-party-pulse absolute bottom-[-10px] left-[-40px] h-[20px] w-[80px] rounded-[50%] bg-[#1f7a4d]/30" />
         {/* знамя отряда — за фигурками */}
         <svg
@@ -487,6 +494,7 @@ function PartyBanner({ scene, party, instant, follow }: { scene: MapScene; party
             </div>
           );
         })}
+        {label && !!party.names?.length && <PartyLabel names={party.names.join(', ')} mine={!!party.mine} />}
       </div>
     </Anchored>
   );

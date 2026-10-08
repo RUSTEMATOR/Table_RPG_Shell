@@ -76,7 +76,7 @@ export function GmMaps() {
         regions: view.regions,
         places: view.places,
         roads: view.roads,
-        party: view.parties.find((p) => p.mapId === view.id) ?? null,
+        parties: view.parties.filter((p) => p.mapId === view.id),
         tokens: view.tokens,
         notes: [],
       },
@@ -234,7 +234,7 @@ export function GmMaps() {
                 camera={setCamera}
                 className={cn('h-[min(72dvh,820px)] min-h-[420px]', tool !== 'select' && 'cursor-crosshair')}
               >
-                <MapHud camera={camera} places={data.places} regions={data.regions} party={data.party} onPlace={select} />
+                <MapHud camera={camera} places={data.places} regions={data.regions} parties={data.parties} onPlace={select} />
               </MapStage>
             ) : (
               <div className="grid h-[min(72dvh,820px)] min-h-[420px] place-items-center text-muted">Загрузка…</div>

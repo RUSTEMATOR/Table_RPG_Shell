@@ -23,10 +23,15 @@ export type MapViewData = {
   regions: ViewRegion[];
   places: ViewPlace[];
   roads: { d: string; open?: boolean; a?: string; b?: string }[];
-  party: { x: number; y: number; move?: PartyMove | null; figures?: PartyFigure[] } | null;
+  /** отряды на этой карте (этап 39: отряд может разделиться); у мастера — и скрытые */
+  parties: ViewParty[];
   tokens?: ViewToken[];
   notes: MapNote[];
 };
+
+export type ViewParty = { id: string; x: number; y: number; move?: PartyMove | null; figures?: PartyFigure[]; names?: string[]; mine?: boolean; visible?: boolean };
+/** Свой отряд игрока, иначе первый (у мастера и стола — основной, если он на этой карте). */
+export const ownParty = <T extends { mine?: boolean }>(parties: T[]): T | null => parties.find((p) => p.mine) ?? parties[0] ?? null;
 
 const ringsPath = (shape: number[][][]) => shape.map((r) => 'M' + r.map((q) => `${q[0]},${q[1]}`).join('L') + 'Z').join('');
 const PAPER = '#f3ecd9';
@@ -229,29 +234,6 @@ export function MapView({
       onPlaceMove?.(d.id, Math.round(Math.min(1600, Math.max(0, q.x)) * 10) / 10, Math.round(Math.min(1100, Math.max(0, q.y)) * 10) / 10);
     } else onPlace?.(d.id);
   };
-
-  // поход отряда (этап 28): маркер идёт по дороге
-  // отряд — фигурки персонажей игроков (если собраны), иначе значок; в походе фигурки идут
-  const partyBox = useRef<HTMLDivElement>(null);
-  const [partyPose, setPartyPose] = useState<'idle' | 'walk'>('idle');
-  const [partyDir, setPartyDir] = useState<'up' | 'left' | 'down' | 'right'>('down');
-  const partyFigures = (data.party?.figures ?? []).filter((f) => f.figure);
-  const putParty = (x: number, y: number) => {
-    if (partyBox.current) partyBox.current.style.transform = `translate(${x}px, ${y}px)`;
-  };
-  usePartyWalk(data.party, {
-    instant: !!(reduced || instant),
-    onStart: () => setPartyPose('walk'),
-    onStep: (q) => {
-      putParty(q.x, q.y);
-      if (q.dx || q.dy) setPartyDir(Math.abs(q.dx) > Math.abs(q.dy) ? (q.dx > 0 ? 'right' : 'left') : q.dy > 0 ? 'down' : 'up');
-    },
-    onEnd: () => {
-      setPartyPose('idle');
-      setPartyDir('down');
-      if (data.party) putParty(data.party.x, data.party.y);
-    },
-  });
 
   const pick = (e: RMouseEvent) => {
     if (cam.wasDrag() || !onPick) return;
@@ -535,28 +517,8 @@ export function MapView({
         ) : (
           <div className="grid size-full place-items-center font-ui text-[#6b5d48]">Рисую карту…</div>
         )}
-        {/* отряд — HTML над SVG: пульс анимирует только свой слой, а не всю карту с фильтрами */}
-        {art && data.party && (
-          <div
-            ref={partyBox}
-            aria-label="Отряд здесь"
-            className="pointer-events-none absolute top-0 left-0"
-            style={{ transform: `translate(${data.party.x}px, ${data.party.y}px)`, zIndex: Math.round(data.party.y) }}
-          >
-            {partyFigures.length > 0 ? (
-              <Suspense fallback={null}>
-                <PartyFigures figures={partyFigures} pose={partyPose} dir={partyDir} />
-              </Suspense>
-            ) : (
-              <>
-                <span aria-hidden="true" className="zg-party-pulse absolute top-[-22px] left-[-22px] size-[44px] rounded-full bg-[#1f7a4d]/20 will-change-transform" />
-                <svg aria-hidden="true" viewBox="-14 -15 28 27" width={28} height={27} className="absolute top-[-15px] left-[-14px] overflow-visible">
-                  <path d="M0 -13 L12 9 H-12Z" fill="#1f7a4d" stroke="#f3ecd9" strokeWidth={2.2} strokeLinejoin="round" />
-                </svg>
-              </>
-            )}
-          </div>
-        )}
+        {/* отряды — HTML над SVG: пульс анимирует только свой слой, а не всю карту с фильтрами */}
+        {art && data.parties.map((q) => <PartyMarker key={q.id} party={q} instant={!!(reduced || instant)} label={data.parties.length > 1} />)}
         {art && tokens.length > 0 && (
           <Suspense fallback={null}>
             <MapTokens
@@ -573,5 +535,69 @@ export function MapView({
       </m.div>
       {children}
     </div>
+  );
+}
+
+/**
+ * Отряд на пергаменте: фигурки персонажей игроков (если собраны), иначе значок; в походе (этап 28) идёт по дороге.
+ * label — подпись с именами, когда отрядов на карте несколько (этап 39); свой отряд — в золотой рамке.
+ */
+function PartyMarker({ party, instant, label }: { party: ViewParty; instant: boolean; label: boolean }) {
+  const box = useRef<HTMLDivElement>(null);
+  const [pose, setPose] = useState<'idle' | 'walk'>('idle');
+  const [dir, setDir] = useState<'up' | 'left' | 'down' | 'right'>('down');
+  const figures = (party.figures ?? []).filter((f) => f.figure);
+  const names = (party.names ?? []).join(', ');
+  const put = (x: number, y: number) => {
+    if (box.current) box.current.style.transform = `translate(${x}px, ${y}px)`;
+  };
+  usePartyWalk(party, {
+    instant,
+    onStart: () => setPose('walk'),
+    onStep: (q) => {
+      put(q.x, q.y);
+      if (q.dx || q.dy) setDir(Math.abs(q.dx) > Math.abs(q.dy) ? (q.dx > 0 ? 'right' : 'left') : q.dy > 0 ? 'down' : 'up');
+    },
+    onEnd: () => {
+      setPose('idle');
+      setDir('down');
+      put(party.x, party.y);
+    },
+  });
+  return (
+    <div
+      ref={box}
+      aria-label={names ? `Отряд: ${names}` : 'Отряд здесь'}
+      className="pointer-events-none absolute top-0 left-0"
+      style={{ transform: `translate(${party.x}px, ${party.y}px)`, zIndex: Math.round(party.y), opacity: party.visible === false ? 0.55 : 1 }}
+    >
+      {figures.length > 0 ? (
+        <Suspense fallback={null}>
+          <PartyFigures figures={figures} pose={pose} dir={dir} />
+        </Suspense>
+      ) : (
+        <>
+          <span aria-hidden="true" className="zg-party-pulse absolute top-[-22px] left-[-22px] size-[44px] rounded-full bg-[#1f7a4d]/20 will-change-transform" />
+          <svg aria-hidden="true" viewBox="-14 -15 28 27" width={28} height={27} className="absolute top-[-15px] left-[-14px] overflow-visible">
+            <path d="M0 -13 L12 9 H-12Z" fill="#1f7a4d" stroke="#f3ecd9" strokeWidth={2.2} strokeLinejoin="round" />
+          </svg>
+        </>
+      )}
+      {label && names && <PartyLabel names={names} mine={!!party.mine} />}
+    </div>
+  );
+}
+
+/** Подпись отряда под маркером: имена персонажей; свой — в золотой рамке. Общая для пергамента и 3D. */
+export function PartyLabel({ names, mine }: { names: string; mine: boolean }) {
+  return (
+    <span
+      className={cn(
+        'absolute top-[14px] left-0 max-w-[220px] -translate-x-1/2 truncate rounded-full border border-solid bg-[rgba(32,26,18,.86)] px-2 py-[1px] font-ui text-[11.5px] font-semibold whitespace-nowrap text-[#f3ecd9] shadow-[0_2px_8px_rgba(10,8,4,.35)]',
+        mine ? 'border-[#c9971f]' : 'border-transparent',
+      )}
+    >
+      {names}
+    </span>
   );
 }

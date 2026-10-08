@@ -28,9 +28,9 @@ export function PlayerMap({ active, full = false }: { active: boolean; full?: bo
     return MAP_IDS.find((m) => m === v) ?? 'world';
   });
   useEffect(() => save('zg:player:map', mapId), [mapId]);
-  const [raw, setMap] = useState<MapPublic | null>(null);
-  // этап 39: свой отряд (иначе первый открытый)
-  const map = useMemo(() => raw && { ...raw, party: raw.parties.find((p) => p.mine) ?? raw.parties[0] ?? null }, [raw]);
+  const [map, setMap] = useState<MapPublic | null>(null);
+  // свой отряд (этап 39: отряд может разделиться) — от него путь, дни, предложение и вход в город
+  const own = map?.parties.find((p) => p.mine) ?? null;
   const [camera, setCamera] = useState<MapCamera | null>(null);
   const [noteMode, setNoteMode] = useState(false);
   const [look, setLook, can3d] = useMapLook();
@@ -45,7 +45,7 @@ export function PlayerMap({ active, full = false }: { active: boolean; full?: bo
   // мастеру: в городе — раздел сообщает сам экран города
   useActivity('map', inCity ? null : card ? { kind: 'map.place', placeId: card } : noteMode || edit ? { kind: 'map.note' } : { kind: 'map.view', mapId });
   // путь и время в дороге (этап 28): от отряда по открытым дорогам
-  const routeOf = useMemo(() => (map?.party ? routesFrom(mapId, map.party, map.roads, map.places) : null), [map, mapId]);
+  const routeOf = useMemo(() => (map && own ? routesFrom(mapId, own, map.roads, map.places) : null), [map, own?.x, own?.y, mapId]);
   const [proposal, setProposal] = useState<ProposalPublic | null>(null);
   const loadProposal = useCallback(
     async (announce: boolean) => {
@@ -114,7 +114,8 @@ export function PlayerMap({ active, full = false }: { active: boolean; full?: bo
     if (!camera || !map || map.id !== mapId || !active || centered.current === map.id) return;
     centered.current = map.id;
     if (nav.arrived(map)) return;
-    if (map.party) camera.flyTo(map.party.x, map.party.y, 2.6, { instant: true });
+    const to = own ?? map.parties[0];
+    if (to) camera.flyTo(to.x, to.y, 2.6, { instant: true });
     else if (full) camera.flyTo(800, 550, home(), { instant: true });
   }, [camera, map, active, mapId]);
   // на карте мира: нажатие внутри земли со своей картой — крупная кнопка «открыть карту»
@@ -122,7 +123,7 @@ export function PlayerMap({ active, full = false }: { active: boolean; full?: bo
   useEffect(() => setRegionHint(null), [mapId]);
   const links = map && map.id === mapId ? map.regions.filter((r) => r.link) : [];
   // где отряд: от этого зависит, можно ли войти в город (решает сервер)
-  const partyKey = map?.party ? `${Math.round(map.party.x)},${Math.round(map.party.y)}` : 'none';
+  const partyKey = own ? `${Math.round(own.x)},${Math.round(own.y)}` : 'none';
 
   const saveNote = async (text: string) => {
     if (!edit) return;
@@ -233,7 +234,7 @@ export function PlayerMap({ active, full = false }: { active: boolean; full?: bo
             onNote={(n) => setEdit({ note: n, x: n.x, y: n.y })}
             className={cn('absolute inset-0', noteMode && 'cursor-crosshair')}
           >
-            <MapHud camera={camera} places={map.places} regions={map.regions} party={map.party} onPlace={openPlace} full={full} />
+            <MapHud camera={camera} places={map.places} regions={map.regions} parties={map.parties} onPlace={openPlace} full={full} />
           </MapStage>
         ) : (
           <div className="grid h-full place-items-center text-muted">Загрузка…</div>
@@ -274,7 +275,7 @@ export function PlayerMap({ active, full = false }: { active: boolean; full?: bo
             extra={(d) => (
               <TravelInfo
                 route={routeOf ? routeOf(d.id) : null}
-                hasParty={!!map?.party}
+                hasParty={!!own}
                 proposal={proposal?.placeId === d.id ? proposal : null}
                 onPropose={(cancel) => void proposeTo(d.id, cancel)}
               />
@@ -313,9 +314,9 @@ export function PlayerMap({ active, full = false }: { active: boolean; full?: bo
 
 /** Путь от отряда: дни пешком и верхом, предложение мастеру «идём сюда». */
 function TravelInfo({ route, hasParty, proposal, onPropose }: { route: Route | null; hasParty: boolean; proposal: ProposalPublic | null; onPropose: (cancel: boolean) => void }) {
-  if (!hasParty) return <p className="m-0 text-[13.6px] opacity-70">Где сейчас отряд, на этой карте не видно.</p>;
+  if (!hasParty) return <p className="m-0 text-[13.6px] opacity-70">Где сейчас твой отряд, на этой карте не видно.</p>;
   if (!route) return null;
-  if (route.units === 0) return <p className="m-0 text-[14px] font-semibold text-[#9fd3b0]">Отряд здесь.</p>;
+  if (route.units === 0) return <p className="m-0 text-[14px] font-semibold text-[#9fd3b0]">Твой отряд здесь.</p>;
   return (
     <div className="grid gap-2 rounded-[10px] bg-[rgba(243,236,217,.07)] p-3">
       <span className="text-[14px]">
