@@ -30,7 +30,7 @@
 cp ops/env.production.example ~/.config/zelenogorye/.env
 chmod 600 ~/.config/zelenogorye/.env
 ```
-Вписать домен, ключи (Jev — тот же, что в `.env.development`; Claude — из Console с месячным лимитом).
+Вписать домен, ключи (Jev — тот же, что в `.env.development`; Claude — из Console с месячным лимитом). Push-уведомления: после установки один раз `ZG_ENV_FILE=~/.config/zelenogorye/.env node ~/srv/zelenogorye/current/server/dist/vapid.mjs` — ключи VAPID допишутся сами, затем перезапуск сервера.
 
 ## 4. Установка (этап 1б)
 

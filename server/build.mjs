@@ -16,6 +16,7 @@ await build({
     seed: 'src/cli/seed.ts',
     maps: 'src/cli/maps.ts',
     backup: 'src/cli/backup.ts',
+    vapid: 'src/cli/vapid.ts',
   },
   outdir: 'dist',
   outExtension: { '.js': '.mjs' },
