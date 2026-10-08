@@ -1,12 +1,12 @@
 import { useSyncExternalStore } from 'react';
-import type { DiaryEntryPlayer, LetterPlayer, PlayerCharacter } from '@zg/shared';
+import type { ChapterPlayer, DiaryEntryPlayer, LetterPlayer, PlayerCharacter } from '@zg/shared';
 import { setAppBadge } from './push.ts';
 import { load, save } from './storage.ts';
 
 // Значки непрочитанного на вкладках игрока. Только из того, что игроку и так приходит; сервер ничего не знает.
 // Отметки хранятся на устройстве, чтобы значок пережил перезагрузку.
 
-export type UnreadTab = 'card' | 'diary';
+export type UnreadTab = 'card' | 'diary' | 'chronicle';
 
 const KEY = 'zg:unread';
 const REPLIES = 'zg:unread:replies';
@@ -20,7 +20,7 @@ function read<T>(key: string, fallback: T): T {
   }
 }
 
-let flags: Record<UnreadTab, boolean> = { card: false, diary: false, ...read<Partial<Record<UnreadTab, boolean>>>(KEY, {}) };
+let flags: Record<UnreadTab, boolean> = { card: false, diary: false, chronicle: false, ...read<Partial<Record<UnreadTab, boolean>>>(KEY, {}) };
 let active: UnreadTab | 'rolls' | 'map' | 'figure' | null = null;
 const listeners = new Set<() => void>();
 const emit = () => {
@@ -39,7 +39,7 @@ function mark(tab: UnreadTab) {
 /** Открыта вкладка: снять её значок. */
 export function setActiveTab(tab: UnreadTab | 'rolls' | 'map' | 'figure' | null) {
   active = tab;
-  if ((tab === 'card' || tab === 'diary') && flags[tab]) {
+  if ((tab === 'card' || tab === 'diary' || tab === 'chronicle') && flags[tab]) {
     flags = { ...flags, [tab]: false };
     emit();
   }
@@ -96,6 +96,28 @@ export function noteLetter(l: LetterPlayer) {
   if (!l.readAt && !lettersSeen.includes(l.id)) {
     mark('diary');
     if (active === 'diary') rememberLetters([...lettersSeen.map((id) => ({ id }) as LetterPlayer), l]);
+  }
+}
+
+// ---- Летопись (этап 43): значок, пока есть глава, которую игрок ещё не открывал на этой вкладке ----
+
+const CHAPTERS = 'zg:unread:chapters';
+let chaptersSeen: string[] = read(CHAPTERS, []);
+
+export function rememberChapters(list: ChapterPlayer[]) {
+  const ids = list.map((c) => c.id);
+  if (ids.length === chaptersSeen.length && ids.every((id) => chaptersSeen.includes(id))) return;
+  chaptersSeen = ids;
+  save(CHAPTERS, JSON.stringify(chaptersSeen));
+}
+
+export function noteChapter(c: ChapterPlayer) {
+  if (!chaptersSeen.includes(c.id)) {
+    mark('chronicle');
+    if (active === 'chronicle') {
+      chaptersSeen = [...chaptersSeen, c.id];
+      save(CHAPTERS, JSON.stringify(chaptersSeen));
+    }
   }
 }
 

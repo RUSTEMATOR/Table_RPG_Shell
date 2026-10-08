@@ -6,6 +6,7 @@ import { useMe } from '../lib/me.tsx';
 import { PlayerCard } from '../components/PlayerCard.tsx';
 import { RollPanel } from '../components/RollPanel.tsx';
 import { Diary } from '../components/Diary.tsx';
+import { Chronicle } from '../components/Chronicle.tsx';
 import { load as loadPref, save as savePref } from '../lib/storage.ts';
 import { RoleScreen } from '../components/Shell.tsx';
 import { api } from '../lib/api.ts';
@@ -22,7 +23,7 @@ import { useHotkeys } from '../lib/hotkeys.ts';
 import { cn } from '../lib/cn.ts';
 import { Card, CardTitle, EmptyState, Segmented, Skeleton } from '../ui/index.ts';
 import { useSkin } from '../lib/cardTheme/skin.ts';
-import { noteCardChange, noteDiaryChange, noteLetter, rememberCard, setActiveTab, useUnread } from '../lib/unread.ts';
+import { noteCardChange, noteChapter, noteDiaryChange, noteLetter, rememberCard, setActiveTab, useUnread } from '../lib/unread.ts';
 
 export function Player() {
   useWakeLock();
@@ -75,7 +76,7 @@ const PlayerMap = lazy(() => import('../components/PlayerMap.tsx').then((m) => (
 const PlayerFigure = lazy(() => import('../components/PlayerFigure.tsx').then((m) => ({ default: m.PlayerFigure })));
 
 type Tab = PlayerTab;
-const TABS: Tab[] = ['rolls', 'card', 'figure', 'diary', 'map'];
+const TABS: Tab[] = ['rolls', 'card', 'figure', 'diary', 'chronicle', 'map'];
 const isTab = (v: string | null | undefined): v is Tab => TABS.includes(v as Tab);
 
 /**
@@ -118,7 +119,7 @@ function PlayerTabs() {
     },
     [],
   );
-  // Клавиши 1–5 — разделы (на компьютере; на телефоне с клавиатурой тоже).
+  // Клавиши 1–6 — разделы (на компьютере; на телефоне с клавиатурой тоже).
   const pickRef = useRef<(t: Tab) => void>(setTab);
   useHotkeys(Object.fromEntries(TABS.map((t, i) => [String(i + 1), () => pickRef.current(t)])));
 
@@ -146,6 +147,7 @@ function PlayerTabs() {
   // Значки ставятся здесь, а не во вкладках: вкладки слушают события, только чтобы обновить себя.
   useSocketEvent('diary:changed', ({ entry }) => noteDiaryChange(entry));
   useSocketEvent('letters:changed', ({ letter }) => noteLetter(letter));
+  useSocketEvent('chronicle:changed', ({ chapter }) => noteChapter(chapter));
   useSocketEvent('character:updated', ({ character }) => noteCardChange(character));
 
   const content: Record<Exclude<Tab, 'rolls'>, ReactNode> = {
@@ -156,6 +158,7 @@ function PlayerTabs() {
       </Suspense>
     ),
     diary: <Diary active={tab === 'diary'} />,
+    chronicle: <Chronicle active={tab === 'chronicle'} />,
     map: (
       <Suspense fallback={<p className="muted">Загрузка карты…</p>}>
         <PlayerMap active={tab === 'map'} full={mapFull} />
@@ -167,6 +170,7 @@ function PlayerTabs() {
     { value: 'card', label: LABELS.card, icon: TAB_ICONS.card, dot: unread.card },
     { value: 'figure', label: LABELS.figure, icon: TAB_ICONS.figure },
     { value: 'diary', label: LABELS.diary, icon: TAB_ICONS.diary, dot: unread.diary },
+    { value: 'chronicle', label: LABELS.chronicle, icon: TAB_ICONS.chronicle, dot: unread.chronicle },
     { value: 'map', label: LABELS.map, icon: TAB_ICONS.map },
   ];
   const mount = useCallback((t: Tab) => setMounted((m) => (m.has(t) ? m : new Set([...m, t]))), []);

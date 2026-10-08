@@ -4,9 +4,9 @@ import { FIGURE_SLOTS } from './figure.ts';
 
 // Активность игрока: что открыто в приложении. Только мастеру; набранный игроком текст сюда не попадает.
 
-export const PLAYER_TABS = ['rolls', 'card', 'figure', 'diary', 'map'] as const;
+export const PLAYER_TABS = ['rolls', 'card', 'figure', 'diary', 'chronicle', 'map'] as const;
 export type PlayerTab = (typeof PLAYER_TABS)[number];
-export const PLAYER_TAB_LABELS: Record<PlayerTab, string> = { rolls: 'Броски', card: 'Карточка', figure: 'Фигурка', diary: 'Дневник', map: 'Карта' };
+export const PLAYER_TAB_LABELS: Record<PlayerTab, string> = { rolls: 'Броски', card: 'Карточка', figure: 'Фигурка', diary: 'Дневник', chronicle: 'Летопись', map: 'Карта' };
 
 export const CITY_SECTIONS = ['about', 'spot', 'rumors', 'here'] as const;
 export type CitySection = (typeof CITY_SECTIONS)[number];

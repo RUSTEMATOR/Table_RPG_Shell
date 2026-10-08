@@ -9,6 +9,7 @@ export const TAB_ICONS = {
   card: 'M12 3l7 3v5c0 4.5-3 8-7 10c-4-2-7-5.5-7-10V6z',
   diary: 'M6 3h9l3 3v15H6zM15 3v3h3M9 10h6M9 14h6M9 18h4',
   figure: 'M9 21h6M10 21l1-7h2l1 7M8 11h8M12 3a3 3 0 1 0 0 6a3 3 0 0 0 0-6zM12 9v5',
+  chronicle: 'M4 5h6a2 2 0 0 1 2 2v13a2 2 0 0 0-2-2H4zM20 5h-6a2 2 0 0 0-2 2v13a2 2 0 0 1 2-2h6zM12 7v13',
   map: 'M4 18l5-6 4 3 7-10M4 18v.1M9 12v.1M13 15v.1M20 5v.1',
 } as const;
 
