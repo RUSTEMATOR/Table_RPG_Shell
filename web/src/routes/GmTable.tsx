@@ -143,7 +143,7 @@ function SceneEditor({ s, onChange }: { s: GmScene; onChange: (s: GmScene) => vo
         </Badge>
       )}
       <Field label="Название">{(id) => <Input id={id} value={title} maxLength={200} onChange={(e) => setTitle(e.target.value)} className="font-name text-lg" />}</Field>
-      <div className="grid gap-3 lg:grid-cols-2">
+      <div className="grid gap-3 @2xl/main:grid-cols-2">
         <Field label="Текст для стола">{(id) => <Textarea id={id} rows={4} value={textPublic} maxLength={4000} onChange={(e) => setPublic(e.target.value)} />}</Field>
         <Field label="Заметки мастера (на стол не уходят)">{(id) => <Textarea id={id} rows={4} value={textGm} maxLength={20000} onChange={(e) => setGm(e.target.value)} />}</Field>
       </div>

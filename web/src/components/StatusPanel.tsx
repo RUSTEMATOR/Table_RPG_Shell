@@ -59,11 +59,11 @@ export function StatusPanel() {
           Обновить
         </Button>
       </div>
-      <dl className="m-0 grid gap-x-6 sm:grid-cols-[auto_1fr]">
+      <dl className="m-0 grid gap-x-6 @lg/main:grid-cols-[auto_1fr]">
         {rows.map(([k, v, bad]) => (
           <div key={k} className="contents">
             <dt className="pt-2 font-ui text-[13.6px] text-muted">{k}</dt>
-            <dd className={cn('m-0 border-b border-solid border-border pb-2 sm:pt-2', bad && 'font-semibold text-danger')}>{v}</dd>
+            <dd className={cn('m-0 border-b border-solid border-border pb-2 @lg/main:pt-2', bad && 'font-semibold text-danger')}>{v}</dd>
           </div>
         ))}
       </dl>

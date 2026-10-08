@@ -149,7 +149,7 @@ function RollForm() {
     <>
       <Card>
         <form onSubmit={doRoll} className="grid gap-3">
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 @lg/main:grid-cols-2">
             <Field label="Имя">{(id) => <Input id={id} value={form.name} onChange={(e) => set('name', e.target.value)} maxLength={120} />}</Field>
             <Pick label="Обращение" value={form.pronoun} onChange={(v) => set('pronoun', v as typeof form.pronoun)} empty="не указано" options={PRONOUNS} />
             <Pick
@@ -268,7 +268,7 @@ function LocalForm() {
   return (
     <Card>
       <form onSubmit={submit} className="grid gap-3">
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 @lg/main:grid-cols-2">
           <Field label="Имя">{(id) => <Input id={id} value={name} onChange={(e) => setName(e.target.value)} required maxLength={120} />}</Field>
           <Pick label="Обращение" value={pronoun} onChange={(v) => setPronoun(v as typeof pronoun)} empty="не указано" options={PRONOUNS} />
         </div>

@@ -122,7 +122,7 @@ export function OpponentBox() {
             )}
           </Field>
         )}
-        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,220px)_auto] sm:items-end">
+        <div className="grid gap-3 @xl/main:grid-cols-[minmax(0,1fr)_minmax(0,220px)_auto] @xl/main:items-end">
           <Field label="Противник">{(id) => <Input id={id} value={name} onChange={(e) => setName(e.target.value)} maxLength={120} placeholder="например, Тролль" />}</Field>
           <Field label={`Его уровень силы${s?.opponentBand ? ` · ${s.opponentBand}` : ''}`}>
             {(id) => (

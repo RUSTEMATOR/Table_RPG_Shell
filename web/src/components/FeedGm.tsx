@@ -21,7 +21,7 @@ export function Override({ r }: { r: FeedRoll }) {
     );
   return (
     <div className="mt-2 grid gap-2 rounded-control border border-solid border-border bg-surface p-3 text-text">
-      <div className="grid gap-2 sm:grid-cols-[200px_minmax(0,1fr)]">
+      <div className="grid gap-2 @lg/main:grid-cols-[200px_minmax(0,1fr)]">
         <Select
           aria-label="Исход"
           value={effect}

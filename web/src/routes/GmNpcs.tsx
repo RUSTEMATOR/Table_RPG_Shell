@@ -162,7 +162,7 @@ function NpcEditor({ n, onChange }: { n: GmNpc; onChange: (n: GmNpc) => void }) 
           {n.shown && <Badge tone="ok">Портрет на столе</Badge>}
         </div>
       )}
-      <div className="grid items-start gap-4 sm:grid-cols-[auto_minmax(0,1fr)]">
+      <div className="grid items-start gap-4 @xl/main:grid-cols-[auto_minmax(0,1fr)]">
         <div className="grid justify-items-start gap-2">
           <div className="grid size-28 place-items-center overflow-hidden rounded-card border border-solid border-border bg-surface-2 text-muted">
             {n.image ? (
@@ -185,7 +185,7 @@ function NpcEditor({ n, onChange }: { n: GmNpc; onChange: (n: GmNpc) => void }) 
           </Button>
         </div>
         <div className="grid gap-3">
-          <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_200px]">
+          <div className="grid gap-3 @xl/main:grid-cols-[minmax(0,1fr)_200px]">
             <Field label="Имя">{(id) => <Input id={id} value={name} maxLength={120} onChange={(e) => setName(e.target.value)} className="font-name text-lg" />}</Field>
             <Field label={`Уровень силы${n.band ? ` · ${n.band}` : ''}`}>
               {(id) => (
@@ -207,7 +207,7 @@ function NpcEditor({ n, onChange }: { n: GmNpc; onChange: (n: GmNpc) => void }) 
                 value={n.model3d ?? '-'}
                 onValueChange={(v) => void model(v)}
                 options={[{ value: '-', label: 'Фигурка' }, ...UNIT_IDS.map((u) => ({ value: u, label: units.units[u] }))]}
-                className="sm:max-w-[260px]"
+                className="@xl/main:max-w-[260px]"
               />
             )}
           </Field>

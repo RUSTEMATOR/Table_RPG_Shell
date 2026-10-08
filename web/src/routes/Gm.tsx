@@ -106,7 +106,7 @@ function PartyStrip() {
       </div>
       {list === undefined && <Skeleton className="h-16" />}
       {list?.length === 0 && <p className="m-0 text-muted">У игроков пока нет персонажей.</p>}
-      <div className="grid gap-3 sm:grid-cols-[repeat(auto-fill,minmax(200px,1fr))]">
+      <div className="grid gap-3 @lg/main:grid-cols-[repeat(auto-fill,minmax(200px,1fr))]">
         {list?.map((c) => (
           <Link
             key={c.id}
@@ -137,9 +137,9 @@ function Characters() {
       </div>
       {list === null && <Skeleton className="h-24" />}
       {list?.length === 0 && <p className="m-0 text-muted">Пока никого. Бросьте попаданца или создайте местного.</p>}
-      <ul className="m-0 grid list-none p-0">
+      <ul className="m-0 grid list-none gap-x-6 p-0 @3xl/main:grid-cols-2">
         {list?.map((c) => (
-          <li key={c.id} className="border-b border-solid border-border last:border-0">
+          <li key={c.id} className="border-b border-solid border-border">
             <Link viewTransition to={`/gm/char/${c.id}`} className="flex items-center gap-3 rounded-control px-2 py-3 text-text no-underline hover:bg-surface-2">
               <div className="min-w-0 grow">
                 <strong className="font-name text-[1.2rem] font-normal">{c.name}</strong>
@@ -199,9 +199,9 @@ export function GmMembers() {
     <>
       <Card>
         <CardTitle>Участники</CardTitle>
-        <ul className="m-0 grid list-none p-0">
+        <ul className="m-0 grid list-none gap-x-6 p-0 @3xl/main:grid-cols-2">
           {members.map((m) => (
-            <li key={m.id} className="flex items-center gap-3 border-b border-solid border-border py-3 last:border-0">
+            <li key={m.id} className="flex items-center gap-3 border-b border-solid border-border py-3">
               <div className="min-w-0 grow">
                 <strong>{m.name}</strong>
                 <div className="flex flex-wrap items-center gap-2 text-[13.6px] text-muted">

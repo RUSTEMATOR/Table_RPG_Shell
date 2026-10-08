@@ -41,7 +41,7 @@ export function SheetPanel({ c, onChange }: { c: GmCharacterView; onChange: (c: 
           </div>
         );
       })}
-      <div className="grid gap-2 border-t border-solid border-border pt-3 sm:grid-cols-[200px_minmax(0,1fr)_auto]">
+      <div className="grid gap-2 border-t border-solid border-border pt-3 @xl/main:grid-cols-[200px_minmax(0,1fr)_auto]">
         <Select aria-label="Раздел" value={kind} onValueChange={(v) => setKind(v as SheetKind)} options={SHEET_KINDS.map((k) => ({ value: k, label: SHEET_TITLES[k] }))} />
         <Input
           aria-label="Название новой записи"

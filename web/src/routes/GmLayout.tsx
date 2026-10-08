@@ -24,7 +24,10 @@ export function GmLayout() {
   const navigate = useNavigate();
   const [palette, setPalette] = useState(false);
   // Страница со своей правой колонкой (персонаж — «Как увидит игрок»): «Сейчас в игре» только листом из шапки.
-  const ownRail = useMatches().some((m) => (m.handle as { ownRail?: boolean } | undefined)?.ownRail);
+  const matches = useMatches();
+  const ownRail = matches.some((m) => (m.handle as { ownRail?: boolean } | undefined)?.ownRail);
+  // Текстовые страницы (заметки, запросы, Jev, активность): строки не растягиваются на всю ширину.
+  const narrow = matches.some((m) => (m.handle as { narrow?: boolean } | undefined)?.narrow);
   useHotkeys({
     'mod+k': () => setPalette((o) => !o),
     ...Object.fromEntries(GM_SECTIONS.map((s) => [`g ${s.key}`, () => navigate(s.to, { viewTransition: true })])),
@@ -43,15 +46,10 @@ export function GmLayout() {
       >
         <CommandPalette open={palette} onOpenChange={setPalette} />
         <div className="@container/gm">
-          <div
-            className={cn(
-              'grid items-start gap-5 @3xl/gm:grid-cols-[210px_minmax(0,1fr)] @7xl/gm:gap-6',
-              !ownRail && '@5xl/gm:grid-cols-[210px_minmax(0,1fr)_minmax(300px,360px)]',
-            )}
-          >
+          <div className={cn('grid items-start gap-5 @3xl/gm:grid-cols-[210px_minmax(0,1fr)] @7xl/gm:gap-6', !ownRail && '@5xl/gm:grid-cols-[210px_minmax(0,1fr)_320px]')}>
             <GmNav className="sticky top-[76px] hidden @3xl/gm:grid" />
             <GmNav variant="tabs" className="@3xl/gm:hidden" />
-            <div className="flex min-w-0 flex-col gap-4">
+            <div className={cn('@container/main flex min-w-0 flex-col gap-4', narrow && 'w-full max-w-[880px] justify-self-center')}>
               <Outlet />
             </div>
             {!ownRail && (
