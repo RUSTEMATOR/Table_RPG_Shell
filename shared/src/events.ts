@@ -21,6 +21,7 @@ import type { TableState } from './table.ts';
 import type { MapId, OverloadSign } from './constants.ts';
 import type { DiaryEntryPlayer, GmDiaryEntry, GmOverload, GreenSuggestion } from './gm.ts';
 import type { GmPlayerPresence } from './presence.ts';
+import type { LetterPlayer } from './letters.ts';
 
 export interface ServerToClientEvents {
   'error:forbidden': (payload: { event: string }) => void;
@@ -65,6 +66,11 @@ export interface ServerToClientEvents {
   'gm:npcs.changed': () => void;
   /** Мастеру: активность игрока изменилась (статус, вкладка, действие). */
   'gm:presence.changed': (payload: GmPlayerPresence) => void;
+  /** Игроку: письмо доставлено или изменилось (этап 42). */
+  'letters:changed': (payload: { letter: LetterPlayer }) => void;
+  'letters:removed': (payload: { id: string }) => void;
+  /** Мастеру: письма персонажа изменились (доставка, прочтение, ответ). */
+  'gm:letters.changed': (payload: { characterId: string }) => void;
 }
 
 type Ack = (res: GmAck) => void;

@@ -193,6 +193,31 @@ export const diaryEntry = sqliteTable(
   (t) => [index('diary_member_idx').on(t.memberId, t.createdAt), index('diary_room_idx').on(t.roomId, t.createdAt)],
 );
 
+// Письмо персонажу (этап 42). note_gm — только мастеру; игроку письмо видно только после доставки (delivered_at).
+export const letter = sqliteTable(
+  'letter',
+  {
+    id: text('id').primaryKey(),
+    roomId: text('room_id')
+      .notNull()
+      .references(() => room.id, { onDelete: 'cascade' }),
+    characterId: text('character_id')
+      .notNull()
+      .references(() => character.id, { onDelete: 'cascade' }),
+    fromName: text('from_name').notNull(),
+    text: text('text').notNull(),
+    noteGm: text('note_gm').notNull().default(''),
+    deliverAt: integer('deliver_at').notNull(),
+    deliveredAt: integer('delivered_at'),
+    readAt: integer('read_at'),
+    reply: text('reply').notNull().default(''),
+    repliedAt: integer('replied_at'),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  (t) => [index('letter_room_char_idx').on(t.roomId, t.characterId), index('letter_due_idx').on(t.deliveredAt, t.deliverAt)],
+);
+
 // Заметки мастера к сессии.
 export const sessionNote = sqliteTable('session_note', {
   sessionId: text('session_id')
