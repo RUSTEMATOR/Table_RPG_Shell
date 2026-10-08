@@ -1,0 +1,412 @@
+{
+ "packs": {
+  "other": {
+   "corner": {
+    "src": "/art/packs/other/corner.png?v=6f6c03c1",
+    "w": 196,
+    "h": 256
+   },
+   "band": {
+    "src": "/art/packs/other/band.png?v=47cc21dd",
+    "w": 379,
+    "h": 96
+   },
+   "tex": {
+    "src": "/art/packs/other/tex.webp?v=71f060b1",
+    "w": 512,
+    "h": 512
+   },
+   "mark": {
+    "src": "/art/packs/other/mark.png?v=337d749b",
+    "w": 174,
+    "h": 209
+   },
+   "font": "Kurale"
+  },
+  "fantasy": {
+   "corner": {
+    "src": "/art/packs/fantasy/corner.png?v=a184da63",
+    "w": 252,
+    "h": 256
+   },
+   "band": {
+    "src": "/art/packs/fantasy/band.png?v=339c97b2",
+    "w": 185,
+    "h": 96
+   },
+   "tex": {
+    "src": "/art/packs/fantasy/tex.webp?v=9a33fd4c",
+    "w": 512,
+    "h": 512
+   },
+   "font": "Cormorant Garamond"
+  },
+  "hp": {
+   "corner": {
+    "src": "/art/packs/hp/corner.png?v=bb8a3fcd",
+    "w": 256,
+    "h": 225
+   },
+   "band": {
+    "src": "/art/packs/hp/band.png?v=5c7494bd",
+    "w": 557,
+    "h": 64
+   },
+   "tex": {
+    "src": "/art/packs/hp/tex.webp?v=ffe1f724",
+    "w": 512,
+    "h": 512
+   },
+   "font": "Marck Script"
+  },
+  "witcher": {
+   "band": {
+    "src": "/art/packs/witcher/band.png?v=217e61ea",
+    "w": 368,
+    "h": 80
+   },
+   "tex": {
+    "src": "/art/packs/witcher/tex.webp?v=a79cab5e",
+    "w": 512,
+    "h": 512
+   },
+   "font": "Ruslan Display"
+  },
+  "dishonored": {
+   "band": {
+    "src": "/art/packs/dishonored/band.png?v=4d931403",
+    "w": 438,
+    "h": 110
+   },
+   "tex": {
+    "src": "/art/packs/dishonored/tex.webp?v=6b6a23ae",
+    "w": 512,
+    "h": 512
+   },
+   "font": "Old Standard TT"
+  },
+  "hist": {
+   "corner": {
+    "src": "/art/packs/hist/corner.png?v=2956480c",
+    "w": 158,
+    "h": 256
+   },
+   "band": {
+    "src": "/art/packs/hist/band.png?v=3df7627d",
+    "w": 408,
+    "h": 80
+   },
+   "tex": {
+    "src": "/art/packs/hist/tex.webp?v=1c3adb1f",
+    "w": 512,
+    "h": 512
+   },
+   "font": "Ponomar"
+  },
+  "tc": {
+   "tex": {
+    "src": "/art/packs/tc/tex.webp?v=479caae6",
+    "w": 512,
+    "h": 512
+   },
+   "mark": {
+    "src": "/art/packs/tc/mark.png?v=81438733",
+    "w": 256,
+    "h": 251
+   },
+   "font": "Cormorant SC"
+  },
+  "gow": {
+   "corner": {
+    "src": "/art/packs/gow/corner.png?v=26ef2842",
+    "w": 230,
+    "h": 233
+   },
+   "band": {
+    "src": "/art/packs/gow/band.png?v=853a6f98",
+    "w": 285,
+    "h": 64
+   },
+   "tex": {
+    "src": "/art/packs/gow/tex.webp?v=2a009d15",
+    "w": 512,
+    "h": 512
+   },
+   "font": "Ruslan Display"
+  },
+  "tes": {
+   "band": {
+    "src": "/art/packs/tes/band.png?v=00063eec",
+    "w": 359,
+    "h": 64
+   },
+   "tex": {
+    "src": "/art/packs/tes/tex.webp?v=6d5c0823",
+    "w": 512,
+    "h": 512
+   },
+   "mark": {
+    "src": "/art/packs/tes/mark.png?v=1b7028a3",
+    "w": 255,
+    "h": 256
+   },
+   "font": "Cormorant Unicase"
+  },
+  "souls": {
+   "corner": {
+    "src": "/art/packs/souls/corner.png?v=6dd310ef",
+    "w": 230,
+    "h": 256
+   },
+   "tex": {
+    "src": "/art/packs/souls/tex.webp?v=1df6b268",
+    "w": 512,
+    "h": 512
+   },
+   "mark": {
+    "src": "/art/packs/souls/mark.png?v=822b50b7",
+    "w": 158,
+    "h": 320
+   },
+   "font": "Cormorant SC"
+  },
+  "myth": {
+   "band": {
+    "src": "/art/packs/myth/band.png?v=fd71eb09",
+    "w": 247,
+    "h": 64
+   },
+   "tex": {
+    "src": "/art/packs/myth/tex.webp?v=ba487209",
+    "w": 512,
+    "h": 512
+   },
+   "font": "Forum"
+  },
+  "percy": {
+   "band": {
+    "src": "/art/packs/percy/band.png?v=8f0b60c4",
+    "w": 216,
+    "h": 64
+   },
+   "pat": {
+    "src": "/art/packs/percy/pat.png?v=131b8b63",
+    "w": 96,
+    "h": 96,
+    "size": 48
+   },
+   "tex": {
+    "src": "/art/packs/percy/tex.webp?v=385f9635",
+    "w": 512,
+    "h": 512
+   },
+   "font": "Philosopher"
+  }
+ },
+ "credits": [
+  {
+   "title": "burned_ground_01",
+   "author": "Poly Haven",
+   "licence": "CC0",
+   "page": "https://polyhaven.com/a/burned_ground_01",
+   "themes": [
+    "souls"
+   ]
+  },
+  {
+   "title": "Ivan Bilibin 161",
+   "author": "Иван Билибин",
+   "licence": "Общественное достояние",
+   "page": "https://commons.wikimedia.org/wiki/File:Ivan_Bilibin_161.jpg",
+   "themes": [
+    "other"
+   ]
+  },
+  {
+   "title": "Leather014",
+   "author": "ambientCG",
+   "licence": "CC0",
+   "page": "https://ambientcg.com/view?id=Leather014",
+   "themes": [
+    "witcher"
+   ]
+  },
+  {
+   "title": "Marble012",
+   "author": "ambientCG",
+   "licence": "CC0",
+   "page": "https://ambientcg.com/view?id=Marble012",
+   "themes": [
+    "myth"
+   ]
+  },
+  {
+   "title": "Marble023",
+   "author": "ambientCG",
+   "licence": "CC0",
+   "page": "https://ambientcg.com/view?id=Marble023",
+   "themes": [
+    "percy"
+   ]
+  },
+  {
+   "title": "Orna019-Masswerk",
+   "author": "Franz Sales Meyer, «Handbook of Ornament» (1898)",
+   "licence": "Общественное достояние",
+   "page": "https://commons.wikimedia.org/wiki/File:Orna019-Masswerk.png",
+   "themes": [
+    "tc",
+    "souls"
+   ]
+  },
+  {
+   "title": "Orna081-Maeander",
+   "author": "Franz Sales Meyer, «Handbook of Ornament» (1898)",
+   "licence": "Общественное достояние",
+   "page": "https://commons.wikimedia.org/wiki/File:Orna081-Maeander.png",
+   "themes": [
+    "myth"
+   ]
+  },
+  {
+   "title": "Orna090-Flechtband",
+   "author": "Franz Sales Meyer, «Handbook of Ornament» (1898)",
+   "licence": "Общественное достояние",
+   "page": "https://commons.wikimedia.org/wiki/File:Orna090-Flechtband.png",
+   "themes": [
+    "gow",
+    "tes"
+   ]
+  },
+  {
+   "title": "Orna097-Wasserwogenband",
+   "author": "Franz Sales Meyer, «Handbook of Ornament» (1898)",
+   "licence": "Общественное достояние",
+   "page": "https://commons.wikimedia.org/wiki/File:Orna097-Wasserwogenband.png",
+   "themes": [
+    "percy"
+   ]
+  },
+  {
+   "title": "Orna112-Schmiedeblumen",
+   "author": "Franz Sales Meyer, «Handbook of Ornament» (1898)",
+   "licence": "Общественное достояние",
+   "page": "https://commons.wikimedia.org/wiki/File:Orna112-Schmiedeblumen.png",
+   "themes": [
+    "dishonored"
+   ]
+  },
+  {
+   "title": "Orna116-Krabben-Wasserspeier",
+   "author": "Franz Sales Meyer, «Handbook of Ornament» (1898)",
+   "licence": "Общественное достояние",
+   "page": "https://commons.wikimedia.org/wiki/File:Orna116-Krabben-Wasserspeier.png",
+   "themes": [
+    "souls"
+   ]
+  },
+  {
+   "title": "Ornament – sborník slohových ozdob všech období umění (1906), Table 35 (Heinrich Dolmetsch)",
+   "author": "Heinrich Dolmetsch, «Ornament» (1906)",
+   "licence": "Общественное достояние",
+   "page": "https://commons.wikimedia.org/wiki/File:Ornament_%E2%80%93_sborn%C3%ADk_slohov%C3%BDch_ozdob_v%C5%A1ech_obdob%C3%AD_um%C4%9Bn%C3%AD_(1906)%2C_Table_35_(Heinrich_Dolmetsch).jpg",
+   "themes": [
+    "witcher",
+    "hist"
+   ]
+  },
+  {
+   "title": "Paper001",
+   "author": "ambientCG",
+   "licence": "CC0",
+   "page": "https://ambientcg.com/view?id=Paper001",
+   "themes": [
+    "hp"
+   ]
+  },
+  {
+   "title": "Paper003",
+   "author": "ambientCG",
+   "licence": "CC0",
+   "page": "https://ambientcg.com/view?id=Paper003",
+   "themes": [
+    "other"
+   ]
+  },
+  {
+   "title": "Paper006",
+   "author": "ambientCG",
+   "licence": "CC0",
+   "page": "https://ambientcg.com/view?id=Paper006",
+   "themes": [
+    "fantasy",
+    "hist",
+    "tes"
+   ]
+  },
+  {
+   "title": "PavingStones046",
+   "author": "ambientCG",
+   "licence": "CC0",
+   "page": "https://ambientcg.com/view?id=PavingStones046",
+   "themes": [
+    "tc"
+   ]
+  },
+  {
+   "title": "Rock030",
+   "author": "ambientCG",
+   "licence": "CC0",
+   "page": "https://ambientcg.com/view?id=Rock030",
+   "themes": [
+    "gow"
+   ]
+  },
+  {
+   "title": "rust_coarse_01",
+   "author": "Poly Haven",
+   "licence": "CC0",
+   "page": "https://polyhaven.com/a/rust_coarse_01",
+   "themes": [
+    "dishonored"
+   ]
+  },
+  {
+   "title": "Seigaiha",
+   "author": "Общественное достояние",
+   "licence": "Общественное достояние",
+   "page": "https://commons.wikimedia.org/wiki/File:Seigaiha.svg",
+   "themes": [
+    "percy"
+   ]
+  },
+  {
+   "title": "Vegvisir",
+   "author": "Общественное достояние (исландский символ)",
+   "licence": "Общественное достояние",
+   "page": "https://commons.wikimedia.org/wiki/File:Vegvisir.svg",
+   "themes": [
+    "tes"
+   ]
+  },
+  {
+   "title": "Victorian Style Frame",
+   "author": "GDJ",
+   "licence": "CC0",
+   "page": "https://openclipart.org/detail/259828",
+   "themes": [
+    "hp"
+   ]
+  },
+  {
+   "title": "Vintage Ornaments (журналы 1880–1910-х)",
+   "author": "Screwy Lightbulb (WelshPixie)",
+   "licence": "CC0",
+   "page": "https://github.com/WelshPixie/vintageart",
+   "themes": [
+    "other",
+    "fantasy"
+   ]
+  }
+ ]
+}

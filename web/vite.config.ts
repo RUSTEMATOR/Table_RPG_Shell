@@ -39,7 +39,7 @@ export default defineConfig({
         // Листы фигурок LPC (~2,5 МБ, сотни файлов) — тоже вне предкэша: качаются по мере надобности, дальше из кэша.
         // Модели 3D-карты (models/world.glb, ~1,8 МБ) — так же: при первом открытии 3D-карты; версия — в ?v=.
         // Звуки стола (sfx/, ~170 КБ m4a) — так же: при первом звуке.
-        globIgnores: ['**/physics.worker-*.js', 'lpc/**', 'models/**', 'sfx/**'],
+        globIgnores: ['**/physics.worker-*.js', 'lpc/**', 'models/**', 'sfx/**', 'art/**'],
         runtimeCaching: [
           {
             urlPattern: ({ url }) => /\/assets\/physics\.worker-[\w-]+\.js$/.test(url.pathname),
@@ -56,6 +56,12 @@ export default defineConfig({
             handler: 'CacheFirst',
             // world.glb и модели противников models/units/*.glb (~200 КБ каждая, этап 34)
             options: { cacheName: 'zg-models', expiration: { maxEntries: 16 } },
+          },
+          {
+            // наборы украшений тем (этап 36): качается только набор открытой темы
+            urlPattern: ({ url }) => url.pathname.startsWith('/art/'),
+            handler: 'CacheFirst',
+            options: { cacheName: 'zg-art', expiration: { maxEntries: 60 } },
           },
           {
             urlPattern: ({ url }) => url.pathname.startsWith('/sfx/'),
