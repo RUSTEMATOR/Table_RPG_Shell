@@ -135,6 +135,8 @@ export const roll = sqliteTable(
     enemyPower: integer('enemy_power'),
     corrected: integer('corrected', { mode: 'boolean' }).notNull().default(false),
     correctionNote: text('correction_note'),
+    /** Переброс за искру (этап 48): какой бросок перебросили. */
+    rerollOf: text('reroll_of'),
     clientRequestId: text('client_request_id').notNull(),
     createdAt: integer('created_at').notNull(),
   },
@@ -337,6 +339,26 @@ export const moment = sqliteTable(
     createdAt: integer('created_at').notNull(),
   },
   (t) => [index('moment_character_idx').on(t.characterId, t.createdAt)],
+);
+
+// Искры (этап 48): журнал ±1 по персонажу. Баланс — сумма.
+export const spark = sqliteTable(
+  'spark',
+  {
+    id: text('id').primaryKey(),
+    roomId: text('room_id')
+      .notNull()
+      .references(() => room.id, { onDelete: 'cascade' }),
+    characterId: text('character_id')
+      .notNull()
+      .references(() => character.id, { onDelete: 'cascade' }),
+    delta: integer('delta').notNull(),
+    kind: text('kind', { enum: ['award', 'quiz', 'spend'] }).notNull(),
+    reason: text('reason').notNull().default(''),
+    rollId: text('roll_id').references(() => roll.id, { onDelete: 'set null' }),
+    createdAt: integer('created_at').notNull(),
+  },
+  (t) => [index('spark_character_idx').on(t.characterId, t.createdAt)],
 );
 
 // Заметки мастера к сессии.

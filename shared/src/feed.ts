@@ -18,6 +18,8 @@ export const RollRequestSchema = z.strictObject({
   kind: DiceSchema,
   visibility: RollVisibilitySchema,
   label: z.string().trim().max(300).default(''),
+  /** Переброс за искру (этап 48): id своего броска не старше 10 минут. Вид, видимость и подпись берутся у него. */
+  rerollOf: z.string().min(1).max(64).optional(),
 });
 export type RollRequest = z.input<typeof RollRequestSchema>;
 
@@ -35,6 +37,8 @@ export const RollPublicSchema = z.strictObject({
   corrected: z.boolean(),
   /** Фигурка персонажа на момент броска (этап 25, бой на столе) — у публичных бросков игроков, у которых она есть. */
   figure: FigureSchema.optional(),
+  /** Переброс за искру (этап 48). */
+  reroll: z.boolean().optional(),
 });
 export type RollPublic = z.infer<typeof RollPublicSchema>;
 
@@ -59,6 +63,7 @@ export interface RollGm {
   enemyBand?: string;
   corrected: boolean;
   correctionNote?: string;
+  reroll?: boolean;
 }
 
 export const AUDIENCES = ['public', 'table', 'gm', 'member'] as const;

@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { FigureSchema, type Figure } from './figure.ts';
 import { SHEET_KINDS, type SheetKind } from './constants.ts';
 import { MomentPlayerSchema, type GmMoment } from './moments.ts';
+import type { GmSparks } from './sparks.ts';
 
 // ---- Что видит игрок: единственный формат, белый список, strictObject на всех уровнях ----
 
@@ -51,6 +52,8 @@ export const PlayerCharacterSchema = z.strictObject({
   figure: FigureSchema.optional(),
   /** Памятные моменты (этап 47), по времени. */
   moments: z.array(MomentPlayerSchema),
+  /** Искры (этап 48): сколько можно потратить на переброс. */
+  sparks: z.number().int().min(0),
 });
 export type PlayerCharacter = z.infer<typeof PlayerCharacterSchema>;
 export type PlayerTrait = z.infer<typeof PlayerTraitSchema>;
@@ -214,6 +217,7 @@ export interface GmCharacterView {
   summaries: import('./gm.ts').GmSummary[];
   sheet: GmSheetEntry[];
   moments: GmMoment[];
+  sparks: GmSparks;
 }
 
 // ---- Лист персонажа ----

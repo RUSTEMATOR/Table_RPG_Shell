@@ -24,6 +24,7 @@ import { gmChronicleRoutes, playerChronicleRoutes } from './routes/chronicle.ts'
 import { gmDowntimeRoutes, playerDowntimeRoutes } from './routes/downtime.ts';
 import { gmScheduleRoutes, playerScheduleRoutes, scheduleIcsRoutes } from './routes/schedule.ts';
 import { gmMomentRoutes } from './routes/moments.ts';
+import { gmSparkRoutes, playerSparkRoutes } from './routes/sparks.ts';
 import { findGmLeak } from './visibility/guard.ts';
 
 declare module 'fastify' {
@@ -78,6 +79,8 @@ export async function buildApp() {
   await app.register(gmScheduleRoutes);
   await app.register(scheduleIcsRoutes);
   await app.register(gmMomentRoutes);
+  await app.register(playerSparkRoutes);
+  await app.register(gmSparkRoutes);
   await app.register(gmScreenRoutes);
   await app.register(playerDiaryRoutes);
   await app.register(gmSceneRoutes);

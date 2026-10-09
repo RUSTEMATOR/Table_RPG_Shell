@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { MomentWriteSchema } from '@zg/shared';
 import { requireGm } from '../auth/requireGm.ts';
 import { awardMoment, characterOfRoll, deleteMoment, getMoment } from '../domain/moments.ts';
+import { awardSpark } from '../domain/sparks.ts';
 import { loadCharacter } from '../domain/repo.ts';
 import { characterView } from '../domain/views.ts';
 import { notifyCharacterChanged } from '../realtime/notify.ts';
@@ -20,6 +21,7 @@ export async function gmMomentRoutes(app: FastifyInstance) {
     const lc = loadCharacter(roomId, characterId);
     if (!lc) return reply.code(404).send({ error: 'not_found' });
     awardMoment(roomId, lc.row, b.data);
+    if (b.data.spark) awardSpark(roomId, lc.row, 'award', b.data.title);
     notifyCharacterChanged(roomId, lc);
     return characterView(lc);
   });

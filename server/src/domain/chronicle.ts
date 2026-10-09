@@ -6,6 +6,9 @@ import { db, schema } from '../db/client.ts';
 import { pushToPlayers } from '../push/send.ts';
 import { publish } from '../realtime/publish.ts';
 import { SUMMARY_LORE } from './data.ts';
+import { loadOwnedCharacter } from './repo.ts';
+import { awardSpark } from './sparks.ts';
+import { notifyCharacterChanged } from '../realtime/notify.ts';
 
 // Летопись (этап 43). Единственное место, где глава превращается в то, что видит игрок: chapterForPlayer.
 // Игроку — только опубликованные главы; вопросы викторины без верных ответов, пока он не ответил.
@@ -212,6 +215,14 @@ export function answerQuiz(r: ChapterRow, memberId: string, answers: number[]): 
   db.insert(schema.chapterAnswer)
     .values({ id: newId(), chapterId: r.id, memberId, answers: JSON.stringify(answers), score, createdAt: Date.now() })
     .run();
+  // без ошибок — искра (этап 48), если у игрока есть персонаж
+  if (score === quiz.length) {
+    const lc = loadOwnedCharacter(r.roomId, memberId);
+    if (lc) {
+      awardSpark(r.roomId, lc.row, 'quiz', `Викторина: ${r.title}`);
+      notifyCharacterChanged(r.roomId, lc);
+    }
+  }
   notifyGm(r);
   return { ok: true, chapter: chapterForPlayer(r, memberId) };
 }

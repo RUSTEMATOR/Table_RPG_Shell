@@ -1,5 +1,5 @@
 import { and, eq } from 'drizzle-orm';
-import { FigureSchema, RollPublicSchema, type Effect, type Figure, type RollGm, type RollPublic, type RollVisibility } from '@zg/shared';
+import { FigureSchema, REROLL_WINDOW_MS, RollPublicSchema, type Effect, type Figure, type RollGm, type RollPublic, type RollVisibility } from '@zg/shared';
 import type { AuthContext } from '../auth/sessions.ts';
 import { newId } from '../auth/tokens.ts';
 import { db, schema } from '../db/client.ts';
@@ -8,6 +8,8 @@ import { powerBand, powerOf } from './cards.ts';
 import { loadCharacter, loadOwnedCharacter } from './repo.ts';
 import { resolveRoll } from './rolls.ts';
 import { activeSession } from './session.ts';
+import { sparkBalance, spendSpark } from './sparks.ts';
+import { notifyCharacterChanged } from '../realtime/notify.ts';
 import { greenForRollInBackground } from '../ai/jev/integrations.ts';
 
 export type RollRow = typeof schema.roll.$inferSelect;
@@ -25,6 +27,7 @@ export function rollPublic(r: RollRow, who: string, figure?: Figure | null): Rol
     private: r.visibility !== 'public',
     corrected: r.corrected,
     ...(figure ? { figure } : {}),
+    ...(r.rerollOf ? { reroll: true } : {}),
   });
 }
 
@@ -54,6 +57,7 @@ export function rollGm(r: RollRow, who: string): RollGm {
     ...(r.enemyName ? { enemyName: r.enemyName } : {}),
     ...(r.enemyPower ? { enemyPower: r.enemyPower, enemyBand: powerBand(r.enemyPower).label } : {}),
     corrected: r.corrected,
+    ...(r.rerollOf ? { reroll: true } : {}),
     ...(r.correctionNote ? { correctionNote: r.correctionNote } : {}),
   };
 }
@@ -81,7 +85,24 @@ export const ALLOWED_VISIBILITY: Record<'gm' | 'player', RollVisibility[]> = {
   player: ['public', 'gm_and_me'],
 };
 
-export function createRoll(auth: AuthContext, req: { clientRequestId: string; kind: 'd10' | 'd20'; visibility: RollVisibility; label: string }): RollRow {
+/** Переброс за искру (этап 48): свой бросок игрока, не старше 10 минут, ещё не перебросанный, искра есть. null — можно. */
+export function rerollError(auth: AuthContext, rollId: string): string | null {
+  if (auth.member.role !== 'player') return 'forbidden';
+  const r = db
+    .select()
+    .from(schema.roll)
+    .where(and(eq(schema.roll.roomId, auth.room.id), eq(schema.roll.id, rollId)))
+    .get();
+  if (!r || r.memberId !== auth.member.id) return 'not_found';
+  if (!r.characterId) return 'no_character';
+  if (Date.now() - r.createdAt > REROLL_WINDOW_MS) return 'too_late';
+  const again = db.select({ id: schema.roll.id }).from(schema.roll).where(eq(schema.roll.rerollOf, r.id)).get();
+  if (again) return 'already';
+  if (sparkBalance(r.characterId) < 1) return 'no_sparks';
+  return null;
+}
+
+export function createRoll(auth: AuthContext, req: { clientRequestId: string; kind: 'd10' | 'd20'; visibility: RollVisibility; label: string; rerollOf?: string }): RollRow {
   const roomId = auth.room.id;
   // Повтор того же запроса (двойное нажатие, переотправка после обрыва) — тот же бросок.
   const dup = db
@@ -96,6 +117,9 @@ export function createRoll(auth: AuthContext, req: { clientRequestId: string; ki
   const owned = isGm ? null : loadOwnedCharacter(roomId, auth.member.id);
   const myPower = owned ? powerOf(owned.doc) : 10;
   const enemy = isGm ? null : session.opponentPower;
+  // переброс: вид, видимость и подпись — у исходного броска (клиент прислал те же, но верим строке)
+  const base = req.rerollOf ? db.select().from(schema.roll).where(eq(schema.roll.id, req.rerollOf)).get() : undefined;
+  if (req.rerollOf) req = { ...req, kind: base?.kind ?? req.kind, visibility: (base?.visibility as RollVisibility) ?? req.visibility, label: base?.label ?? req.label };
   const res = resolveRoll(req.kind, myPower, enemy);
   const row: RollRow = {
     id: newId(),
@@ -116,10 +140,15 @@ export function createRoll(auth: AuthContext, req: { clientRequestId: string; ki
     enemyPower: enemy,
     corrected: false,
     correctionNote: null,
+    rerollOf: req.rerollOf ?? null,
     clientRequestId: req.clientRequestId,
     createdAt: Date.now(),
   };
   db.insert(schema.roll).values(row).run();
+  if (req.rerollOf && owned) {
+    spendSpark(roomId, owned.row.id, row.id);
+    notifyCharacterChanged(roomId, loadOwnedCharacter(roomId, auth.member.id) ?? owned);
+  }
   appendEvents(roomId, deliveries(row));
   if (!isGm) greenForRollInBackground(roomId, row);
   return row;

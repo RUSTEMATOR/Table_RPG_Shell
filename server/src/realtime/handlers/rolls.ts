@@ -1,7 +1,7 @@
 import type { Socket } from 'socket.io';
 import { RollOverrideSchema, RollRequestSchema, type GmAck } from '@zg/shared';
 import type { AuthContext } from '../../auth/sessions.ts';
-import { ALLOWED_VISIBILITY, createRoll, overrideRoll, rollFor } from '../../domain/rollService.ts';
+import { ALLOWED_VISIBILITY, createRoll, overrideRoll, rerollError, rollFor } from '../../domain/rollService.ts';
 import { log } from '../log.ts';
 import { replyForbidden, safeAck } from '../publish.ts';
 import { findGmLeak } from '../../visibility/guard.ts';
@@ -17,6 +17,10 @@ export function registerRollHandlers(socket: Socket) {
     if (!req.success) return reply({ ok: false, error: 'bad_request' });
     if (!ALLOWED_VISIBILITY[auth.member.role].includes(req.data.visibility)) return reply({ ok: false, error: 'bad_visibility' });
     if (findGmLeak(JSON.stringify(req.data.label))) return reply({ ok: false, error: 'bad_request' });
+    if (req.data.rerollOf) {
+      const err = rerollError(auth, req.data.rerollOf);
+      if (err) return reply({ ok: false, error: err });
+    }
     const row = createRoll(auth, req.data);
     reply({ ok: true, roll: rollFor(auth, row) });
   });

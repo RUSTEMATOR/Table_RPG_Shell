@@ -24,6 +24,8 @@ export const MomentWriteSchema = z.strictObject({
   title: z.string().trim().min(1).max(80),
   text: z.string().trim().max(400).default(''),
   noteGm: z.string().trim().max(1000).default(''),
+  /** Вместе с моментом дать искру (этап 48). */
+  spark: z.boolean().default(false),
 });
 
 export const MomentPlayerSchema = z.strictObject({ id: z.string(), kind: z.enum(MOMENT_KINDS), title: z.string(), text: z.string(), at: z.number() });
