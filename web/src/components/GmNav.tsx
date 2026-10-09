@@ -21,6 +21,12 @@ export const GM_SECTIONS = [
   { to: '/gm/chronicle', label: 'Летопись', key: 'c', icon: 'M4 5h6a2 2 0 0 1 2 2v13a2 2 0 0 0-2-2H4zM20 5h-6a2 2 0 0 0-2 2v13a2 2 0 0 1 2-2h6zM12 7v13' },
   { to: '/gm/search', label: 'Поиск', key: 's', icon: 'M11 4a7 7 0 1 0 0 14a7 7 0 0 0 0-14zM21 21l-5-5' },
   { to: '/gm/activity', label: 'Активность', key: 'a', icon: 'M3 12h4l3-7l4 14l3-7h4' },
+  {
+    to: '/gm/database',
+    label: 'База',
+    key: 'b',
+    icon: 'M4 6c0-1.7 3.6-3 8-3s8 1.3 8 3s-3.6 3-8 3s-8-1.3-8-3zM4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6',
+  },
   { to: '/gm/members', label: 'Участники', key: 'u', icon: 'M12 4a8 8 0 1 0 0 16a8 8 0 0 0 0-16zM13 7l-3 5h4l-3 5' },
 ] as const;
 
