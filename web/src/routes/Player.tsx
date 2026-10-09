@@ -7,6 +7,7 @@ import { PlayerCard } from '../components/PlayerCard.tsx';
 import { RollPanel } from '../components/RollPanel.tsx';
 import { Diary } from '../components/Diary.tsx';
 import { Chronicle } from '../components/Chronicle.tsx';
+import { Acquaintances } from '../components/Acquaintances.tsx';
 import { load as loadPref, save as savePref } from '../lib/storage.ts';
 import { RoleScreen } from '../components/Shell.tsx';
 import { api } from '../lib/api.ts';
@@ -66,6 +67,7 @@ function PlayerHome({ active, theme, base, choice, onChoice }: { active: boolean
     <>
       <ThemeChoice base={base} value={choice} onChange={onChoice} />
       <PlayerCard className="reveal" c={character} theme={theme} onChange={setCharacter} />
+      <Acquaintances />
     </>
   );
 }
