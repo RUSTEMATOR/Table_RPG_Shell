@@ -8,6 +8,7 @@ import { load as loadPref, remove as removePref, save as savePref } from '../lib
 import { rememberReplies } from '../lib/unread.ts';
 import { useActivity } from '../lib/activity.ts';
 import { Downtime } from './Downtime.tsx';
+import { NextGame } from './NextGame.tsx';
 import { Letters } from './Letters.tsx';
 import { spring } from '../lib/motion.tsx';
 import { Button, Card, CardTitle, EmptyState, Field, Segmented, Sheet, Textarea } from '../ui/index.ts';
@@ -84,6 +85,7 @@ export function Diary({ active = true }: { active?: boolean }) {
   const editing = sheet && sheet !== 'new' ? sheet : null;
   return (
     <>
+      <NextGame />
       <Downtime />
       <Letters active={active} />
       <div className="flex items-center justify-between gap-3">
