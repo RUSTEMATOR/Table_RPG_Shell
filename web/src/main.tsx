@@ -38,6 +38,7 @@ const router = createBrowserRouter(
         { path: 'chronicle', lazy: lazy(() => import('./routes/GmChronicle.tsx'), 'GmChronicle'), handle: { narrow: true } },
         { path: 'search', lazy: lazy(() => import('./routes/GmSearch.tsx'), 'GmSearch'), handle: { narrow: true } },
         { path: 'database', lazy: lazy(() => import('./routes/GmDatabase.tsx'), 'GmDatabase'), handle: { narrow: true } },
+        { path: 'battle', lazy: lazy(() => import('./routes/GmBattle.tsx'), 'GmBattlePage') },
         { path: 'table', lazy: lazy(() => import('./routes/GmTable.tsx'), 'GmTable') },
         { path: 'npcs', lazy: lazy(() => import('./routes/GmNpcs.tsx'), 'GmNpcs') },
         { path: 'maps', lazy: lazy(() => import('./routes/GmMaps.tsx'), 'GmMaps'), handle: { ownRail: true } },
