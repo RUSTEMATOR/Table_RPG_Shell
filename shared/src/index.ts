@@ -23,3 +23,4 @@ export * from './bestiary.ts';
 export * from './srd.ts';
 export * from './shells.ts';
 export * from './reactions.ts';
+export * from './search.ts';

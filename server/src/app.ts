@@ -28,6 +28,7 @@ import { gmSparkRoutes, playerSparkRoutes } from './routes/sparks.ts';
 import { playerAcquaintanceRoutes } from './routes/acquaintances.ts';
 import { gmBestiaryRoutes, playerBestiaryRoutes } from './routes/bestiary.ts';
 import { gmShellRoutes, playerShellRoutes } from './routes/shells.ts';
+import { gmSearchRoutes } from './routes/search.ts';
 import { findGmLeak } from './visibility/guard.ts';
 
 declare module 'fastify' {
@@ -89,6 +90,7 @@ export async function buildApp() {
   await app.register(gmBestiaryRoutes);
   await app.register(playerShellRoutes);
   await app.register(gmShellRoutes);
+  await app.register(gmSearchRoutes);
   await app.register(gmScreenRoutes);
   await app.register(playerDiaryRoutes);
   await app.register(gmSceneRoutes);
