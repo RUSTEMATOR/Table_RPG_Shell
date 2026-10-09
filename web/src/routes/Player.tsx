@@ -9,6 +9,7 @@ import { Diary } from '../components/Diary.tsx';
 import { Chronicle } from '../components/Chronicle.tsx';
 import { Acquaintances } from '../components/Acquaintances.tsx';
 import { Questionnaire } from '../components/Questionnaire.tsx';
+import { PlayerBattle } from '../components/PlayerBattle.tsx';
 import { load as loadPref, save as savePref } from '../lib/storage.ts';
 import { RoleScreen } from '../components/Shell.tsx';
 import { api } from '../lib/api.ts';
@@ -264,6 +265,7 @@ function Pager({ tab, setTab, mounted, mount, content, items, pickRef }: LayoutP
         {pane(
           'rolls',
           <>
+            <PlayerBattle />
             <RollPanel role="player" />
             <FeedCard />
           </>,
@@ -308,7 +310,13 @@ function Spread({ tab, setTab, mounted, content, items, pickRef }: LayoutProps) 
     >
       <TabBar variant="side" value={tab} onChange={pick} controls={(v) => `pane-${v}`} items={items} />
       <div className="zg-main min-h-0">
-        {pane('rolls', <FeedCard />)}
+        {pane(
+          'rolls',
+          <>
+            <PlayerBattle />
+            <FeedCard />
+          </>,
+        )}
         {pane('card', content.card)}
         {pane('figure', content.figure)}
         {pane('diary', content.diary)}

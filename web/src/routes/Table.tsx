@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { AnimatePresence, m, MotionConfig } from 'motion/react';
-import { DEFAULT_ATMOSPHERE, DEMO_ROOM_CODE, ambientFor, EFFECT_LABELS, type TableMoment, type TableReaction, type TableState } from '@zg/shared';
+import { DEFAULT_ATMOSPHERE, DEMO_ROOM_CODE, ambientFor, type BattlePublic, EFFECT_LABELS, type TableMoment, type TableReaction, type TableState } from '@zg/shared';
 import { ConnectionDot } from '../components/ConnectionDot.tsx';
 import { api } from '../lib/api.ts';
 import { useFeed } from '../lib/feed.ts';
@@ -22,6 +22,7 @@ import { TvSigns, type Sign } from '../tv/TvSigns.tsx';
 import { TvMoments } from '../tv/TvMoments.tsx';
 import { TvReactions } from '../tv/TvReactions.tsx';
 import { TvDaytime, TvWeather } from '../tv/TvWeather.tsx';
+import { TvBattleGrid } from '../tv/TvBattleGrid.tsx';
 import { setAmbient } from '../tv/ambient.ts';
 import { TV_VARS, effectColor, isTableRoll } from '../tv/palette.ts';
 import { EFFECT_ICON, GameIcon } from '../ui/GameIcon.tsx';
@@ -50,6 +51,9 @@ function TableScreen({ room, demo }: { room: string; demo: boolean }) {
   const [signs, setSigns] = useState<Sign[]>([]);
   const [moments, setMoments] = useState<TableMoment[]>([]);
   const [reactions, setReactions] = useState<TableReaction[]>([]);
+  // поле боя (этап 60): своё событие и запрос, поверх сцены и карты
+  const [battle, setBattle] = useState<BattlePublic | null>(null);
+  useSocketEvent('battle:changed', ({ battle: b }) => setBattle(b));
   const [still, setStill] = useState(() => load('zg:table:still') === '1');
   // Облегчённый режим: ?lite=1, слабое устройство, нет WebGL2 или фон тормозит (кадр дольше 33 мс) — без 3D, частиц и наплыва.
   const [lite, setLite] = useState(() => capabilities.lite());
@@ -58,6 +62,7 @@ function TableScreen({ room, demo }: { room: string; demo: boolean }) {
   const [flying, setFlying] = useState<string | null>(null);
 
   const loadState = useCallback(async () => {
+    void api<{ battle: BattlePublic | null }>('GET', '/api/table/battle').then((b) => b.ok && setBattle(b.data.battle));
     const r = await api<TableState>('GET', '/api/table/state');
     if (r.ok) {
       setState(r.data);
@@ -129,6 +134,7 @@ function TableScreen({ room, demo }: { room: string; demo: boolean }) {
         <TvMap show={state.map} still={still} lite={lite} />
         <TvDaytime daytime={state.atmosphere.daytime} />
         <TvWeather weather={state.atmosphere.weather} still={still || lite || capabilities.reducedMotion()} />
+        <TvBattleGrid battle={battle} />
 
         <header className="absolute inset-x-[5vw] top-[3vh] flex items-center gap-4 text-[clamp(14px,1.1vw,22px)] opacity-70">
           <span className="grow tracking-[.08em] text-[var(--tv-muted)] uppercase">
