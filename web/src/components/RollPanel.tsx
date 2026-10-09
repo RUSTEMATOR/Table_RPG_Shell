@@ -1,8 +1,9 @@
 import { lazy, Suspense, useEffect, useRef, useState, type FormEvent, type PointerEvent } from 'react';
-import { EFFECT_LABELS, REROLL_WINDOW_MS } from '@zg/shared';
+import { EFFECT_LABELS, REACTIONS, REACTION_LABELS, REROLL_WINDOW_MS, type Reaction } from '@zg/shared';
 import { addOwn, holdOwn, type FeedRoll } from '../lib/feed.ts';
 import { useMe } from '../lib/me.tsx';
-import { requestRoll, useSocketEvent } from '../lib/socket.ts';
+import { emitReaction, requestRoll, useSocketEvent } from '../lib/socket.ts';
+import { REACTION_ICON } from '../tv/TvReactions.tsx';
 import { api } from '../lib/api.ts';
 import { useActivity } from '../lib/activity.ts';
 import { useMedia } from '../lib/media.ts';
@@ -288,8 +289,41 @@ export function RollPanel({ role }: { role: 'gm' | 'player' }) {
             </div>
           )}
           {role === 'gm' && visibility === 'gm_hidden' && <p className="m-0 text-[13.6px] text-muted">Скрытый бросок видите только вы. На столе и у игроков его нет.</p>}
+          {role === 'player' && <Reactions />}
         </div>
       </div>
     </Card>
+  );
+}
+
+/** Отклик на стол (этап 52): значок всплывает на экране стола. Без связи — тихо ничего. */
+function Reactions() {
+  const [sent, setSent] = useState<Reaction | null>(null);
+  const react = (k: Reaction) => {
+    if (!emitReaction(k)) return;
+    haptics.tap();
+    setSent(k);
+    window.setTimeout(() => setSent((x) => (x === k ? null : x)), 700);
+  };
+  return (
+    <div className="zg-reactions grid gap-1.5">
+      <span className="font-ui text-xs font-medium tracking-[.06em] text-muted uppercase">Отклик на стол</span>
+      <div className="grid grid-cols-4 gap-1.5">
+        {REACTIONS.map((k) => (
+          <button
+            key={k}
+            type="button"
+            onClick={() => react(k)}
+            className={cn(
+              'flex min-h-11 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-control border border-solid border-border bg-transparent font-ui text-[13px] text-inherit transition-transform active:scale-95',
+              sent === k && 'border-accent bg-accent-soft',
+            )}
+          >
+            <GameIcon name={REACTION_ICON[k]} className="size-5" />
+            {REACTION_LABELS[k]}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
