@@ -361,6 +361,32 @@ export const spark = sqliteTable(
   (t) => [index('spark_character_idx').on(t.characterId, t.createdAt)],
 );
 
+// Знакомые (этап 49): персонаж игрока встретил жителя (противника библиотеки) в «Кто здесь». note — только игроку.
+export const acquaintance = sqliteTable(
+  'acquaintance',
+  {
+    id: text('id').primaryKey(),
+    roomId: text('room_id')
+      .notNull()
+      .references(() => room.id, { onDelete: 'cascade' }),
+    characterId: text('character_id')
+      .notNull()
+      .references(() => character.id, { onDelete: 'cascade' }),
+    npcId: text('npc_id')
+      .notNull()
+      .references(() => npc.id, { onDelete: 'cascade' }),
+    firstPlaceId: text('first_place_id').references(() => mapPlace.id, { onDelete: 'set null' }),
+    firstAt: integer('first_at').notNull(),
+    lastAt: integer('last_at').notNull(),
+    attitude: text('attitude', { enum: ['unknown', 'friend', 'wary', 'foe'] })
+      .notNull()
+      .default('unknown'),
+    note: text('note').notNull().default(''),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  (t) => [uniqueIndex('acquaintance_once_idx').on(t.characterId, t.npcId), index('acquaintance_npc_idx').on(t.npcId)],
+);
+
 // Заметки мастера к сессии.
 export const sessionNote = sqliteTable('session_note', {
   sessionId: text('session_id')

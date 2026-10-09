@@ -30,6 +30,7 @@ import {
   updateRumor,
   updateSpot,
 } from '../domain/places.ts';
+import { meetAt } from '../domain/acquaintances.ts';
 import { notifyPlaceChanged } from '../realtime/maps.ts';
 import { publish } from '../realtime/publish.ts';
 import { findGmLeak } from '../visibility/guard.ts';
@@ -224,7 +225,13 @@ export async function publicPlaceRoutes(app: FastifyInstance) {
     if (!auth) return reply.code(401).send({ error: 'unauthorized' });
     if (auth.member.role !== 'player') return reply.code(403).send({ error: 'forbidden' });
     const d = projectPlaceDetail(auth.room.id, request.params.id, 'player', auth.member.id);
-    return d ?? reply.code(404).send({ error: 'not_found' });
+    if (!d) return reply.code(404).send({ error: 'not_found' });
+    // этап 49: внутри города игрок видит «кто здесь» — знакомство
+    if (d.inside) {
+      const p = getPlace(auth.room.id, d.id);
+      if (p) meetAt(auth.room.id, auth.member.id, p);
+    }
+    return d;
   });
   // этап 45: «первым услышал» и сказы — только изнутри города (отряд рядом)
   const insidePlace = (request: FastifyRequest, reply: FastifyReply, placeId: string) => {

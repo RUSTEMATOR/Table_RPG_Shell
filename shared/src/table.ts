@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ImagePublicSchema, type GmImage } from './media.ts';
+import type { GmAcquaintance } from './acquaintances.ts';
 import { MapFocusSchema, MapIdSchema, type UnitId } from './maps.ts';
 import { FigureSchema, type Figure } from './figure.ts';
 
@@ -72,5 +73,7 @@ export interface GmNpc {
   shown: boolean;
   /** Противник текущей сессии. */
   opponent: boolean;
+  /** Кто с ним знаком (этап 49). */
+  acquaintances: GmAcquaintance[];
   updatedAt: number;
 }

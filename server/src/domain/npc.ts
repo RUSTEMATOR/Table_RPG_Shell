@@ -4,6 +4,7 @@ import { newId } from '../auth/tokens.ts';
 import { db, schema } from '../db/client.ts';
 import { powerBand } from './cards.ts';
 import { NO_IMAGE, imageGm, removeImage, storeImage } from './media.ts';
+import { acquaintancesOfNpc } from './acquaintances.ts';
 
 // Библиотека противников. Всё здесь — мастерские данные; столу уходит только projectForTable.
 
@@ -21,6 +22,7 @@ export function gmNpc(r: NpcRow, shownId: string | null, opponentId: string | nu
     model3d: npcModel(r),
     shown: r.id === shownId,
     opponent: r.id === opponentId,
+    acquaintances: acquaintancesOfNpc(r.id),
     updatedAt: r.updatedAt,
   };
 }

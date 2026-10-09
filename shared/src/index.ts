@@ -18,3 +18,4 @@ export * from './downtime.ts';
 export * from './schedule.ts';
 export * from './moments.ts';
 export * from './sparks.ts';
+export * from './acquaintances.ts';
