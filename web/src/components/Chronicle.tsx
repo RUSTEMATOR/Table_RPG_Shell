@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AnimatePresence, m } from 'motion/react';
-import type { ChapterPlayer } from '@zg/shared';
+import type { ChapterPlayer, PhotoPlayer } from '@zg/shared';
+import { Pic } from './Pic.tsx';
 import { api } from '../lib/api.ts';
 import { useConnection, useSocketEvent } from '../lib/socket.ts';
 import { rememberChapters } from '../lib/unread.ts';
 import { spring } from '../lib/motion.tsx';
 import { cn } from '../lib/cn.ts';
-import { Button, Card, CardTitle, EmptyState } from '../ui/index.ts';
+import { Button, Card, CardTitle, EmptyState, Sheet } from '../ui/index.ts';
 import { Bestiary } from './Bestiary.tsx';
 
 const when = (t: number) => new Date(t).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -50,6 +51,7 @@ export function Chronicle({ active = true }: { active?: boolean }) {
   return (
     <>
       <Bestiary />
+      <Album chapters={chapters ?? []} />
       <CardTitle className="text-[1.7rem]">Летопись</CardTitle>
       {chapters === null && <p className="muted">Загрузка…</p>}
       {chapters?.length === 0 && <EmptyState icon="quill-ink">Глав пока нет. После сессии мастер опубликует главу о том, что случилось, — она появится здесь.</EmptyState>}
@@ -106,6 +108,7 @@ function Reader({ c, onBack, onChanged }: { c: ChapterPlayer; onBack: () => void
       <span className="font-ui text-xs font-medium uppercase tracking-[.06em] text-muted">{when(c.publishedAt)}</span>
       <h2 className="m-0 font-name text-[1.8rem] leading-tight">{c.title}</h2>
       <p className="prewrap m-0 font-read text-[1.08rem] leading-relaxed">{c.text}</p>
+      {c.photos.length > 0 && <Photos photos={c.photos} />}
       {c.quiz && (
         <Card className="mt-2 gap-3">
           <CardTitle>Что ты помнишь?</CardTitle>
@@ -172,5 +175,49 @@ function Reader({ c, onBack, onChanged }: { c: ChapterPlayer; onBack: () => void
         </Card>
       )}
     </article>
+  );
+}
+
+/** Фото сессии (этап 53): сетка превью с размытым плейсхолдером; нажатие — фото целиком с подписью. */
+function Photos({ photos, title }: { photos: PhotoPlayer[]; title?: (p: PhotoPlayer) => string }) {
+  const [open, setOpen] = useState<PhotoPlayer | null>(null);
+  return (
+    <>
+      <ul className="zg-photos m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(110px,1fr))] gap-2 p-0">
+        {photos.map((p) => (
+          <li key={p.id}>
+            <button
+              type="button"
+              onClick={() => setOpen(p)}
+              className="block w-full cursor-pointer overflow-hidden rounded-control border-0 bg-transparent p-0"
+              aria-label={p.caption || 'Фото'}
+            >
+              <Pic image={p.image} size="thumb" className="aspect-square w-full" loading="lazy" />
+            </button>
+          </li>
+        ))}
+      </ul>
+      <Sheet
+        open={open !== null}
+        onOpenChange={(o) => !o && setOpen(null)}
+        title={open ? (title?.(open) ?? (open.caption || 'Фото')) : ''}
+        description={open && title && open.caption ? open.caption : undefined}
+      >
+        {open && <Pic image={open.image} className="w-full rounded-control" imgClassName="h-auto w-full object-contain" />}
+      </Sheet>
+    </>
+  );
+}
+
+/** Альбом кампании (этап 53): все фото опубликованных глав, новые сверху. Нет фото — нет альбома. */
+function Album({ chapters }: { chapters: ChapterPlayer[] }) {
+  const photos = chapters.flatMap((c) => c.photos.map((p) => ({ ...p, chapter: c.title })));
+  if (!photos.length) return null;
+  const titleOf = new Map(photos.map((p) => [p.id, p.chapter]));
+  return (
+    <Card className="zg-album gap-2">
+      <CardTitle>Альбом · {photos.length}</CardTitle>
+      <Photos photos={photos.slice(0, 48)} title={(p) => titleOf.get(p.id) ?? 'Фото'} />
+    </Card>
   );
 }
