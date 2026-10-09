@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { PLAYER_TAB_LABELS, type PlayerCharacter, type PlayerTab } from '@zg/shared';
+import { PLAYER_TAB_LABELS, type PlayerCharacter, type PlayerTab, type Shell } from '@zg/shared';
 import { Feed } from '../components/Feed.tsx';
 import { isOwnRoll, type FeedRoll } from '../lib/feed.ts';
 import { useMe } from '../lib/me.tsx';
@@ -17,7 +17,7 @@ import { reportTab } from '../lib/activity.ts';
 import { capabilities } from '../lib/capabilities.ts';
 import { resolveTheme, themeVariant } from '../lib/cardTheme/index.ts';
 import { useScheme } from '../lib/colorScheme.ts';
-import { ThemeChoice } from '../components/ThemeChoice.tsx';
+import { ThemeChoice, themeAllowed } from '../components/ThemeChoice.tsx';
 import { TAB_ICONS, TabBar, type TabItem } from '../components/TabBar.tsx';
 import { DESKTOP_QUERY, PHONE_QUERY, useMedia } from '../lib/media.ts';
 import { useHotkeys } from '../lib/hotkeys.ts';
@@ -65,7 +65,7 @@ function PlayerHome({ active, theme, base, choice, onChoice }: { active: boolean
     );
   return (
     <>
-      <ThemeChoice base={base} value={choice} onChange={onChoice} />
+      <ThemeChoice base={base} value={choice} onChange={onChoice} shells={character.shells} />
       <PlayerCard className="reveal" c={character} theme={theme} onChange={setCharacter} />
       <Acquaintances />
     </>
@@ -136,7 +136,7 @@ function PlayerTabs() {
   const unread = useUnread();
   // Тема экрана: выбор игрока на этом устройстве, иначе тема персонажа; «День» / «Ночь» — её вариант.
   const { me } = useMe();
-  const base = usePlayerSkin();
+  const { skin: base, picked } = usePlayerSkin();
   const choiceKey = `zg:player:cardTheme:${me?.member.id ?? ''}`;
   const [choice, setChoice] = useState(() => loadPref(choiceKey) ?? '');
   const pickTheme = (k: string) => {
@@ -144,7 +144,9 @@ function PlayerTabs() {
     savePref(choiceKey, k);
   };
   const scheme = useScheme();
-  const theme = themeVariant(choice || base, scheme);
+  // выбор темы с закрытой оболочкой (сделанный до этапа 51 или после снятия) не применяется — тема персонажа
+  const usable = choice && themeAllowed(choice, base, picked) ? choice : '';
+  const theme = themeVariant(usable || base, scheme);
   useSkin(theme);
   // Значки ставятся здесь, а не во вкладках: вкладки слушают события, только чтобы обновить себя.
   useSocketEvent('diary:changed', ({ entry }) => noteDiaryChange(entry));
@@ -153,7 +155,7 @@ function PlayerTabs() {
   useSocketEvent('character:updated', ({ character }) => noteCardChange(character));
 
   const content: Record<Exclude<Tab, 'rolls'>, ReactNode> = {
-    card: <PlayerHome active={tab === 'card'} theme={theme} base={base} choice={choice} onChoice={pickTheme} />,
+    card: <PlayerHome active={tab === 'card'} theme={theme} base={base} choice={usable} onChoice={pickTheme} />,
     figure: (
       <Suspense fallback={<p className="muted">Загрузка…</p>}>
         <PlayerFigure />
@@ -354,16 +356,19 @@ function FeedCard() {
 }
 
 /** Тема экрана игрока — тема его персонажа. Запоминается на устройстве, чтобы при открытии не мигал обычный вид. */
-function usePlayerSkin(): string {
+function usePlayerSkin(): { skin: string; picked: readonly Shell[] } {
   const [skin, setSkin] = useState(() => loadPref('zg:player:skin') ?? 'other');
+  // открытые оболочки (этап 51): по ним проверяется выбор темы на устройстве
+  const [picked, setPicked] = useState<readonly Shell[]>([]);
   const take = useCallback((c: PlayerCharacter | null) => {
     const th = c ? resolveTheme(c.look) : 'other';
     setSkin(th);
+    setPicked(c?.shells.picked ?? []);
     savePref('zg:player:skin', th);
   }, []);
   useEffect(() => {
     void api<{ character: PlayerCharacter | null }>('GET', '/api/player/character').then((r) => r.ok && take(r.data.character));
   }, [take]);
   useSocketEvent('character:updated', ({ character }) => take(character));
-  return skin;
+  return { skin, picked };
 }
