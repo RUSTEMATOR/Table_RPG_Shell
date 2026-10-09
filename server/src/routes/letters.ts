@@ -96,7 +96,7 @@ export async function gmLetterRoutes(app: FastifyInstance) {
     const roomId = request.auth!.room.id;
     const lc = loadCharacter(roomId, b.data.characterId);
     if (!lc) return reply.code(404).send({ error: 'not_found' });
-    if (!draftsAvailable(roomId)) return reply.code(403).send({ error: 'off', message: 'Черновики Claude выключены (нет ключа или демо-комната)' });
+    if (!draftsAvailable(roomId)) return reply.code(403).send({ error: 'off', message: 'Черновики Claude выключены (нет ключа ANTHROPIC_API_KEY)' });
     const res = await generateText(letterPrompt(lc.row, b.data.fromName, b.data.hint), true);
     if (!res.ok) {
       request.log.warn({ reason: res.reason }, 'claude: черновик письма не получился');

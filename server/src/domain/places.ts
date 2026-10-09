@@ -19,7 +19,6 @@ import { newId } from '../auth/tokens.ts';
 import { claudeConfigured } from '../ai/claude/client.ts';
 import { db, schema } from '../db/client.ts';
 import { SUMMARY_LORE } from './data.ts';
-import { isDemoRoom } from './demo.ts';
 import { MAPS, type PlaceRow } from './maps.ts';
 import { NO_IMAGE, imagePublic, removeImage, storeImage } from './media.ts';
 import { listNpcs, npcFigure } from './npc.ts';
@@ -60,7 +59,8 @@ export function placesWithNpc(roomId: string, npcId: string): string[] {
   return [...new Set(rows.map((r) => r.placeId))];
 }
 
-export const draftsAvailable = (roomId: string) => claudeConfigured() && !isDemoRoom(roomId);
+// Черновики Claude доступны и в демо-комнате (решение Рустема, 2026-10-09): гостю важно увидеть, как это работает.
+export const draftsAvailable = (_roomId: string) => claudeConfigured();
 
 export function gmPlaceDetail(roomId: string, p: PlaceRow): GmPlaceDetail {
   return {

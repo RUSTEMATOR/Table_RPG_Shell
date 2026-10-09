@@ -196,7 +196,7 @@ export async function gmPlaceRoutes(app: FastifyInstance) {
     if (!p) return;
     const b = PlaceDraftSchema.safeParse(request.body);
     if (!b.success) return reply.code(400).send({ error: 'bad_request' });
-    if (!draftsAvailable(p.roomId)) return reply.code(403).send({ error: 'off', message: 'Черновики Claude выключены (нет ключа или демо-комната)' });
+    if (!draftsAvailable(p.roomId)) return reply.code(403).send({ error: 'off', message: 'Черновики Claude выключены (нет ключа ANTHROPIC_API_KEY)' });
     const res = await generateText(draftPrompt(b.data.part, p), true);
     if (!res.ok) {
       request.log.warn({ reason: res.reason, part: b.data.part }, 'claude: черновик места не получился');

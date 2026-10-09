@@ -99,7 +99,7 @@ export async function gmChronicleRoutes(app: FastifyInstance) {
     const b = ChapterDraftSchema.safeParse(request.body);
     if (!b.success) return reply.code(400).send({ error: 'bad_request' });
     const roomId = request.auth!.room.id;
-    if (!draftsAvailable(roomId)) return reply.code(403).send({ error: 'off', message: 'Черновики Claude выключены (нет ключа или демо-комната)' });
+    if (!draftsAvailable(roomId)) return reply.code(403).send({ error: 'off', message: 'Черновики Claude выключены (нет ключа ANTHROPIC_API_KEY)' });
     const res = await generateText(chapterPrompt(sessionMaterial(roomId, b.data.sessionId), b.data.hint), false);
     if (!res.ok) {
       request.log.warn({ reason: res.reason }, 'claude: глава не получилась');
@@ -115,7 +115,7 @@ export async function gmChronicleRoutes(app: FastifyInstance) {
     const roomId = request.auth!.room.id;
     const r = getChapter(roomId, request.params.id);
     if (!r) return reply.code(404).send({ error: 'not_found' });
-    if (!draftsAvailable(roomId)) return reply.code(403).send({ error: 'off', message: 'Черновики Claude выключены (нет ключа или демо-комната)' });
+    if (!draftsAvailable(roomId)) return reply.code(403).send({ error: 'off', message: 'Черновики Claude выключены (нет ключа ANTHROPIC_API_KEY)' });
     const res = await generateText(quizPrompt(r.title, r.text), true);
     if (!res.ok) {
       request.log.warn({ reason: res.reason }, 'claude: викторина не получилась');
