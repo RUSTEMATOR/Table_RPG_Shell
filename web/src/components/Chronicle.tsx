@@ -7,6 +7,7 @@ import { rememberChapters } from '../lib/unread.ts';
 import { spring } from '../lib/motion.tsx';
 import { cn } from '../lib/cn.ts';
 import { Button, Card, CardTitle, EmptyState } from '../ui/index.ts';
+import { Bestiary } from './Bestiary.tsx';
 
 const when = (t: number) => new Date(t).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
 const excerpt = (t: string) => {
@@ -48,6 +49,7 @@ export function Chronicle({ active = true }: { active?: boolean }) {
   if (open) return <Reader c={open} onBack={() => setOpenId(null)} onChanged={upsert} />;
   return (
     <>
+      <Bestiary />
       <CardTitle className="text-[1.7rem]">Летопись</CardTitle>
       {chapters === null && <p className="muted">Загрузка…</p>}
       {chapters?.length === 0 && <EmptyState icon="quill-ink">Глав пока нет. После сессии мастер опубликует главу о том, что случилось, — она появится здесь.</EmptyState>}
