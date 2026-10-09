@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { PLACE_KIND_LABELS, RUMOR_KIND_LABELS, SPOT_KIND_LABELS, type CitySection, type PlaceDetailPublic, type PresencePublic } from '@zg/shared';
+import { PLACE_KIND_LABELS, RUMOR_KIND_LABELS, SPOT_KIND_LABELS, type CitySection, type PlaceDetailPublic, type PresencePublic, type TalePlayer } from '@zg/shared';
 import { api } from '../../lib/api.ts';
 import { useSocketEvent } from '../../lib/socket.ts';
 import { useActivity } from '../../lib/activity.ts';
@@ -9,6 +9,7 @@ import { PlaceIcon } from '../MapView.tsx';
 import { teamOf } from '../../maps3d/settlements.ts';
 import { GameIcon, RUMOR_ICON, SPOT_ICON, type GameIconName } from '../../ui/GameIcon.tsx';
 import { Pic } from '../../components/Pic.tsx';
+import { Button, Field, Sheet, Textarea } from '../../ui/index.ts';
 
 // Карточка места и экран города (этап 27) — у игрока и на столе. Данные — только открытое (projectPlaceDetail на сервере):
 // описание, правитель, фракция, население, места в городе, открытые слухи и задания, «кто здесь».
@@ -255,6 +256,11 @@ export function CityScreen({ d, onClose, table }: { d: PlaceDetailPublic; onClos
                     {RUMOR_KIND_LABELS[r.kind]}.
                   </b>{' '}
                   {r.text}
+                  {(r.by || r.firstBy) && (
+                    <i className="ml-[0.5em] text-[0.75em] opacity-70">
+                      {[r.by && `рассказал(а) ${r.by}`, r.firstBy && `первым услышал(а) ${r.firstBy}`].filter(Boolean).join(' · ')}
+                    </i>
+                  )}
                 </span>
               ))}
             </div>
@@ -339,21 +345,109 @@ export function CityScreen({ d, onClose, table }: { d: PlaceDetailPublic; onClos
             <Here list={spot.here} />
           </>
         )}
-        {sel === 'rumors' && (
-          <ul className="m-0 grid list-none gap-2.5 p-0">
-            {d.rumors.map((r) => (
-              <li key={r.id} className="grid gap-0.5 border-l-[3px] border-solid pl-3" style={{ borderColor: r.kind === 'quest' ? '#e8c25a' : 'rgba(243,236,217,.35)' }}>
-                <span className="flex items-center gap-1.5 text-[12px] tracking-[.08em] uppercase opacity-65">
-                  <GameIcon name={RUMOR_ICON[r.kind]} className="size-4" />
-                  {RUMOR_KIND_LABELS[r.kind]}
-                </span>
-                <span style={{ fontFamily: SERIF, fontSize: 18 }}>{r.text}</span>
-              </li>
-            ))}
-          </ul>
-        )}
+        {sel === 'rumors' && <Rumors d={d} table={table} />}
         {sel === 'here' && <Here list={[...d.here, ...d.spots.flatMap((s) => s.here)]} />}
       </section>
+    </div>
+  );
+}
+
+// «услышал» отправляется по слуху один раз за сеанс: первый услышавший запоминается на сервере (этап 45)
+const heard = new Set<string>();
+
+/** Слухи и задания города: подписи «рассказал(а)» и «первым услышал(а)», у игрока — свои сказы и «Рассказать сказ». */
+function Rumors({ d, table }: { d: PlaceDetailPublic; table?: boolean }) {
+  useEffect(() => {
+    if (table) return;
+    for (const r of d.rumors) {
+      if (r.firstBy || heard.has(r.id)) continue;
+      heard.add(r.id);
+      void api('POST', `/api/player/maps/rumors/${encodeURIComponent(r.id)}/heard`);
+    }
+  }, [d.rumors, table]);
+  return (
+    <div className="grid gap-3">
+      <ul className="m-0 grid list-none gap-2.5 p-0">
+        {d.rumors.map((r) => (
+          <li key={r.id} className="grid gap-0.5 border-l-[3px] border-solid pl-3" style={{ borderColor: r.kind === 'quest' ? '#e8c25a' : 'rgba(243,236,217,.35)' }}>
+            <span className="flex items-center gap-1.5 text-[12px] tracking-[.08em] uppercase opacity-65">
+              <GameIcon name={RUMOR_ICON[r.kind]} className="size-4" />
+              {RUMOR_KIND_LABELS[r.kind]}
+              {r.by && <span className="normal-case tracking-normal">· рассказал(а) {r.by}</span>}
+            </span>
+            <span style={{ fontFamily: SERIF, fontSize: 18 }}>{r.text}</span>
+            {r.firstBy && <span className="text-[12.5px] opacity-60">Первым услышал(а): {r.firstBy}</span>}
+          </li>
+        ))}
+      </ul>
+      {!table && <Tales placeId={d.id} />}
+    </div>
+  );
+}
+
+/** Сказы игрока в этом городе: ожидающие и принятые; «Рассказать сказ» — лист с текстом. Мастер решает, ляжет ли сказ в город. */
+function Tales({ placeId }: { placeId: string }) {
+  const [tales, setTales] = useState<TalePlayer[] | null>(null);
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    void api<{ tales: TalePlayer[] }>('GET', `/api/player/maps/places/${encodeURIComponent(placeId)}/tales`).then((r) => alive && r.ok && setTales(r.data.tales));
+    return () => {
+      alive = false;
+    };
+  }, [placeId]);
+  useSocketEvent('map:place.changed', ({ placeId: id }) => {
+    if (id === placeId) void api<{ tales: TalePlayer[] }>('GET', `/api/player/maps/places/${encodeURIComponent(placeId)}/tales`).then((r) => r.ok && setTales(r.data.tales));
+  });
+  const pending = (tales ?? []).filter((t) => !t.accepted);
+  const send = async () => {
+    setBusy(true);
+    setError(null);
+    const r = await api<{ tales: TalePlayer[] }>('POST', `/api/player/maps/places/${encodeURIComponent(placeId)}/tales`, { text });
+    setBusy(false);
+    if (!r.ok) return setError(r.error === 'too_many' ? 'Не больше трёх сказов на рассмотрении в одном городе.' : 'Не отправилось, попробуй ещё раз.');
+    setTales(r.data.tales);
+    setText('');
+    setOpen(false);
+  };
+  return (
+    <div className="grid gap-2 border-t border-solid border-[rgba(243,236,217,.2)] pt-3">
+      {pending.map((t) => (
+        <div key={t.id} className="grid gap-0.5 border-l-[3px] border-dashed border-[rgba(243,236,217,.35)] pl-3 opacity-80">
+          <span className="text-[12px] tracking-[.08em] uppercase opacity-65">Твой сказ · ждёт мастера</span>
+          <span style={{ fontFamily: SERIF, fontSize: 17 }}>{t.text}</span>
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="justify-self-start cursor-pointer rounded-[8px] border border-solid border-[rgba(243,236,217,.4)] bg-transparent px-3 py-1.5 font-ui text-[14px] text-inherit hover:bg-[rgba(243,236,217,.1)]"
+      >
+        Рассказать сказ
+      </button>
+      <Sheet
+        open={open}
+        onOpenChange={(o) => !o && setOpen(false)}
+        title="Рассказать сказ"
+        description="Слух или байка, которую твой персонаж пустил по городу. Если мастер примет, её услышат все — с твоим именем."
+      >
+        <div className="grid gap-3">
+          <Field label="Сказ" error={error}>
+            {(id) => <Textarea id={id} rows={5} value={text} maxLength={1000} onChange={(e) => setText(e.target.value)} placeholder="Говорят, что…" />}
+          </Field>
+          <div className="flex gap-2">
+            <Button type="button" variant="ghost" className="flex-1" onClick={() => setOpen(false)}>
+              Отмена
+            </Button>
+            <Button type="button" variant="primary" className="flex-[2]" disabled={busy || !text.trim()} onClick={() => void send()}>
+              {busy ? 'Отправляю…' : 'Отправить мастеру'}
+            </Button>
+          </div>
+        </div>
+      </Sheet>
     </div>
   );
 }
