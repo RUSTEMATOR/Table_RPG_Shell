@@ -6,6 +6,7 @@ import { PlayerCard } from '../components/PlayerCard.tsx';
 import { ThemePick } from '../components/ThemePick.tsx';
 import { SheetPanel } from '../components/SheetPanel.tsx';
 import { SummaryPanel } from '../components/SummaryPanel.tsx';
+import { MomentsPanel } from '../components/MomentsPanel.tsx';
 import { api } from '../lib/api.ts';
 import { OWNER_ERRORS, usePlayers } from '../lib/gm.ts';
 import { emitGm, useConnection, useSocketEvent } from '../lib/socket.ts';
@@ -16,7 +17,7 @@ import { Button, buttonVariants, Card, Field, Input, Select, Sheet, Switch, TabP
 const FigureEditor = lazy(() => import('../figure/FigureEditor.tsx').then((m) => ({ default: m.FigureEditor })));
 
 const STAGES = ['Спит', 'Пробуждение', 'Освоение', 'Мастерство', 'Предел'];
-type Tab = 'traits' | 'sheet' | 'summaries' | 'figure' | 'notes';
+type Tab = 'traits' | 'sheet' | 'summaries' | 'moments' | 'figure' | 'notes';
 type SlotPatch = (s: GmSlotView) => GmSlotView;
 
 const levelOf = (r: GmSlotView['revealed']): GmSlotView['revealLevel'] => (r.trait ? 'revealed' : r.hint.trim() ? 'hinted' : 'hidden');
@@ -153,6 +154,7 @@ export function GmCharacter() {
               { value: 'traits', label: `Черты · ${c.slots.length}` },
               { value: 'sheet', label: 'Лист' },
               { value: 'summaries', label: 'Сводки' },
+              { value: 'moments', label: `Моменты${c.moments.length ? ` · ${c.moments.length}` : ''}` },
               { value: 'figure', label: 'Фигурка' },
               { value: 'notes', label: 'Заметки' },
             ]}
@@ -184,6 +186,9 @@ export function GmCharacter() {
             </TabPanel>
             <TabPanel value="summaries" className="flex flex-col gap-4 focus:outline-none">
               <SummaryPanel c={c} onChange={setC} />
+            </TabPanel>
+            <TabPanel value="moments" className="flex flex-col gap-4 focus:outline-none">
+              <MomentsPanel c={c} onChange={setC} />
             </TabPanel>
             <TabPanel value="figure" className="flex max-w-[560px] flex-col gap-4 focus:outline-none">
               {tab === 'figure' && (

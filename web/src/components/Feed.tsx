@@ -7,6 +7,7 @@ import { EFFECT_ICON, EmptyState, GameIcon } from '../ui/GameIcon.tsx';
 
 const Override = lazy(() => import('./FeedGm.tsx').then((x) => ({ default: x.Override })));
 const GreenHint = lazy(() => import('./FeedGm.tsx').then((x) => ({ default: x.GreenHint })));
+const Moment = lazy(() => import('./FeedGm.tsx').then((x) => ({ default: x.Moment })));
 
 const time = (t: number) => new Date(t).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 
@@ -61,6 +62,7 @@ export function Feed({ limit = 50, gm = false, only }: { limit?: number; gm?: bo
                   {g.correctionNote && ` Исправление: ${g.correctionNote}`}
                   <Suspense fallback={null}>
                     <Override r={r} />
+                    <Moment r={r} />
                     <GreenHint rollId={r.id} />
                   </Suspense>
                 </div>

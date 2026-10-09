@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { EFFECTS, EFFECT_LABELS, type Effect } from '@zg/shared';
+import { EFFECTS, EFFECT_LABELS, MOMENT_KINDS, MOMENT_KIND_LABELS, type Effect, type MomentKind } from '@zg/shared';
 import type { FeedRoll } from '../lib/feed.ts';
 import { emitGm } from '../lib/socket.ts';
 import { api } from '../lib/api.ts';
 import { dismissGreen, useGreenSuggestions } from '../lib/suggestions.ts';
-import { Button, EFFECT_ICON, GameIcon, Input, Select, toast } from '../ui/index.ts';
+import { Button, EFFECT_ICON, GameIcon, Input, MOMENT_ICON, Select, toast } from '../ui/index.ts';
 
 // Мастерская часть строки ленты: исправить бросок, подсказка зелёной магии. Отдельный чанк: игроку не нужен.
 
@@ -82,6 +82,65 @@ export function GreenHint({ rollId }: { rollId: string }) {
       <Button size="sm" variant="ghost" onClick={() => dismissGreen(rollId)}>
         Нет
       </Button>
+    </div>
+  );
+}
+
+/** «Момент» (этап 47): выдать памятный момент автору броска. Вид подставляется по исходу, заголовок — из подписи. */
+export function Moment({ r }: { r: FeedRoll }) {
+  const [open, setOpen] = useState(false);
+  const [kind, setKind] = useState<MomentKind>(r.effect === 'crit' ? 'crit' : r.effect === 'complication' ? 'fumble' : 'custom');
+  const [title, setTitle] = useState(r.label || (r.effect === 'crit' ? 'Двадцатка' : r.effect === 'complication' ? 'Единица' : ''));
+  const [text, setText] = useState('');
+  const [busy, setBusy] = useState(false);
+  if (!r.character) return null;
+  if (!open)
+    return (
+      <button type="button" className="linkish ml-2" onClick={() => setOpen(true)}>
+        Момент
+      </button>
+    );
+  return (
+    <div className="mt-2 grid gap-2 rounded-control border border-solid border-border bg-surface p-3 text-text">
+      <div className="grid gap-2 @lg/main:grid-cols-[200px_minmax(0,1fr)]">
+        <Select
+          aria-label="Вид момента"
+          value={kind}
+          onValueChange={(v) => setKind(v as MomentKind)}
+          options={MOMENT_KINDS.map((k) => ({
+            value: k,
+            label: (
+              <span className="inline-flex items-center gap-2">
+                <GameIcon name={MOMENT_ICON[k]} className="text-muted" />
+                {MOMENT_KIND_LABELS[k]}
+              </span>
+            ),
+          }))}
+        />
+        <Input aria-label="Заголовок" placeholder="Заголовок (увидит игрок и стол)" value={title} maxLength={80} onChange={(e) => setTitle(e.target.value)} />
+      </div>
+      <Input aria-label="Пояснение" placeholder="Пояснение (необязательно, увидит игрок)" value={text} maxLength={400} onChange={(e) => setText(e.target.value)} />
+      <div className="flex gap-2">
+        <Button
+          size="sm"
+          variant="primary"
+          disabled={busy || !title.trim()}
+          onClick={async () => {
+            setBusy(true);
+            const res = await api('POST', '/api/gm/moments', { rollId: r.id, kind, title, text });
+            setBusy(false);
+            if (res.ok) {
+              setOpen(false);
+              toast(`Момент выдан: ${r.character}`);
+            } else toast.error(res.message ?? 'Не получилось');
+          }}
+        >
+          Выдать
+        </Button>
+        <Button size="sm" variant="ghost" onClick={() => setOpen(false)}>
+          Отмена
+        </Button>
+      </div>
     </div>
   );
 }
