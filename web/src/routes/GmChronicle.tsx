@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AnimatePresence, m } from 'motion/react';
-import { QUIZ_MAX, QUIZ_OPTIONS, type GmChapter, type GmSessionItem, type QuizQuestion } from '@zg/shared';
+import { PHOTO_MAX, QUIZ_MAX, QUIZ_OPTIONS, type GmChapter, type GmSessionItem, type QuizQuestion } from '@zg/shared';
 import { api } from '../lib/api.ts';
 import { useConnection, useSocketEvent } from '../lib/socket.ts';
 import { spring } from '../lib/motion.tsx';
 import { cn } from '../lib/cn.ts';
-import { Badge, Button, Card, CardTitle, Field, Input, Select, Skeleton, Textarea, toast } from '../ui/index.ts';
+import { Badge, Button, buttonVariants, Card, CardTitle, Field, Input, Select, Skeleton, Textarea, toast } from '../ui/index.ts';
+import { Pic } from '../components/Pic.tsx';
+import { uploadImage } from '../lib/uploadImage.ts';
 
 // Летопись (этап 43): мастер пишет главу по сессии (черновик — Claude), правит, составляет викторину и публикует.
 
@@ -160,6 +162,8 @@ function Editor({ sessions, chapter, onDone, onSaved }: { sessions: GmSessionIte
       </div>
       <Field label="Текст главы">{(id) => <Textarea id={id} rows={14} value={text} maxLength={30000} onChange={(e) => setText(e.target.value)} />}</Field>
 
+      {chapter ? <ChapterPhotos chapter={chapter} onChanged={onSaved} /> : <p className="m-0 text-[13.6px] text-muted">Фото сессии можно добавить, когда глава сохранена.</p>}
+
       <div className="grid gap-3 rounded-control border border-solid border-border p-3">
         <div className="flex flex-wrap items-center gap-2">
           <b className="grow">Что ты помнишь? · {quiz.length ? `${quiz.length} ${quiz.length === 1 ? 'вопрос' : 'вопроса'}` : 'без викторины'}</b>
@@ -252,6 +256,75 @@ function ChapterItem({ c, onEdit }: { c: GmChapter; onEdit: () => void }) {
           {confirm ? 'Точно удалить?' : 'Удалить'}
         </Button>
       </div>
+    </div>
+  );
+}
+
+/** Фото сессии в главе (этап 53): загрузить (можно несколько), подпись, удалить. Игроки видят, когда глава опубликована. */
+function ChapterPhotos({ chapter, onChanged }: { chapter: GmChapter; onChanged: (c: GmChapter) => void }) {
+  const [busy, setBusy] = useState(false);
+  const upload = async (files: FileList | null) => {
+    if (!files?.length) return;
+    setBusy(true);
+    let last: GmChapter | null = null;
+    for (const f of Array.from(files).slice(0, PHOTO_MAX - chapter.photos.length)) {
+      try {
+        const res = await uploadImage(`/api/gm/chronicle/${encodeURIComponent(chapter.id)}/photos`, f);
+        if (res.ok) last = (await res.json()) as GmChapter;
+        else toast.error(`«${f.name}» не загрузилось`);
+      } catch {
+        toast.error('Нет связи');
+        break;
+      }
+    }
+    setBusy(false);
+    if (last) {
+      onChanged(last);
+      toast('Фото добавлены');
+    }
+  };
+  const caption = async (pid: string, text: string) => {
+    const r = await api<GmChapter>('POST', `/api/gm/chronicle/photos/${encodeURIComponent(pid)}`, { caption: text });
+    if (r.ok) onChanged(r.data);
+  };
+  const remove = async (pid: string) => {
+    const r = await api<GmChapter>('POST', `/api/gm/chronicle/photos/${encodeURIComponent(pid)}/delete`);
+    if (r.ok) {
+      onChanged(r.data);
+      toast('Фото удалено');
+    }
+  };
+  return (
+    <div className="grid gap-2 rounded-control border border-solid border-border p-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <b className="grow">
+          Фото сессии · {chapter.photos.length} из {PHOTO_MAX}
+        </b>
+        <label className={cn(buttonVariants({ size: 'sm' }), (busy || chapter.photos.length >= PHOTO_MAX) && 'pointer-events-none opacity-50')}>
+          {busy ? 'Загружаю…' : 'Добавить фото'}
+          <input type="file" accept="image/*" multiple className="sr-only" onChange={(e) => void upload(e.target.files)} disabled={busy} />
+        </label>
+      </div>
+      {chapter.photos.length > 0 && (
+        <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2 p-0">
+          {chapter.photos.map((p) => (
+            <li key={p.id} className="grid gap-1">
+              <Pic image={p.image} size="thumb" className="aspect-square w-full rounded-control" loading="lazy" />
+              <Input
+                aria-label="Подпись"
+                defaultValue={p.caption}
+                maxLength={200}
+                placeholder="Подпись"
+                onBlur={(e) => e.target.value !== p.caption && void caption(p.id, e.target.value)}
+              />
+              <Button size="sm" variant="ghost" onClick={() => void remove(p.id)}>
+                Удалить
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="m-0 text-[12.5px] text-muted">Игроки видят фото, когда глава опубликована: под главой и в общем «Альбоме». Снимаете людей за столом — спросите их согласия.</p>
     </div>
   );
 }
