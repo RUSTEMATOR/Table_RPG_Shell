@@ -5,6 +5,7 @@ import { Feed } from '../components/Feed.tsx';
 import { OpponentBox } from '../components/OpponentBox.tsx';
 import { RollPanel } from '../components/RollPanel.tsx';
 import { OverloadPanel } from '../components/OverloadPanel.tsx';
+import { DowntimePanel } from '../components/DowntimePanel.tsx';
 import { StatusPanel } from '../components/StatusPanel.tsx';
 import { api } from '../lib/api.ts';
 import { useSocketEvent } from '../lib/socket.ts';
@@ -68,6 +69,7 @@ export function Gm() {
     <>
       <OpponentBox />
       <RollPanel role="gm" />
+      <DowntimePanel />
       <PartyStrip />
       <Card className="@5xl/gm:hidden">
         <CardTitle>Лента</CardTitle>
