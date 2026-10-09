@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
-import { UNIT_IDS, type Figure, type GmNpc, type UnitId } from '@zg/shared';
+import { ATTITUDE_LABELS, UNIT_IDS, type Figure, type GmNpc, type UnitId } from '@zg/shared';
 import { api } from '../lib/api.ts';
 import { useConnection, useSocketEvent } from '../lib/socket.ts';
 import { AnimatePresence, m } from 'motion/react';
@@ -153,10 +153,15 @@ function NpcEditor({ n, onChange }: { n: GmNpc; onChange: (n: GmNpc) => void }) 
 
   return (
     <Card className={cn((n.shown || n.opponent) && 'outline-2 outline-offset-[-2px] outline-accent')}>
-      {(n.opponent || n.shown) && (
-        <div className="flex gap-2">
+      {(n.opponent || n.shown || n.acquaintances.length > 0) && (
+        <div className="flex flex-wrap items-center gap-2">
           {n.opponent && <Badge tone="accent">Противник сессии</Badge>}
           {n.shown && <Badge tone="ok">Портрет на столе</Badge>}
+          {n.acquaintances.length > 0 && (
+            <span className="text-[13px] text-muted">
+              Знакомы: {n.acquaintances.map((a) => `${a.characterName}${a.attitude !== 'unknown' ? ` (${ATTITUDE_LABELS[a.attitude].toLowerCase()})` : ''}`).join(', ')}
+            </span>
+          )}
         </div>
       )}
       <div className="grid items-start gap-4 @xl/main:grid-cols-[auto_minmax(0,1fr)]">
