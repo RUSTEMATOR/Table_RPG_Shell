@@ -1,8 +1,13 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import { ChapterAnswerSchema, ChapterDraftSchema, ChapterListPlayerSchema, ChapterPatchSchema, ChapterWriteSchema } from '@zg/shared';
+import { ChapterAnswerSchema, ChapterDraftSchema, ChapterListPlayerSchema, ChapterPatchSchema, ChapterWriteSchema, PhotoCaptionSchema } from '@zg/shared';
+import { IMAGE_BODY_LIMIT, IMAGE_TYPES } from '../domain/media.ts';
 import { generateText, type ClaudeFailure } from '../ai/claude/client.ts';
 import { requireGm } from '../auth/requireGm.ts';
 import {
+  addPhoto,
+  captionPhoto,
+  deletePhoto,
+  getPhoto,
   answerQuiz,
   chapterForGm,
   chapterForPlayer,
@@ -62,6 +67,37 @@ export async function playerChronicleRoutes(app: FastifyInstance) {
 
 export async function gmChronicleRoutes(app: FastifyInstance) {
   app.addHook('onRequest', requireGm);
+  app.addContentTypeParser(IMAGE_TYPES, { parseAs: 'buffer', bodyLimit: IMAGE_BODY_LIMIT }, (_req, body, done) => done(null, body));
+
+  // фото сессии (этап 53)
+  app.post<{ Params: { id: string } }>('/api/gm/chronicle/:id/photos', async (request, reply) => {
+    const r = getChapter(request.auth!.room.id, request.params.id);
+    if (!r) return reply.code(404).send({ error: 'not_found' });
+    if (!Buffer.isBuffer(request.body) || request.body.length === 0) return reply.code(400).send({ error: 'no_image' });
+    let res;
+    try {
+      res = await addPhoto(r, request.body);
+    } catch (err) {
+      request.log.warn({ err }, 'chronicle: фото не обработалось');
+      return reply.code(400).send({ error: 'bad_image', message: 'Не получилось прочитать картинку' });
+    }
+    if (res === 'too_many') return reply.code(409).send({ error: 'too_many', message: 'Не больше 24 фото в главе' });
+    return chapterForGm(getChapter(r.roomId, r.id)!);
+  });
+  app.post<{ Params: { pid: string } }>('/api/gm/chronicle/photos/:pid', async (request, reply) => {
+    const b = PhotoCaptionSchema.safeParse(request.body);
+    if (!b.success) return reply.code(400).send({ error: 'bad_request' });
+    const p = getPhoto(request.auth!.room.id, request.params.pid);
+    if (!p) return reply.code(404).send({ error: 'not_found' });
+    captionPhoto(p, b.data.caption);
+    return chapterForGm(getChapter(p.roomId, p.chapterId)!);
+  });
+  app.post<{ Params: { pid: string } }>('/api/gm/chronicle/photos/:pid/delete', async (request, reply) => {
+    const p = getPhoto(request.auth!.room.id, request.params.pid);
+    if (!p) return reply.code(404).send({ error: 'not_found' });
+    deletePhoto(p);
+    return chapterForGm(getChapter(p.roomId, p.chapterId)!);
+  });
 
   app.get('/api/gm/chronicle', async (request) => listChaptersForGm(request.auth!.room.id));
   app.get('/api/gm/sessions', async (request) => listSessionsForGm(request.auth!.room.id));

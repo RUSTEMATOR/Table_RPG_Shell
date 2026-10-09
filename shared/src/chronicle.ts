@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ImagePublicSchema, type GmImage } from './media.ts';
 
 // Летопись (этап 43): главы по сессиям и викторина «Что ты помнишь?». Игроку — только опубликованные главы,
 // вопросы без верных ответов; верные открываются вместе с его результатом после ответа.
@@ -54,11 +55,18 @@ export const QuizResultSchema = z.strictObject({
   total: z.number().int(),
   at: z.number(),
 });
+export const PHOTO_MAX = 24;
+export const PhotoPlayerSchema = z.strictObject({ id: z.string(), caption: z.string(), image: ImagePublicSchema });
+export type PhotoPlayer = z.infer<typeof PhotoPlayerSchema>;
+export const PhotoCaptionSchema = z.strictObject({ caption: z.string().trim().max(200) });
+
 export const ChapterPlayerSchema = z.strictObject({
   id: z.string(),
   title: z.string(),
   text: z.string(),
   publishedAt: z.number(),
+  /** Фото сессии (этап 53). */
+  photos: z.array(PhotoPlayerSchema),
   quiz: z.array(QuizQuestionPlayerSchema).nullable(),
   result: QuizResultSchema.nullable(),
 });
@@ -86,6 +94,7 @@ export interface GmChapter {
   status: ChapterStatus;
   publishedAt: number | null;
   answers: GmChapterAnswer[];
+  photos: { id: string; caption: string; image: GmImage }[];
   createdAt: number;
   updatedAt: number;
 }

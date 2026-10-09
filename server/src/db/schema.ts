@@ -242,6 +242,29 @@ export const chapter = sqliteTable(
   (t) => [index('chapter_room_idx').on(t.roomId, t.publishedAt)],
 );
 
+// Фото сессии в главе (этап 53): видимость — как у главы. Файл — общий конвейер картинок (media.ts).
+export const chapterPhoto = sqliteTable(
+  'chapter_photo',
+  {
+    id: text('id').primaryKey(),
+    roomId: text('room_id')
+      .notNull()
+      .references(() => room.id, { onDelete: 'cascade' }),
+    chapterId: text('chapter_id')
+      .notNull()
+      .references(() => chapter.id, { onDelete: 'cascade' }),
+    caption: text('caption').notNull().default(''),
+    sort: integer('sort').notNull().default(0),
+    imageFile: text('image_file'),
+    imageW: integer('image_w'),
+    imageH: integer('image_h'),
+    imageBytes: integer('image_bytes'),
+    imageHash: text('image_hash'),
+    createdAt: integer('created_at').notNull(),
+  },
+  (t) => [index('chapter_photo_chapter_idx').on(t.chapterId, t.sort)],
+);
+
 // Ответ игрока на викторину главы: один на участника.
 export const chapterAnswer = sqliteTable(
   'chapter_answer',

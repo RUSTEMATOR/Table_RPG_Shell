@@ -82,7 +82,7 @@ export function removeImage(file: string | null): void {
  * пока не досчитано — hash: null, превью отдаёт 404, и клиент берёт полный файл.
  */
 export async function backfillMedia(log: { info: (o: object, m: string) => void; warn: (o: object, m: string) => void }): Promise<void> {
-  const tables = [schema.scene, schema.npc, schema.mapPlace] as const;
+  const tables = [schema.scene, schema.npc, schema.mapPlace, schema.chapterPhoto] as const;
   let n = 0;
   for (const t of tables) {
     const rows = db.select({ id: t.id, imageFile: t.imageFile }).from(t).all();
@@ -112,6 +112,14 @@ export async function backfillMedia(log: { info: (o: object, m: string) => void;
 export function mediaAllowed(roomId: string, role: string, requested: string): boolean {
   // превью <id>.t.webp живёт по правилам своего полного файла
   const file = requested.replace(/\.t\.webp$/, '.webp');
+  // фото сессии (этап 53): как глава — мастеру всегда, игрокам — если глава опубликована; столу — нет
+  const photo = db
+    .select({ status: schema.chapter.status })
+    .from(schema.chapterPhoto)
+    .innerJoin(schema.chapter, eq(schema.chapter.id, schema.chapterPhoto.chapterId))
+    .where(and(eq(schema.chapterPhoto.roomId, roomId), eq(schema.chapterPhoto.imageFile, file)))
+    .get();
+  if (photo) return role === 'gm' || (role === 'player' && photo.status === 'published');
   const placeRow = db
     .select({ visible: schema.mapPlace.visible, kind: schema.mapPlace.kind })
     .from(schema.mapPlace)

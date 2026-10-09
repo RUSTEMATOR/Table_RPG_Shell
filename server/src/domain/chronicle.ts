@@ -1,11 +1,23 @@
 import { and, asc, desc, eq, gte, isNotNull, lte } from 'drizzle-orm';
 import { z } from 'zod';
-import { ChapterPlayerSchema, EFFECT_LABELS, QUIZ_OPTIONS, QuizSchema, type ChapterPlayer, type Effect, type GmChapter, type GmSessionItem, type QuizQuestion } from '@zg/shared';
+import {
+  ChapterPlayerSchema,
+  EFFECT_LABELS,
+  PHOTO_MAX,
+  QUIZ_OPTIONS,
+  QuizSchema,
+  type ChapterPlayer,
+  type Effect,
+  type GmChapter,
+  type GmSessionItem,
+  type QuizQuestion,
+} from '@zg/shared';
 import { newId } from '../auth/tokens.ts';
 import { db, schema } from '../db/client.ts';
 import { pushToPlayers } from '../push/send.ts';
 import { publish } from '../realtime/publish.ts';
 import { SUMMARY_LORE } from './data.ts';
+import { imageGm, imagePublic, removeImage, storeImage } from './media.ts';
 import { loadOwnedCharacter } from './repo.ts';
 import { awardSpark } from './sparks.ts';
 import { notifyCharacterChanged } from '../realtime/notify.ts';
@@ -14,6 +26,11 @@ import { notifyCharacterChanged } from '../realtime/notify.ts';
 // Игроку — только опубликованные главы; вопросы викторины без верных ответов, пока он не ответил.
 
 export type ChapterRow = typeof schema.chapter.$inferSelect;
+export type PhotoRow = typeof schema.chapterPhoto.$inferSelect;
+
+export function photoRows(chapterId: string): PhotoRow[] {
+  return db.select().from(schema.chapterPhoto).where(eq(schema.chapterPhoto.chapterId, chapterId)).orderBy(asc(schema.chapterPhoto.sort), asc(schema.chapterPhoto.createdAt)).all();
+}
 type AnswerRow = typeof schema.chapterAnswer.$inferSelect;
 
 export function quizOf(r: ChapterRow): QuizQuestion[] | null {
@@ -51,6 +68,9 @@ export function chapterForPlayer(r: ChapterRow, memberId: string): ChapterPlayer
     title: r.title,
     text: r.text,
     publishedAt: r.publishedAt ?? 0,
+    photos: photoRows(r.id)
+      .filter((p) => p.imageFile)
+      .map((p) => ({ id: p.id, caption: p.caption, image: imagePublic(p)! })),
     quiz: quiz ? quiz.map((q) => ({ q: q.q, options: q.options })) : null,
     result: quiz && a ? { answers: parseAnswers(a.answers), correct: quiz.map((q) => q.answer), score: a.score, total: quiz.length, at: a.createdAt } : null,
   });
@@ -89,6 +109,9 @@ export function chapterForGm(r: ChapterRow): GmChapter {
     status: r.status,
     publishedAt: r.publishedAt,
     answers: quiz ? answersForGm(r.roomId, r.id, quiz.length) : [],
+    photos: photoRows(r.id)
+      .filter((p) => p.imageFile)
+      .map((p) => ({ id: p.id, caption: p.caption, image: imageGm(p)! })),
     createdAt: r.createdAt,
     updatedAt: r.updatedAt,
   };
@@ -200,6 +223,7 @@ export function setPublished(r: ChapterRow, on: boolean): ChapterRow {
 }
 
 export function deleteChapter(r: ChapterRow): void {
+  for (const p of photoRows(r.id)) removeImage(p.imageFile);
   db.delete(schema.chapter).where(eq(schema.chapter.id, r.id)).run();
   if (r.status === 'published') for (const m of players(r.roomId)) publish(r.roomId, { kind: 'member', memberId: m }, 'chronicle:removed', { id: r.id });
   notifyGm(r);
@@ -328,4 +352,44 @@ export function parseQuizDraft(text: string): QuizQuestion[] | null {
   } catch {
     return null;
   }
+}
+
+// ---- фото сессии (этап 53) ----
+
+export function getPhoto(roomId: string, id: string): PhotoRow | undefined {
+  return db
+    .select()
+    .from(schema.chapterPhoto)
+    .where(and(eq(schema.chapterPhoto.roomId, roomId), eq(schema.chapterPhoto.id, id)))
+    .get();
+}
+
+function touched(chapterId: string): ChapterRow | undefined {
+  const r = db.select().from(schema.chapter).where(eq(schema.chapter.id, chapterId)).get();
+  if (!r) return undefined;
+  notifyPlayers(r);
+  notifyGm(r);
+  return r;
+}
+
+export async function addPhoto(r: ChapterRow, input: Buffer): Promise<'ok' | 'too_many'> {
+  const list = photoRows(r.id);
+  if (list.length >= PHOTO_MAX) return 'too_many';
+  const img = await storeImage(input);
+  db.insert(schema.chapterPhoto)
+    .values({ id: newId(), roomId: r.roomId, chapterId: r.id, caption: '', sort: (list[list.length - 1]?.sort ?? 0) + 1, ...img, createdAt: Date.now() })
+    .run();
+  touched(r.id);
+  return 'ok';
+}
+
+export function captionPhoto(p: PhotoRow, caption: string): void {
+  db.update(schema.chapterPhoto).set({ caption }).where(eq(schema.chapterPhoto.id, p.id)).run();
+  touched(p.chapterId);
+}
+
+export function deletePhoto(p: PhotoRow): void {
+  db.delete(schema.chapterPhoto).where(eq(schema.chapterPhoto.id, p.id)).run();
+  removeImage(p.imageFile);
+  touched(p.chapterId);
 }

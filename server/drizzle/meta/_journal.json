@@ -183,6 +183,13 @@
       "when": 1791544308735,
       "tag": "0025_shell_unlock",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "6",
+      "when": 1791544557653,
+      "tag": "0026_chapter_photo",
+      "breakpoints": true
     }
   ]
 }
