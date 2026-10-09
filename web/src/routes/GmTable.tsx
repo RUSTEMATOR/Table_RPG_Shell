@@ -6,6 +6,7 @@ import { AnimatePresence, m } from 'motion/react';
 import { spring } from '../lib/motion.tsx';
 import { cn } from '../lib/cn.ts';
 import { Badge, Button, buttonVariants, Card, CardTitle, Field, Input, Textarea, toast } from '../ui/index.ts';
+import { AtmospherePanel } from '../components/AtmospherePanel.tsx';
 import { Pic } from '../components/Pic.tsx';
 import { uploadImage } from '../lib/uploadImage.ts';
 
@@ -40,6 +41,7 @@ function Scenes() {
 
   return (
     <>
+      <AtmospherePanel />
       <Card>
         <div className="flex flex-wrap items-center gap-3">
           <CardTitle className="grow">Сцены для стола</CardTitle>
