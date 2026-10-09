@@ -45,6 +45,10 @@ export function FigureCredits() {
           <a href="https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0" target="_blank" rel="noreferrer" className="text-link">
             KayKit Medieval Hexagon Pack
           </a>{' '}
+          и{' '}
+          <a href="https://github.com/KayKit-Game-Assets/KayKit-Halloween-Bits-1.0" target="_blank" rel="noreferrer" className="text-link">
+            Halloween Bits
+          </a>{' '}
           Кея Лаусберга (Kay Lousberg), CC0; противники в 3D — его же Character Pack: Adventurers и Skeletons, CC0.
         </p>
         <p className="m-0 text-[14px] text-muted">

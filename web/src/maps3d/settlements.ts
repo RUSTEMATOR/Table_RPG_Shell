@@ -182,20 +182,28 @@ export function settlementOf(p: PlaceLike, H: Heights): Instance[] {
       add('church', p.x, p.y, K, turn(), 8);
       around('well', 9, 14, K, 4);
       houses(1, 12, 18);
+      // погост у храма (этап 58, KayKit Halloween Bits)
+      for (let i = 0; i < 4; i++) around(r() < 0.5 ? 'gravestone' : 'gravemarker', 10, 16, K, 1.5);
       break;
     case 'crypt':
-      add('ruin', p.x, p.y, K, turn(), 8);
-      for (let i = 0; i < 4; i++) around(r() < 0.5 ? 'rock_c' : 'rock_d', 8, 16, 14, 2);
-      around('trees_cut', 12, 20, 9, 6);
+      // склеп среди могил и мёртвых деревьев (этап 58)
+      add('crypt_h', p.x, p.y, K, turn(), 9);
+      for (let i = 0; i < 6; i++) around(r() < 0.4 ? 'grave_a' : r() < 0.7 ? 'grave_b' : 'gravestone', 10, 18, K, 2.5);
+      for (let i = 0; i < 3; i++) around(r() < 0.5 ? 'tree_dead_l' : 'tree_dead_m', 14, 22, K, 4);
+      around('post_lantern', 8, 11, K, 2);
+      around('fence_iron', 16, 20, K, 4);
       break;
     case 'cult': {
       add('stage', p.x, p.y, K * 0.8, turn(), 6);
+      add('shrine', p.x, p.y, K * 1.6, turn(), 3);
       for (let i = 0; i < 7; i++) {
         const a = (i / 7) * Math.PI * 2;
         out.push({ model: 'rock_c', x: p.x + Math.cos(a) * 13, y: p.y + Math.sin(a) * 13, base: H.at(p.x, p.y) - 0.2, rot: a, scale: 22 });
       }
       flag(p.x + 4, p.y - 4);
       around('tent', 18, 24, 16, 5);
+      for (let i = 0; i < 3; i++) around('lantern', 10, 16, K * 1.4, 1.5);
+      around('tree_dead_m', 18, 26, K, 4);
       break;
     }
     case 'vampire':
@@ -204,6 +212,10 @@ export function settlementOf(p: PlaceLike, H: Heights): Instance[] {
       around('tent', 9, 15, 16, 5);
       flag(p.x + 5, p.y + 5);
       around('barrel', 8, 14, 16, 2);
+      // гробы, фонари и мёртвые деревья (этап 58)
+      for (let i = 0; i < 2; i++) around('coffin', 6, 12, K, 2.5);
+      for (let i = 0; i < 2; i++) around('post_lantern', 9, 14, K, 2);
+      for (let i = 0; i < 2; i++) around(r() < 0.5 ? 'tree_dead_l' : 'tree_dead_m', 14, 22, K, 4);
       break;
     case 'lake':
       for (let i = 0; i < 4; i++) out.push({ model: 'lily', x: p.x + (r() - 0.5) * 30, y: p.y + (r() - 0.5) * 20, base: -1.1, rot: r() * 6.28, scale: 22 });
