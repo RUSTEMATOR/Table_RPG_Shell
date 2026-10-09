@@ -1,4 +1,7 @@
-// Модели 3D-карты из KayKit Medieval Hexagon Pack 1.0 (Kay Lousberg, CC0) — закреплённый коммит.
+// Модели 3D-карты из KayKit Medieval Hexagon Pack 1.0 и KayKit Halloween Bits 1.0 (Kay Lousberg, CC0) — закреплённые коммиты.
+// Halloween Bits (этап 58: крипты, культы, лагеря вампиров) — в пять раз крупнее и со своей текстурой, а карта рисует все модели
+// одним материалом с атласом Medieval Hexagon. Поэтому модели Halloween уменьшаются (HALLOWEEN.scale), а UV каждой вершины
+// переводятся на ближайший по цвету тексель атласа Medieval (палитры у KayKit — плашки цвета, оттенки близки); своя текстура выбрасывается.
 // Берёт только отобранные модели (MODELS ниже), ничего не перерисовывает.
 // Здания в наборе — в четырёх цветах, которые отличаются только сдвигом U у «цветных» вершин (синий 0, красный 1/8,
 // жёлтый 2/4·1/8… см. TEAM_SHIFT). Поэтому берётся только синий вариант, а цветные вершины помечаются атрибутом _TEAM (0/1):
@@ -17,10 +20,36 @@ import { Document, NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { dedup, getBounds, meshopt, mergeDocuments, prune, quantize, unpartition, weld } from '@gltf-transform/functions';
 import { MeshoptEncoder } from 'meshoptimizer';
+import sharp from 'sharp';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../..');
 const REPO = 'https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0.git';
 const SHA = '84fa4e91af6a88989be7c99e0891cede11f2ca38';
+
+const HALLOWEEN = {
+  repo: 'https://github.com/KayKit-Game-Assets/KayKit-Halloween-Bits-1.0.git',
+  sha: '6dc69bf6b2fa766a985754f35ec6a0324090e6c6',
+  dir: 'addons/kaykit_halloween_bits/Assets/gltf',
+  env: 'KAYKIT_HALLOWEEN_DIR',
+  scale: 0.2,
+};
+// [id, файл в Assets/gltf без расширения]
+const HALLOWEEN_MODELS = [
+  ['crypt_h', 'crypt'],
+  ['grave_a', 'grave_A'],
+  ['grave_b', 'grave_B'],
+  ['gravestone', 'gravestone'],
+  ['gravemarker', 'gravemarker_A'],
+  ['tree_dead_l', 'tree_dead_large'],
+  ['tree_dead_m', 'tree_dead_medium'],
+  ['shrine', 'shrine_candles'],
+  ['post_lantern', 'post_lantern'],
+  ['lantern', 'lantern_standing'],
+  ['arch_gate', 'arch_gate'],
+  ['coffin', 'coffin'],
+  ['fence_iron', 'fence'],
+  ['pumpkin', 'pumpkin_orange_jackolantern'],
+];
 
 /** Сдвиг U цветных вершин относительно синего варианта. */
 export const TEAM_SHIFT = { blue: 0, red: 0.125, yellow: 0.25, green: 0.375 };
@@ -90,6 +119,78 @@ const MODELS = [
   ['stone', 'decoration/props/resource_stone'],
 ];
 
+function clone(repo, sha, env) {
+  if (process.env[env]) return process.env[env];
+  const dir = join(tmpdir(), `kaykit-${sha.slice(0, 8)}`);
+  if (!existsSync(join(dir, '.git'))) {
+    rmSync(dir, { recursive: true, force: true });
+    execFileSync('git', ['init', '-q', dir]);
+    execFileSync('git', ['-C', dir, 'remote', 'add', 'origin', repo]);
+    execFileSync('git', ['-C', dir, 'fetch', '-q', '--depth', '1', 'origin', sha], { stdio: 'inherit' });
+    execFileSync('git', ['-C', dir, 'checkout', '-q', 'FETCH_HEAD']);
+  }
+  return dir;
+}
+
+/** Пиксели PNG: {w, h, data(RGBA)}. */
+async function pixels(file) {
+  const { data, info } = await sharp(file).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  return { w: info.width, h: info.height, data };
+}
+
+/** Палитра атласа: уникальные цвета → UV центра первого такого текселя. */
+function palette(img) {
+  const seen = new Map();
+  for (let y = 0; y < img.h; y++)
+    for (let x = 0; x < img.w; x++) {
+      const i = (y * img.w + x) * 4;
+      const key = (img.data[i] << 16) | (img.data[i + 1] << 8) | img.data[i + 2];
+      if (!seen.has(key)) seen.set(key, [(x + 0.5) / img.w, (y + 0.5) / img.h]);
+    }
+  return [...seen].map(([k, uv]) => ({ r: k >> 16, g: (k >> 8) & 255, b: k & 255, uv }));
+}
+
+/** UV вершин модели Halloween → ближайший по цвету тексель атласа Medieval; своя текстура убирается. */
+function remap(doc, img, pal) {
+  const cache = new Map();
+  const nearest = (r, g, b) => {
+    const key = (r << 16) | (g << 8) | b;
+    let best = cache.get(key);
+    if (best) return best;
+    let d = Infinity;
+    for (const c of pal) {
+      const e = (c.r - r) ** 2 * 0.3 + (c.g - g) ** 2 * 0.59 + (c.b - b) ** 2 * 0.11;
+      if (e < d) {
+        d = e;
+        best = c.uv;
+      }
+    }
+    cache.set(key, best);
+    return best;
+  };
+  for (const mesh of doc.getRoot().listMeshes())
+    for (const prim of mesh.listPrimitives()) {
+      const uvA = prim.getAttribute('TEXCOORD_0');
+      if (!uvA) continue;
+      const n = uvA.getCount();
+      const out = new Float32Array(n * 2);
+      const t = [0, 0];
+      for (let v = 0; v < n; v++) {
+        uvA.getElement(v, t);
+        const x = Math.min(img.w - 1, Math.max(0, Math.floor((((t[0] % 1) + 1) % 1) * img.w)));
+        const y = Math.min(img.h - 1, Math.max(0, Math.floor((((t[1] % 1) + 1) % 1) * img.h)));
+        const i = (y * img.w + x) * 4;
+        const uv = nearest(img.data[i], img.data[i + 1], img.data[i + 2]);
+        out[v * 2] = uv[0];
+        out[v * 2 + 1] = uv[1];
+      }
+      prim.setAttribute('TEXCOORD_0', doc.createAccessor().setType('VEC2').setArray(out).setBuffer(doc.getRoot().listBuffers()[0]));
+      uvA.dispose();
+    }
+  for (const m of doc.getRoot().listMaterials()) m.setBaseColorTexture(null);
+  for (const t of doc.getRoot().listTextures()) t.dispose();
+}
+
 function repoDir() {
   if (process.env.KAYKIT_DIR) return process.env.KAYKIT_DIR;
   const dir = join(tmpdir(), `kaykit-hex-${SHA.slice(0, 8)}`);
@@ -136,9 +237,29 @@ async function main() {
   const scene = out.createScene('world');
   const catalog = {};
 
-  for (const [id, path] of MODELS) {
-    const src = await io.read(join(dir, path.replaceAll('{c}', 'blue') + '.gltf'));
-    const team = path.includes('{c}') ? markTeam(src, await io.read(join(dir, path.replaceAll('{c}', 'red') + '.gltf'))) : false;
+  // атлас Medieval — по первой модели: в него же переводятся цвета моделей Halloween
+  const first = await io.read(join(dir, MODELS[0][1].replaceAll('{c}', 'blue') + '.gltf'));
+  const atlasUri = first.getRoot().listTextures()[0]?.getURI();
+  if (!atlasUri) throw new Error('нет атласа Medieval');
+  const atlas = await pixels(join(dir, dirname(MODELS[0][1].replaceAll('{c}', 'blue')), atlasUri));
+  const pal = palette(atlas);
+  const hdir = join(clone(HALLOWEEN.repo, HALLOWEEN.sha, HALLOWEEN.env), HALLOWEEN.dir);
+  const hTex = await pixels(join(hdir, 'halloweenbits_texture.png'));
+
+  const all = [...MODELS.map(([id, path]) => ({ id, path, pack: 'hex' })), ...HALLOWEEN_MODELS.map(([id, file]) => ({ id, path: file, pack: 'halloween' }))];
+  for (const { id, path, pack } of all) {
+    const src = pack === 'hex' ? await io.read(join(dir, path.replaceAll('{c}', 'blue') + '.gltf')) : await io.read(join(hdir, path + '.gltf'));
+    if (pack === 'halloween') {
+      remap(src, hTex, pal);
+      const sc = src.getRoot().getDefaultScene() ?? src.getRoot().listScenes()[0];
+      for (const n of sc.listChildren()) {
+        const k = n.getScale();
+        const t = n.getTranslation();
+        n.setScale([k[0] * HALLOWEEN.scale, k[1] * HALLOWEEN.scale, k[2] * HALLOWEEN.scale]);
+        n.setTranslation([t[0] * HALLOWEEN.scale, t[1] * HALLOWEEN.scale, t[2] * HALLOWEEN.scale]);
+      }
+    }
+    const team = pack === 'hex' && path.includes('{c}') ? markTeam(src, await io.read(join(dir, path.replaceAll('{c}', 'red') + '.gltf'))) : false;
     const srcScene = src.getRoot().getDefaultScene() ?? src.getRoot().listScenes()[0];
     const b = getBounds(srcScene);
     catalog[id] = {
@@ -168,9 +289,9 @@ async function main() {
   mkdirSync(join(root, 'web/public/models'), { recursive: true });
   writeFileSync(join(root, 'web/public/models/world.glb'), glb);
   const lines = Object.entries(catalog).map(([id, m]) => `  ${JSON.stringify(id)}: ${JSON.stringify(m)}`);
-  const head = `"source": ${JSON.stringify(`KayKit Medieval Hexagon Pack 1.0 @ ${SHA.slice(0, 8)}-meshopt`)},\n "teamShift": ${JSON.stringify(TEAM_SHIFT)}`;
+  const head = `"source": ${JSON.stringify(`KayKit Medieval Hexagon Pack 1.0 + Halloween Bits 1.0 @ ${SHA.slice(0, 8)}-${HALLOWEEN.sha.slice(0, 8)}-meshopt`)},\n "teamShift": ${JSON.stringify(TEAM_SHIFT)}`;
   writeFileSync(join(root, 'web/src/maps3d/models.json'), `{\n ${head},\n "models": {\n${lines.join(',\n')}\n }\n}\n`);
-  console.log(`world.glb: ${(glb.byteLength / 1024).toFixed(0)} КБ, моделей: ${MODELS.length}`);
+  console.log(`world.glb: ${(glb.byteLength / 1024).toFixed(0)} КБ, моделей: ${all.length}, цветов в палитре атласа: ${pal.length}`);
 }
 
 await main();
