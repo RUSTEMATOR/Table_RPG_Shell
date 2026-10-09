@@ -12,4 +12,4 @@ export { Switch } from './Switch.tsx';
 export { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from './DropdownMenu.tsx';
 export { Segmented, Tabs, TabPanel, type Option } from './Segmented.tsx';
 export { Toaster, toast } from './Toaster.tsx';
-export { EmptyState, GameIcon, ICON_SET, SPOT_ICON, RUMOR_ICON, EFFECT_ICON, type GameIconName } from './GameIcon.tsx';
+export { EmptyState, GameIcon, ICON_SET, SPOT_ICON, RUMOR_ICON, EFFECT_ICON, MOMENT_ICON, type GameIconName } from './GameIcon.tsx';

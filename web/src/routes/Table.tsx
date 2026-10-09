@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { AnimatePresence, m, MotionConfig } from 'motion/react';
-import { DEMO_ROOM_CODE, EFFECT_LABELS, type TableState } from '@zg/shared';
+import { DEMO_ROOM_CODE, EFFECT_LABELS, type TableMoment, type TableState } from '@zg/shared';
 import { ConnectionDot } from '../components/ConnectionDot.tsx';
 import { api } from '../lib/api.ts';
 import { useFeed } from '../lib/feed.ts';
@@ -19,6 +19,7 @@ import { TvMap } from '../tv/TvMap.tsx';
 import { TvBigRoll } from '../tv/TvBigRoll.tsx';
 import { TvParticles } from '../tv/TvParticles.tsx';
 import { TvSigns, type Sign } from '../tv/TvSigns.tsx';
+import { TvMoments } from '../tv/TvMoments.tsx';
 import { TV_VARS, effectColor, isTableRoll } from '../tv/palette.ts';
 import { EFFECT_ICON, GameIcon } from '../ui/GameIcon.tsx';
 import { play, setSound, useSound } from '../tv/sound.ts';
@@ -44,6 +45,7 @@ function TableScreen({ room, demo }: { room: string; demo: boolean }) {
   const [state, setState] = useState<TableState>({ scene: null, npc: null, map: null });
   const [loaded, setLoaded] = useState(false); // до первого ответа заставку не показываем: иначе она мигнёт перед сценой
   const [signs, setSigns] = useState<Sign[]>([]);
+  const [moments, setMoments] = useState<TableMoment[]>([]);
   const [still, setStill] = useState(() => load('zg:table:still') === '1');
   // Облегчённый режим: ?lite=1, слабое устройство, нет WebGL2 или фон тормозит (кадр дольше 33 мс) — без 3D, частиц и наплыва.
   const [lite, setLite] = useState(() => capabilities.lite());
@@ -67,6 +69,10 @@ function TableScreen({ room, demo }: { room: string; demo: boolean }) {
     if (conn === 'online') void loadState();
   }, [conn, loadState]);
   useSocketEvent('table:state', (s) => setState(s));
+  useSocketEvent('table:moment', (x) => {
+    setMoments((l) => [x, ...l].slice(0, 3));
+    window.setTimeout(() => setMoments((l) => l.filter((y) => y.at !== x.at)), 10000);
+  });
   useSocketEvent('table:sign', (s) => {
     setSigns((l) => [s, ...l.filter((x) => x.character !== s.character)].slice(0, 4));
     window.setTimeout(() => setSigns((l) => l.filter((x) => x.at !== s.at)), 12000);
@@ -204,6 +210,7 @@ function TableScreen({ room, demo }: { room: string; demo: boolean }) {
         </aside>
 
         <TvSigns signs={signs} />
+        <TvMoments list={moments} />
       </div>
     </MotionConfig>
   );

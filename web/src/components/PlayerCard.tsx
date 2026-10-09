@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { cn } from '../lib/cn.ts';
 import { Button, Field, Input, Sheet, Textarea } from '../ui/index.ts';
-import type { PlayerCharacter, PlayerItem, PlayerSheetNote, PlayerTrait } from '@zg/shared';
+import { MOMENT_KIND_LABELS, type MomentPlayer, type PlayerCharacter, type PlayerItem, type PlayerSheetNote, type PlayerTrait } from '@zg/shared';
+import { GameIcon, MOMENT_ICON } from '../ui/GameIcon.tsx';
 import { api } from '../lib/api.ts';
 import { useActivity } from '../lib/activity.ts';
 import {
@@ -119,6 +120,7 @@ export function PlayerCard({
         {(c.items.length > 0 || onChange) && <Items items={c.items} onChange={onChange} />}
         <Notes title="Состояния" picto="bolt" list={c.conditions} />
         <Notes title="Связи" picto="relation" list={c.relations} />
+        {c.moments.length > 0 && <Moments list={c.moments} />}
       </div>
       {empty && <p className="hint">Мир пока присматривается к тебе.</p>}
     </div>
@@ -193,6 +195,43 @@ function Notes({ title, picto, list }: { title: string; picto: string; list: Pla
 type Res = { character: PlayerCharacter | null };
 
 /** Снаряжение. Игрок правит его сам; изменения сразу видит мастер. */
+/** Памятные моменты (этап 47): полка значков по видам; нажатие раскрывает пояснение. */
+function Moments({ list }: { list: MomentPlayer[] }) {
+  const [open, setOpen] = useState<string | null>(null);
+  const when = (t: number) => new Date(t).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+  const cur = open ? list.find((x) => x.id === open) : undefined;
+  return (
+    <div className="slot zg-moments">
+      <Chip k="" label="Памятные моменты" />
+      <ul className="m-0 flex list-none flex-wrap gap-2 p-0 pt-2">
+        {list.map((mo) => (
+          <li key={mo.id}>
+            <button
+              type="button"
+              aria-pressed={open === mo.id}
+              onClick={() => setOpen((o) => (o === mo.id ? null : mo.id))}
+              title={`${MOMENT_KIND_LABELS[mo.kind]} · ${when(mo.at)}`}
+              className={cn(
+                'zg-moment flex cursor-pointer items-center gap-1.5 rounded-full border border-solid border-current bg-transparent px-2.5 py-1 font-ui text-[13px] text-inherit',
+                open !== null && open !== mo.id && 'opacity-60',
+              )}
+            >
+              <GameIcon name={MOMENT_ICON[mo.kind]} className="size-4" />
+              {mo.title}
+            </button>
+          </li>
+        ))}
+      </ul>
+      {cur && (
+        <div className="note mt-2">
+          {MOMENT_KIND_LABELS[cur.kind]} · {when(cur.at)}
+          {cur.text ? `. ${cur.text}` : ''}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Items({ items, onChange }: { items: PlayerItem[]; onChange?: (c: PlayerCharacter) => void }) {
   const [editing, setEditing] = useState<string | 'new' | null>(null);
   useActivity('card', editing !== null ? { kind: 'card.item', isNew: editing === 'new' } : null);

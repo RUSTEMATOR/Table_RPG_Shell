@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { Effect, RumorKind, SpotKind } from '@zg/shared';
+import type { Effect, MomentKind, RumorKind, SpotKind } from '@zg/shared';
 import set from './icons.json';
 import { cn } from '../lib/cn.ts';
 
@@ -36,6 +36,19 @@ export const SPOT_ICON: Record<SpotKind, GameIconName> = {
 };
 
 export const RUMOR_ICON: Record<RumorKind, GameIconName> = { rumor: 'conversation', quest: 'scroll-unfurled' };
+
+/** Памятные моменты (этап 47). */
+export const MOMENT_ICON: Record<MomentKind, GameIconName> = {
+  crit: 'laurel-crown',
+  fumble: 'skull-crack',
+  savior: 'anchor',
+  bravery: 'claw-slashes',
+  wit: 'conversation',
+  luck: 'clover',
+  sacrifice: 'bleeding-wound',
+  discovery: 'position-marker',
+  custom: 'wax-seal',
+};
 
 export const EFFECT_ICON: Record<Effect, GameIconName> = {
   crit: 'laurel-crown',
