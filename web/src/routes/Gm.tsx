@@ -12,13 +12,39 @@ import { api } from '../lib/api.ts';
 import { useSocketEvent } from '../lib/socket.ts';
 import { cn } from '../lib/cn.ts';
 import { errorText } from './errors.ts';
-import { Badge, Button, buttonVariants, Card, CardTitle, Field, Input, Segmented, Skeleton, toast } from '../ui/index.ts';
+import { Badge, Button, buttonVariants, Card, CardTitle, Dialog, DialogContent, Field, Input, Segmented, Skeleton, toast } from '../ui/index.ts';
 
 function memberStatus(m: GmMember): string {
   if (m.role === 'gm') return 'мастер';
   if (m.invitePending) return m.joined ? 'вошёл, выдана новая ссылка' : 'ждёт входа по ссылке';
   if (m.joined) return m.role === 'table' ? 'подключён' : 'вошёл, PIN задан';
   return 'ссылка истекла';
+}
+
+/** QR одноразовой ссылки (этап 55): рисуется в браузере, никуда не отправляется; «Во весь экран» — показать для камеры. */
+function InviteQr({ url, name }: { url: string; name: string }) {
+  const [svg, setSvg] = useState<string | null>(null);
+  const [big, setBig] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    void import('qrcode').then((q) => q.toString(url, { type: 'svg', margin: 1, errorCorrectionLevel: 'M' })).then((x) => alive && setSvg(x));
+    return () => {
+      alive = false;
+    };
+  }, [url]);
+  if (!svg) return null;
+  return (
+    <>
+      <button type="button" onClick={() => setBig(true)} className="w-36 cursor-zoom-in justify-self-start rounded-control border-0 bg-white p-1.5" aria-label="QR во весь экран">
+        <span className="block [&>svg]:block [&>svg]:h-auto [&>svg]:w-full" dangerouslySetInnerHTML={{ __html: svg }} />
+      </button>
+      <Dialog open={big} onOpenChange={setBig}>
+        <DialogContent title={`Приглашение: ${name}`} description="Наведите камеру телефона на код. Ссылка одноразовая.">
+          <span className="mx-auto block w-[min(80vw,420px)] rounded-control bg-white p-3 [&>svg]:block [&>svg]:h-auto [&>svg]:w-full" dangerouslySetInnerHTML={{ __html: svg }} />
+        </DialogContent>
+      </Dialog>
+    </>
+  );
 }
 
 function InviteBox({ invite, name }: { invite: InviteCreated; name: string }) {
@@ -42,6 +68,7 @@ function InviteBox({ invite, name }: { invite: InviteCreated; name: string }) {
         Ссылка для {name}, одноразовая, до {new Date(invite.expiresAt).toLocaleDateString('ru-RU')}:
       </p>
       <code className="font-mono text-[13px] break-all select-all">{url}</code>
+      <InviteQr url={url} name={name} />
       <div className="flex flex-wrap gap-2">
         <Button variant="primary" size="sm" onClick={copy}>
           Копировать

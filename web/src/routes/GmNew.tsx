@@ -1,8 +1,9 @@
-import { useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
-import type { GmDraftView, RollParamsInput } from '@zg/shared';
+import { QUESTIONNAIRE_LABELS, type GmQuestionnaire, type GmDraftView, type RollParamsInput } from '@zg/shared';
 import { GmSlot } from '../components/GmSlot.tsx';
 import { api } from '../lib/api.ts';
+import { useSocketEvent } from '../lib/socket.ts';
 import { OWNER_ERRORS, useCatalog, usePlayers } from '../lib/gm.ts';
 import { load, save } from '../lib/storage.ts';
 import { cn } from '../lib/cn.ts';
@@ -145,8 +146,18 @@ function RollForm() {
   const universes = catalog.universes.filter((u) => !form.source || u.genre === form.source || form.source === 'other');
   const draft = view?.draft as { seed?: string; slots?: unknown[] } | undefined;
 
+  // анкета игрока (этап 55): подставить имя, местоимение, жанр, вселенную и владельца
+  const fromQuestionnaire = (q: GmQuestionnaire) => {
+    const next = { ...form, name: q.answers.name || form.name, pronoun: q.answers.pronoun, source: q.answers.source || form.source, universe: q.answers.universe };
+    setForm(next);
+    save(FORM_KEY, JSON.stringify({ ...next, seed: '' }));
+    setOwner(q.memberId);
+    toast(`Форма заполнена по анкете: ${q.memberName}`);
+  };
+
   return (
     <>
+      <Questionnaires onUse={fromQuestionnaire} />
       <Card>
         <form onSubmit={doRoll} className="grid gap-3">
           <div className="grid gap-3 @lg/main:grid-cols-2">
@@ -319,6 +330,57 @@ function ImportForm() {
           Импортировать
         </Button>
       </form>
+    </Card>
+  );
+}
+
+/** Анкеты игроков без персонажа (этап 55): ответы и «Заполнить форму по анкете». */
+function Questionnaires({ onUse }: { onUse: (q: GmQuestionnaire) => void }) {
+  const [list, setList] = useState<GmQuestionnaire[] | null>(null);
+  const load = useCallback(async () => {
+    const r = await api<GmQuestionnaire[]>('GET', '/api/gm/questionnaires');
+    if (r.ok) setList(r.data);
+  }, []);
+  useEffect(() => {
+    void load();
+  }, [load]);
+  useSocketEvent('gm:questionnaire.changed', () => void load());
+  const open = (list ?? []).filter((q) => !q.hasCharacter);
+  if (!open.length) return null;
+  return (
+    <Card>
+      <CardTitle>Анкеты игроков · {open.length}</CardTitle>
+      {open.map((q) => (
+        <details key={q.memberId} className="group rounded-control border border-solid border-border p-3">
+          <summary className="flex cursor-pointer list-none flex-wrap items-center gap-2 [&::-webkit-details-marker]:hidden">
+            <b className="grow">
+              {q.memberName}
+              {q.answers.name ? ` — «${q.answers.name}»` : ''}
+            </b>
+            <span className="text-[12.5px] text-muted">{[q.sourceLabel, q.universeLabel, q.answers.pronoun].filter(Boolean).join(' · ')}</span>
+            <Button
+              size="sm"
+              variant="primary"
+              onClick={(e) => {
+                e.preventDefault();
+                onUse(q);
+              }}
+            >
+              Заполнить форму по анкете
+            </Button>
+          </summary>
+          <dl className="m-0 mt-2 grid gap-1.5 text-[14px]">
+            {(['concept', 'past', 'wants', 'fears', 'ties', 'avoid'] as const)
+              .filter((k) => q.answers[k])
+              .map((k) => (
+                <div key={k}>
+                  <dt className="font-ui text-xs font-medium tracking-[.06em] text-muted uppercase">{QUESTIONNAIRE_LABELS[k]}</dt>
+                  <dd className="prewrap m-0 font-read">{q.answers[k]}</dd>
+                </div>
+              ))}
+          </dl>
+        </details>
+      ))}
     </Card>
   );
 }

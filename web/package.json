@@ -62,6 +62,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "motion": "^14.0.0",
+    "qrcode": "^1.5.4",
     "radix-ui": "^1.6.7",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
@@ -74,6 +75,7 @@
     "thumbhash": "^0.1.1"
   },
   "devDependencies": {
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@types/three": "^0.186.0",
