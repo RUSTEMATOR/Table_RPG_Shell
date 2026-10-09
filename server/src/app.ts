@@ -31,6 +31,7 @@ import { gmShellRoutes, playerShellRoutes } from './routes/shells.ts';
 import { gmSearchRoutes } from './routes/search.ts';
 import { gmQuestionnaireRoutes, playerQuestionnaireRoutes } from './routes/questionnaire.ts';
 import { gmDatabaseRoutes } from './routes/database.ts';
+import { gmBattleRoutes, publicBattleRoutes } from './routes/battle.ts';
 import { findGmLeak } from './visibility/guard.ts';
 
 declare module 'fastify' {
@@ -96,6 +97,8 @@ export async function buildApp() {
   await app.register(playerQuestionnaireRoutes);
   await app.register(gmQuestionnaireRoutes);
   await app.register(gmDatabaseRoutes);
+  await app.register(gmBattleRoutes);
+  await app.register(publicBattleRoutes);
   await app.register(gmScreenRoutes);
   await app.register(playerDiaryRoutes);
   await app.register(gmSceneRoutes);

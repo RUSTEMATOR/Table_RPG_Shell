@@ -29,6 +29,7 @@ import type { TableMoment } from './moments.ts';
 import type { AcquaintancePlayer } from './acquaintances.ts';
 import type { BestiaryPlayer } from './bestiary.ts';
 import type { TableReaction } from './reactions.ts';
+import type { BattlePublic } from './battle.ts';
 
 export interface ServerToClientEvents {
   'error:forbidden': (payload: { event: string }) => void;
@@ -55,6 +56,9 @@ export interface ServerToClientEvents {
   'table:moment': (payload: TableMoment) => void;
   /** Столу: отклик игрока (этап 52). */
   'table:reaction': (payload: TableReaction) => void;
+  /** Игрокам и столу: поле боя изменилось (этап 60); null — поля нет или закрыто. */
+  'battle:changed': (payload: { battle: BattlePublic | null }) => void;
+  'gm:battle.changed': () => void;
   /** Столу: сцена сменилась. */
   'table:state': (payload: TableState) => void;
   /** Игрокам и столу: открытая часть карты изменилась (уходит, только если она действительно изменилась). Перечитать. */

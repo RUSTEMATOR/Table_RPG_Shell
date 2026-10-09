@@ -458,6 +458,40 @@ export const questionnaire = sqliteTable('questionnaire', {
   updatedAt: integer('updated_at').notNull(),
 });
 
+// Тактическое поле боя (этап 60): одно на комнату. terrain — JSON [{col,row,t}].
+export const battle = sqliteTable('battle', {
+  roomId: text('room_id')
+    .primaryKey()
+    .references(() => room.id, { onDelete: 'cascade' }),
+  title: text('title').notNull().default(''),
+  cols: integer('cols').notNull(),
+  rows: integer('rows').notNull(),
+  terrain: text('terrain').notNull().default('[]'),
+  open: integer('open', { mode: 'boolean' }).notNull().default(false),
+  playerMoves: integer('player_moves', { mode: 'boolean' }).notNull().default(false),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+});
+
+// Фишка на поле: персонаж, противник из библиотеки или метка с подписью. hidden — видит только мастер.
+export const battleToken = sqliteTable(
+  'battle_token',
+  {
+    id: text('id').primaryKey(),
+    roomId: text('room_id')
+      .notNull()
+      .references(() => battle.roomId, { onDelete: 'cascade' }),
+    kind: text('kind', { enum: ['character', 'npc', 'mark'] }).notNull(),
+    refId: text('ref_id'),
+    label: text('label').notNull().default(''),
+    col: integer('col').notNull(),
+    row: integer('row').notNull(),
+    hidden: integer('hidden', { mode: 'boolean' }).notNull().default(false),
+    createdAt: integer('created_at').notNull(),
+  },
+  (t) => [index('battle_token_room_idx').on(t.roomId)],
+);
+
 // Заметки мастера к сессии.
 export const sessionNote = sqliteTable('session_note', {
   sessionId: text('session_id')
