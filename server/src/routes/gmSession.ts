@@ -3,6 +3,7 @@ import { OpponentSchema } from '@zg/shared';
 import { requireGm } from '../auth/requireGm.ts';
 import { getNpc } from '../domain/npc.ts';
 import { activeSession, sessionView, setOpponent, startNewSession } from '../domain/session.ts';
+import { notifyDowntimeSessionChanged } from '../domain/downtime.ts';
 import { pushEnabled, pushToPlayers } from '../push/send.ts';
 import { publish } from '../realtime/publish.ts';
 import { pushTable } from './scenes.ts';
@@ -46,6 +47,7 @@ export async function gmSessionRoutes(app: FastifyInstance) {
     const roomId = request.auth!.room.id;
     const s = startNewSession(roomId);
     publish(roomId, { kind: 'gm' }, 'gm:session.changed');
+    notifyDowntimeSessionChanged(roomId);
     publish(roomId, { kind: 'gm' }, 'gm:npcs.changed');
     pushTable(roomId);
     return sessionView(s);

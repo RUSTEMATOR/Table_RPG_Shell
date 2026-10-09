@@ -14,3 +14,4 @@ export * from './presence.ts';
 export * from './push.ts';
 export * from './letters.ts';
 export * from './chronicle.ts';
+export * from './downtime.ts';

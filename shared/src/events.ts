@@ -23,6 +23,7 @@ import type { DiaryEntryPlayer, GmDiaryEntry, GmOverload, GreenSuggestion } from
 import type { GmPlayerPresence } from './presence.ts';
 import type { LetterPlayer } from './letters.ts';
 import type { ChapterPlayer } from './chronicle.ts';
+import type { DowntimeStatePlayer } from './downtime.ts';
 
 export interface ServerToClientEvents {
   'error:forbidden': (payload: { event: string }) => void;
@@ -77,6 +78,10 @@ export interface ServerToClientEvents {
   'chronicle:removed': (payload: { id: string }) => void;
   /** Мастеру: главы изменились (правка, публикация, ответ игрока). */
   'gm:chronicle.changed': (payload: { id: string }) => void;
+  /** Игроку: его дело между сессиями изменилось или разобрано (этап 44). */
+  'downtime:changed': (payload: DowntimeStatePlayer) => void;
+  /** Мастеру: дела изменились. */
+  'gm:downtime.changed': (payload: { id: string }) => void;
 }
 
 type Ack = (res: GmAck) => void;

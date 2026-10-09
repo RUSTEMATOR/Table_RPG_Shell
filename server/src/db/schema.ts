@@ -258,6 +258,30 @@ export const chapterAnswer = sqliteTable(
   (t) => [uniqueIndex('chapter_answer_once_idx').on(t.chapterId, t.memberId)],
 );
 
+// Дело между сессиями (этап 44): одно на персонажа на сессию. outcome — итог мастера, игроку после resolved_at.
+export const downtime = sqliteTable(
+  'downtime',
+  {
+    id: text('id').primaryKey(),
+    roomId: text('room_id')
+      .notNull()
+      .references(() => room.id, { onDelete: 'cascade' }),
+    sessionId: text('session_id')
+      .notNull()
+      .references(() => gameSession.id, { onDelete: 'cascade' }),
+    characterId: text('character_id')
+      .notNull()
+      .references(() => character.id, { onDelete: 'cascade' }),
+    kind: text('kind').notNull(),
+    text: text('text').notNull().default(''),
+    outcome: text('outcome'),
+    resolvedAt: integer('resolved_at'),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  (t) => [uniqueIndex('downtime_once_idx').on(t.sessionId, t.characterId), index('downtime_room_idx').on(t.roomId, t.resolvedAt)],
+);
+
 // Заметки мастера к сессии.
 export const sessionNote = sqliteTable('session_note', {
   sessionId: text('session_id')
