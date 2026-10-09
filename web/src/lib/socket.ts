@@ -151,7 +151,7 @@ export function emitGm(event: GmEvent, payload: unknown): Promise<GmAck> {
 export type RollAck = { ok: true; roll: import('./feed.ts').FeedRoll } | { ok: false; error: string };
 
 /** Запрос броска. Тот же clientRequestId при повторе даёт тот же бросок на сервере. */
-export function requestRoll(payload: { clientRequestId: string; kind: 'd10' | 'd20'; visibility: string; label: string }): Promise<RollAck> {
+export function requestRoll(payload: { clientRequestId: string; kind: 'd10' | 'd20'; visibility: string; label: string; rerollOf?: string }): Promise<RollAck> {
   const s = connectSocket();
   return new Promise((resolve) => {
     s.timeout(8000).emit('roll:request', payload, (err: Error | null, res: RollAck) => {

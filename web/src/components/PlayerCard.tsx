@@ -68,6 +68,7 @@ export function PlayerCard({
           <h2 className="view-title ct-title">{c.name || 'Без имени'}</h2>
           {sub && <p className="ct-sub">{sub}</p>}
           {c.powerBand && <p className="ct-sub pw-pub">Уровень силы: {c.powerBand}</p>}
+          {c.sparks > 0 && <p className="ct-sub zg-sparks-line">Искры: {c.sparks}</p>}
         </div>
       </div>
       <div dangerouslySetInnerHTML={html(ornSvg(th))} style={{ display: 'contents' }} />

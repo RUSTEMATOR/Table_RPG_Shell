@@ -1,8 +1,9 @@
 import { lazy, Suspense, useEffect, useRef, useState, type FormEvent, type PointerEvent } from 'react';
-import { EFFECT_LABELS } from '@zg/shared';
+import { EFFECT_LABELS, REROLL_WINDOW_MS } from '@zg/shared';
 import { addOwn, holdOwn, type FeedRoll } from '../lib/feed.ts';
 import { useMe } from '../lib/me.tsx';
-import { requestRoll } from '../lib/socket.ts';
+import { requestRoll, useSocketEvent } from '../lib/socket.ts';
+import { api } from '../lib/api.ts';
 import { useActivity } from '../lib/activity.ts';
 import { useMedia } from '../lib/media.ts';
 import { capabilities, fullEffects } from '../lib/capabilities.ts';
@@ -13,6 +14,26 @@ import { Button, Card, CardTitle, EFFECT_ICON, GameIcon, Input, Segmented } from
 import { cn } from '../lib/cn.ts';
 
 const DiceStage = lazy(() => import('../dice/DiceStage.tsx'));
+
+const REROLL_ERRORS: Record<string, string> = {
+  no_sparks: 'Искр нет.',
+  too_late: 'Поздно: прошло больше 10 минут.',
+  already: 'Этот бросок уже перебрасывали.',
+  no_character: 'Переброс — только у персонажа.',
+};
+
+/** Искры игрока (этап 48): баланс приходит в карточке, здесь — только число. */
+function useSparks(role: 'gm' | 'player'): number {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    if (role !== 'player') return;
+    void api<{ balance: number }>('GET', '/api/player/sparks').then((r) => r.ok && setN(r.data.balance));
+  }, [role]);
+  useSocketEvent('character:updated', ({ character }) => {
+    if (role === 'player') setN(character?.sparks ?? 0);
+  });
+  return n;
+}
 
 type Kind = 'd10' | 'd20';
 const OK = new Set(['crit', 'crit_damage', 'strong', 'success', 'luck']);
@@ -81,7 +102,8 @@ export function RollPanel({ role }: { role: 'gm' | 'player' }) {
     else haptics.success();
   };
 
-  const send = async (k: Kind, id: string, angle?: number, power?: number) => {
+  const sparks = useSparks(role);
+  const send = async (k: Kind, id: string, angle?: number, power?: number, rerollOf?: string) => {
     haptics.tap();
     setPending({ id, kind: k });
     setError(null);
@@ -96,12 +118,18 @@ export function RollPanel({ role }: { role: 'gm' | 'player' }) {
       spinTimer.current = window.setInterval(() => setSpin(1 + Math.floor(Math.random() * sides)), 70);
     }
     const started = Date.now();
-    const res = await requestRoll({ clientRequestId: id, kind: k, visibility, label: label.trim() });
+    const res = await requestRoll({ clientRequestId: id, kind: k, visibility, label: label.trim(), ...(rerollOf ? { rerollOf } : {}) });
     if (!res.ok) {
       unhold();
       if (spinTimer.current) window.clearInterval(spinTimer.current);
       setSpin(null);
       if (three) setStage((s) => ({ ...s, key: '' }));
+      if (rerollOf && REROLL_ERRORS[res.error]) {
+        // переброс не состоялся: лоток свободен, прежний результат на месте
+        setPending(null);
+        setError(REROLL_ERRORS[res.error]!);
+        return;
+      }
       // pending остаётся: «Повторить» отправит тот же id, сервер не бросит дважды.
       setError(res.error === 'timeout' ? 'Нет ответа от сервера.' : `Не получилось: ${res.error}`);
       return;
@@ -209,6 +237,18 @@ export function RollPanel({ role }: { role: 'gm' | 'player' }) {
         </div>
 
         <div className="grid content-start gap-3">
+          {role === 'player' && (
+            <div className="zg-sparks flex flex-wrap items-center gap-2 text-[13.6px] text-muted">
+              <span>
+                Искры: <b className="text-text">{sparks}</b>
+              </span>
+              {shown && !shown.reroll && sparks > 0 && !busy && Date.now() - shown.at < REROLL_WINDOW_MS && (
+                <Button size="sm" variant="ghost" onClick={() => void send(shown.kind, newRequestId(), undefined, undefined, shown.id)}>
+                  Переброс за искру
+                </Button>
+              )}
+            </div>
+          )}
           <div className="flex flex-wrap items-center justify-between gap-2">
             <Segmented
               label="Кубик"

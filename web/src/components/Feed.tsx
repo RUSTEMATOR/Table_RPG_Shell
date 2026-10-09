@@ -46,6 +46,7 @@ export function Feed({ limit = 50, gm = false, only }: { limit?: number; gm?: bo
                     <GameIcon name={EFFECT_ICON[r.effect]} className="mr-1.5" />
                     {EFFECT_LABELS[r.effect]}
                     {r.corrected && <span className="muted small"> · исправлено мастером</span>}
+                    {r.reroll && <span className="muted small"> · переброс за искру</span>}
                   </div>
                 </div>
                 <span className="feed-meta">
