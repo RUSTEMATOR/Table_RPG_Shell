@@ -271,6 +271,7 @@ function Pager({ tab, setTab, mounted, mount, content, items, pickRef }: LayoutP
         {pane('card', content.card)}
         {pane('figure', content.figure)}
         {pane('diary', content.diary)}
+        {pane('chronicle', content.chronicle)}
         {pane('map', content.map)}
       </div>
       <TabBar value={tab} onChange={pick} controls={(v) => `pane-${v}`} items={items} />
@@ -311,6 +312,7 @@ function Spread({ tab, setTab, mounted, content, items, pickRef }: LayoutProps) 
         {pane('card', content.card)}
         {pane('figure', content.figure)}
         {pane('diary', content.diary)}
+        {pane('chronicle', content.chronicle)}
         {pane('map', content.map)}
       </div>
       <aside aria-label="Броски" className={cn('zg-aside min-h-0 flex-col gap-4 overflow-y-auto overscroll-y-contain pb-6', wideMap ? 'hidden' : 'flex')}>
