@@ -208,30 +208,6 @@ export function deliverDue(now = Date.now()): number {
   return due.length;
 }
 
-const TICK_MS = 30_000;
-let timer: ReturnType<typeof setInterval> | null = null;
-
-/** Планировщик доставки: сразу при запуске и каждые 30 с. Ошибки доставки игру не останавливают. */
-export function startLetterScheduler(log: { info: (o: object, m: string) => void; warn: (o: object, m: string) => void }): void {
-  if (timer) return;
-  const tick = () => {
-    try {
-      const n = deliverDue();
-      if (n) log.info({ n }, 'letters: письма доставлены');
-    } catch (err) {
-      log.warn({ err }, 'letters: доставка не удалась');
-    }
-  };
-  tick();
-  timer = setInterval(tick, TICK_MS);
-  timer.unref?.();
-}
-
-export function stopLetterScheduler(): void {
-  if (timer) clearInterval(timer);
-  timer = null;
-}
-
 /** Подсказка Claude для черновика письма: канон, имя и открытое описание персонажа, отправитель, подсказка мастера. */
 export function letterPrompt(c: CharacterRow, fromName: string, hint: string): string {
   return [

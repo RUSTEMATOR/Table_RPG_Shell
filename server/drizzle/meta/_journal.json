@@ -134,6 +134,13 @@
       "when": 1791504236405,
       "tag": "0018_downtime",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1791504612713,
+      "tag": "0019_rumor_schedule_tales",
+      "breakpoints": true
     }
   ]
 }

@@ -1,14 +1,17 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import { PlaceDraftSchema, PresenceAddSchema, PresenceWriteSchema, RumorKindSchema, RumorWriteSchema, SpotWriteSchema, type RumorKind } from '@zg/shared';
+import { PlaceDraftSchema, PresenceAddSchema, PresenceWriteSchema, RumorWriteSchema, SpotWriteSchema, TaleListPlayerSchema, TaleWriteSchema } from '@zg/shared';
 import { generateText, type ClaudeFailure } from '../ai/claude/client.ts';
 import { requireGm } from '../auth/requireGm.ts';
 import { getPlace, type PlaceRow } from '../domain/maps.ts';
 import { IMAGE_BODY_LIMIT, IMAGE_TYPES } from '../domain/media.ts';
 import { getNpc } from '../domain/npc.ts';
 import {
+  acceptTale,
   addPresence,
   clearPlaceImage,
   createRumor,
+  createTale,
+  declineTale,
   createSpot,
   deletePresence,
   deleteRumor,
@@ -18,6 +21,8 @@ import {
   getPresence,
   getRumor,
   getSpot,
+  listOwnTales,
+  markHeard,
   gmPlaceDetail,
   parseDraft,
   setPlaceImage,
@@ -25,8 +30,9 @@ import {
   updateRumor,
   updateSpot,
 } from '../domain/places.ts';
-import { pushToPlayers } from '../push/send.ts';
 import { notifyPlaceChanged } from '../realtime/maps.ts';
+import { publish } from '../realtime/publish.ts';
+import { findGmLeak } from '../visibility/guard.ts';
 import { projectPlaceDetail } from '../visibility/map.ts';
 
 // Города (этап 27): мастеру — карточка места целиком и правка (места в городе, слухи и задания, «кто здесь», картинка,
@@ -42,12 +48,6 @@ const FAILURE_TEXT: Record<ClaudeFailure, string> = {
   too_long: 'Ответ не поместился, попробуйте ещё раз.',
   error: 'Claude API вернул ошибку.',
 };
-
-/** Слух или задание стало открытым в открытом месте — push игрокам (этап 41): только вид и имя места, без текста. */
-function rumorRevealed(p: PlaceRow, kind: RumorKind): void {
-  if (!p.visible || p.kind === 'deleted') return;
-  pushToPlayers(p.roomId, { title: p.name, body: kind === 'quest' ? 'Новое задание' : 'Новый слух', url: '/?tab=map', tag: `rumor:${p.id}` });
-}
 
 export async function gmPlaceRoutes(app: FastifyInstance) {
   app.addHook('onRequest', requireGm);
@@ -114,7 +114,6 @@ export async function gmPlaceRoutes(app: FastifyInstance) {
     const b = RumorWriteSchema.safeParse(request.body);
     if (!b.success || !b.data.text) return reply.code(400).send({ error: 'bad_request' });
     createRumor(p, { kind: b.data.kind ?? 'rumor', text: b.data.text, visible: b.data.visible ?? false, noteGm: b.data.noteGm ?? '' });
-    if (b.data.visible) rumorRevealed(p, b.data.kind ?? 'rumor');
     return done(p.roomId, p.id);
   });
   app.post<{ Params: { id: string } }>('/api/gm/maps/rumors/:id', async (request, reply) => {
@@ -123,12 +122,21 @@ export async function gmPlaceRoutes(app: FastifyInstance) {
     const r = getRumor(request.auth!.room.id, request.params.id);
     if (!r) return reply.code(404).send({ error: 'not_found' });
     const patch: Parameters<typeof updateRumor>[1] = {};
-    for (const k of ['kind', 'text', 'visible', 'noteGm'] as const) if (b.data[k] !== undefined) Object.assign(patch, { [k]: b.data[k] });
+    for (const k of ['kind', 'text', 'visible', 'noteGm', 'revealAt'] as const) if (b.data[k] !== undefined) Object.assign(patch, { [k]: b.data[k] });
     updateRumor(r, patch);
-    if (patch.visible && !r.visible) {
-      const p = getPlace(r.roomId, r.placeId);
-      if (p) rumorRevealed(p, patch.kind ?? RumorKindSchema.catch('rumor').parse(r.kind));
-    }
+    return done(r.roomId, r.placeId);
+  });
+  // сказы игроков (этап 45)
+  app.post<{ Params: { id: string } }>('/api/gm/maps/rumors/:id/accept', async (request, reply) => {
+    const r = getRumor(request.auth!.room.id, request.params.id);
+    if (!r || !r.proposed) return reply.code(404).send({ error: 'not_found' });
+    acceptTale(r);
+    return done(r.roomId, r.placeId);
+  });
+  app.post<{ Params: { id: string } }>('/api/gm/maps/rumors/:id/decline', async (request, reply) => {
+    const r = getRumor(request.auth!.room.id, request.params.id);
+    if (!r || !r.proposed) return reply.code(404).send({ error: 'not_found' });
+    declineTale(r);
     return done(r.roomId, r.placeId);
   });
   app.post<{ Params: { id: string } }>('/api/gm/maps/rumors/:id/delete', async (request, reply) => {
@@ -217,6 +225,56 @@ export async function publicPlaceRoutes(app: FastifyInstance) {
     if (auth.member.role !== 'player') return reply.code(403).send({ error: 'forbidden' });
     const d = projectPlaceDetail(auth.room.id, request.params.id, 'player', auth.member.id);
     return d ?? reply.code(404).send({ error: 'not_found' });
+  });
+  // этап 45: «первым услышал» и сказы — только изнутри города (отряд рядом)
+  const insidePlace = (request: FastifyRequest, reply: FastifyReply, placeId: string) => {
+    const auth = request.auth;
+    if (!auth) {
+      void reply.code(401).send({ error: 'unauthorized' });
+      return null;
+    }
+    if (auth.member.role !== 'player') {
+      void reply.code(403).send({ error: 'forbidden' });
+      return null;
+    }
+    const d = projectPlaceDetail(auth.room.id, placeId, 'player', auth.member.id);
+    if (!d || !d.inside) {
+      void reply.code(404).send({ error: 'not_found' });
+      return null;
+    }
+    return auth;
+  };
+  app.post<{ Params: { id: string } }>('/api/player/maps/rumors/:id/heard', async (request, reply) => {
+    const auth0 = request.auth;
+    if (!auth0) return reply.code(401).send({ error: 'unauthorized' });
+    const r = getRumor(auth0.room.id, request.params.id);
+    if (!r) return reply.code(404).send({ error: 'not_found' });
+    const auth = insidePlace(request, reply, r.placeId);
+    if (!auth) return;
+    if (markHeard(r, auth.member.id)) notifyPlaceChanged(r.roomId, r.placeId);
+    return { ok: true };
+  });
+  app.get<{ Params: { id: string } }>('/api/player/maps/places/:id/tales', async (request, reply) => {
+    const auth = insidePlace(request, reply, request.params.id);
+    if (!auth) return;
+    return TaleListPlayerSchema.parse({
+      tales: listOwnTales(auth.room.id, request.params.id, auth.member.id).map((t) => ({ id: t.id, text: t.text, accepted: !t.proposed, createdAt: t.createdAt })),
+    });
+  });
+  app.post<{ Params: { id: string } }>('/api/player/maps/places/:id/tales', async (request, reply) => {
+    const b = TaleWriteSchema.safeParse(request.body);
+    if (!b.success) return reply.code(400).send({ error: 'bad_request' });
+    if (findGmLeak(JSON.stringify(b.data.text))) return reply.code(400).send({ error: 'bad_request' });
+    const auth = insidePlace(request, reply, request.params.id);
+    if (!auth) return;
+    const p = getPlace(auth.room.id, request.params.id)!;
+    // не больше трёх ожидающих сказов на город от одного игрока
+    if (listOwnTales(auth.room.id, p.id, auth.member.id).filter((t) => t.proposed).length >= 3) return reply.code(429).send({ error: 'too_many' });
+    createTale(p, auth.member.id, b.data.text);
+    publish(auth.room.id, { kind: 'gm' }, 'gm:place.changed', { placeId: p.id });
+    return TaleListPlayerSchema.parse({
+      tales: listOwnTales(auth.room.id, p.id, auth.member.id).map((t) => ({ id: t.id, text: t.text, accepted: !t.proposed, createdAt: t.createdAt })),
+    });
   });
   app.get<{ Params: { id: string } }>('/api/table/maps/places/:id', async (request, reply) => {
     const auth = request.auth;

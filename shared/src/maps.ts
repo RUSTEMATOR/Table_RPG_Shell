@@ -251,7 +251,8 @@ export const PlaceDetailPublicSchema = z.strictObject({
   population: z.string(),
   image: ImagePublicSchema.nullable(),
   spots: z.array(z.strictObject({ id: z.string(), kind: SpotKindSchema, name: z.string(), description: z.string(), here: z.array(PresencePublicSchema) })),
-  rumors: z.array(z.strictObject({ id: z.string(), kind: RumorKindSchema, text: z.string() })),
+  /** by — кто рассказал (сказ игрока, этап 45), firstBy — кто первым услышал; имена персонажей, не id. */
+  rumors: z.array(z.strictObject({ id: z.string(), kind: RumorKindSchema, text: z.string(), by: z.string().nullable(), firstBy: z.string().nullable() })),
   here: z.array(PresencePublicSchema),
 });
 export type PlaceDetailPublic = z.infer<typeof PlaceDetailPublicSchema>;
@@ -273,6 +274,12 @@ export interface GmRumor {
   /** когда открыт игрокам (порядок у игроков), null — ещё не открыт */
   revealedAt: number | null;
   noteGm: string;
+  /** откроется по расписанию (этап 45), null — вручную */
+  revealAt: number | null;
+  /** сказ игрока: автор (персонаж или игрок); proposed — ждёт решения мастера */
+  author: string | null;
+  proposed: boolean;
+  firstBy: string | null;
 }
 export interface GmPresence {
   id: string;
@@ -319,7 +326,16 @@ export const RumorWriteSchema = z.strictObject({
   text: z.string().trim().max(1000).optional(),
   visible: z.boolean().optional(),
   noteGm: z.string().max(4000).optional(),
+  /** Открыть в это время (мс); null — снять расписание. */
+  revealAt: z.number().int().positive().nullable().optional(),
 });
+
+// ---- Сказы игроков (этап 45) ----
+export const TaleWriteSchema = z.strictObject({ text: z.string().trim().min(1).max(1000) });
+/** Свои сказы в этом городе: ждут мастера или приняты (отклонённые удаляются). */
+export const TalePlayerSchema = z.strictObject({ id: z.string(), text: z.string(), accepted: z.boolean(), createdAt: z.number() });
+export type TalePlayer = z.infer<typeof TalePlayerSchema>;
+export const TaleListPlayerSchema = z.strictObject({ tales: z.array(TalePlayerSchema) });
 export const PresenceAddSchema = z.strictObject({
   npcId: z.string().min(1).max(64),
   spotId: z.string().min(1).max(64).nullable().default(null),

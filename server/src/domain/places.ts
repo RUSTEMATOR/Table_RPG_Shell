@@ -1,4 +1,4 @@
-import { and, asc, eq } from 'drizzle-orm';
+import { and, asc, desc, eq, isNotNull, lte } from 'drizzle-orm';
 import {
   MapIdSchema,
   PLACE_KIND_LABELS,
@@ -22,6 +22,7 @@ import { SUMMARY_LORE } from './data.ts';
 import { MAPS, type PlaceRow } from './maps.ts';
 import { NO_IMAGE, imagePublic, removeImage, storeImage } from './media.ts';
 import { listNpcs, npcFigure } from './npc.ts';
+import { pushToGm, pushToMember, pushToPlayers } from '../push/send.ts';
 
 // Города (этап 27): карточка места, места в городе, слухи и задания, «кто здесь». Здесь — данные и правка мастера;
 // что видят игрок и стол — только visibility/map.ts (projectPlaceDetail).
@@ -63,6 +64,7 @@ export function placesWithNpc(roomId: string, npcId: string): string[] {
 export const draftsAvailable = (_roomId: string) => claudeConfigured();
 
 export function gmPlaceDetail(roomId: string, p: PlaceRow): GmPlaceDetail {
+  const names = memberNames(roomId);
   return {
     id: p.id,
     mapId: MapIdSchema.parse(p.mapId),
@@ -92,6 +94,10 @@ export function gmPlaceDetail(roomId: string, p: PlaceRow): GmPlaceDetail {
       visible: r.visible,
       revealedAt: r.revealedAt,
       noteGm: r.noteGm,
+      revealAt: r.revealAt,
+      author: r.authorMemberId ? (names.get(r.authorMemberId) ?? null) : null,
+      proposed: r.proposed,
+      firstBy: r.firstHeardBy ? (names.get(r.firstHeardBy) ?? null) : null,
     })),
     presence: presenceRows(p.id).map(({ p: x, name, figure }) => ({
       id: x.id,
@@ -171,20 +177,131 @@ export function createRumor(p: PlaceRow, w: { kind: RumorKind; text: string; vis
     visible: w.visible,
     revealedAt: w.visible ? now : null,
     noteGm: w.noteGm,
+    revealAt: null,
+    authorMemberId: null,
+    proposed: false,
+    firstHeardBy: null,
+    firstHeardAt: null,
     createdAt: now,
     updatedAt: now,
   };
   db.insert(schema.mapRumor).values(row).run();
+  if (w.visible) pushRumorRevealed(p, w.kind);
   return row;
 }
 /** Открытие слуха ставит его в конец списка у игроков; закрытие убирает отметку (открыть снова — снова в конец). */
-export function updateRumor(r: RumorRow, patch: { kind?: RumorKind; text?: string; visible?: boolean; noteGm?: string }): void {
+export function updateRumor(r: RumorRow, patch: { kind?: RumorKind; text?: string; visible?: boolean; noteGm?: string; revealAt?: number | null }): void {
   const now = Date.now();
   const revealed = patch.visible === undefined || patch.visible === r.visible ? {} : { revealedAt: patch.visible ? now : null };
+  // открыли руками — расписание больше не нужно
+  const schedule = patch.visible ? { revealAt: null } : {};
   db.update(schema.mapRumor)
-    .set({ ...patch, ...revealed, updatedAt: now })
+    .set({ ...patch, ...revealed, ...schedule, updatedAt: now })
     .where(eq(schema.mapRumor.id, r.id))
     .run();
+  if (patch.visible && !r.visible) {
+    const p = db.select().from(schema.mapPlace).where(eq(schema.mapPlace.id, r.placeId)).get();
+    if (p) pushRumorRevealed(p, patch.kind ?? RumorKindSchema.catch('rumor').parse(r.kind));
+  }
+}
+
+// ---- этап 45: имена, расписание, «первым услышал», сказы ----
+
+/** Участник → имя его персонажа, иначе имя участника. Для подписей «рассказал», «первым услышал». */
+export function memberNames(roomId: string): Map<string, string> {
+  const names = new Map(
+    db
+      .select({ id: schema.member.id, name: schema.member.name })
+      .from(schema.member)
+      .where(eq(schema.member.roomId, roomId))
+      .all()
+      .map((m) => [m.id, m.name]),
+  );
+  for (const c of db.select({ owner: schema.character.ownerMemberId, name: schema.character.name }).from(schema.character).where(eq(schema.character.roomId, roomId)).all())
+    if (c.owner) names.set(c.owner, c.name);
+  return names;
+}
+
+/** Слух или задание стало открытым в открытом месте — push игрокам (этап 41): только вид и имя места, без текста. */
+export function pushRumorRevealed(p: PlaceRow, kind: RumorKind): void {
+  if (!p.visible || p.kind === 'deleted') return;
+  pushToPlayers(p.roomId, { title: p.name, body: kind === 'quest' ? 'Новое задание' : 'Новый слух', url: '/?tab=map', tag: `rumor:${p.id}` });
+}
+
+/** Слухи, чьё время настало, — открыть. Возвращает места, где что-то открылось (для сигналов). */
+export function revealDueRumors(now = Date.now()): PlaceRow[] {
+  const due = db
+    .select()
+    .from(schema.mapRumor)
+    .where(and(eq(schema.mapRumor.visible, false), eq(schema.mapRumor.proposed, false), isNotNull(schema.mapRumor.revealAt), lte(schema.mapRumor.revealAt, now)))
+    .all();
+  const places: PlaceRow[] = [];
+  for (const r of due) {
+    db.update(schema.mapRumor).set({ visible: true, revealedAt: now, revealAt: null, updatedAt: now }).where(eq(schema.mapRumor.id, r.id)).run();
+    const p = db.select().from(schema.mapPlace).where(eq(schema.mapPlace.id, r.placeId)).get();
+    if (!p) continue;
+    pushRumorRevealed(p, RumorKindSchema.catch('rumor').parse(r.kind));
+    if (!places.some((x) => x.id === p.id)) places.push(p);
+  }
+  return places;
+}
+
+/** Игрок открыл «Слухи» с этим слухом: первый — запоминается. true — что-то изменилось. */
+export function markHeard(r: RumorRow, memberId: string): boolean {
+  if (!r.visible || r.proposed || r.firstHeardBy) return false;
+  const now = Date.now();
+  db.update(schema.mapRumor).set({ firstHeardBy: memberId, firstHeardAt: now, updatedAt: now }).where(eq(schema.mapRumor.id, r.id)).run();
+  return true;
+}
+
+/** Сказ игрока: ждёт мастера, игрокам не виден. */
+export function createTale(p: PlaceRow, memberId: string, text: string): RumorRow {
+  const now = Date.now();
+  const row: RumorRow = {
+    id: newId(),
+    roomId: p.roomId,
+    placeId: p.id,
+    kind: 'rumor',
+    text,
+    visible: false,
+    revealedAt: null,
+    noteGm: '',
+    revealAt: null,
+    authorMemberId: memberId,
+    proposed: true,
+    firstHeardBy: null,
+    firstHeardAt: null,
+    createdAt: now,
+    updatedAt: now,
+  };
+  db.insert(schema.mapRumor).values(row).run();
+  const who = memberNames(p.roomId).get(memberId) ?? 'игрок';
+  pushToGm(p.roomId, { title: 'Сказ игрока', body: `${who} — ${p.name}`, url: '/gm/maps', tag: `tale:${row.id}` });
+  return row;
+}
+
+export function listOwnTales(roomId: string, placeId: string, memberId: string): RumorRow[] {
+  return db
+    .select()
+    .from(schema.mapRumor)
+    .where(and(eq(schema.mapRumor.roomId, roomId), eq(schema.mapRumor.placeId, placeId), eq(schema.mapRumor.authorMemberId, memberId)))
+    .orderBy(desc(schema.mapRumor.createdAt))
+    .all();
+}
+
+/** Мастер принял сказ: открытый слух с подписью автора. */
+export function acceptTale(r: RumorRow): void {
+  const now = Date.now();
+  db.update(schema.mapRumor).set({ proposed: false, visible: true, revealedAt: now, revealAt: null, updatedAt: now }).where(eq(schema.mapRumor.id, r.id)).run();
+  const p = db.select().from(schema.mapPlace).where(eq(schema.mapPlace.id, r.placeId)).get();
+  if (p) pushRumorRevealed(p, 'rumor');
+  if (r.authorMemberId) pushToMember(r.roomId, r.authorMemberId, { title: 'Сказ принят', body: p?.name ?? '', url: '/?tab=map', tag: `tale:${r.id}` });
+}
+
+export function declineTale(r: RumorRow): void {
+  db.delete(schema.mapRumor).where(eq(schema.mapRumor.id, r.id)).run();
+  const p = db.select({ name: schema.mapPlace.name }).from(schema.mapPlace).where(eq(schema.mapPlace.id, r.placeId)).get();
+  if (r.authorMemberId) pushToMember(r.roomId, r.authorMemberId, { title: 'Сказ не принят', body: p?.name ?? '', url: '/?tab=map', tag: `tale:${r.id}` });
 }
 export function deleteRumor(r: RumorRow): void {
   db.delete(schema.mapRumor).where(eq(schema.mapRumor.id, r.id)).run();

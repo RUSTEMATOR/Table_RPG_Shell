@@ -17,7 +17,7 @@ import { MAPS, ensureMaps, getPlace, partyMove, type PlaceRow, pieceKey, pieces,
 import { figuresOf, listParties, namesOf, partyIdOfMember } from '../domain/parties.ts';
 import { imagePublic } from '../domain/media.ts';
 import { npcFigure } from '../domain/npc.ts';
-import { presenceRows, rumorRows, spotRows } from '../domain/places.ts';
+import { memberNames, presenceRows, rumorRows, spotRows } from '../domain/places.ts';
 
 // Единственное место, где карта превращается в то, что видят игрок и стол.
 // Уходят только открытые регионы (контур, имя, подпись) и открытые места, без note_gm и без ключей исходных данных.
@@ -125,6 +125,7 @@ export function projectPlaceDetail(roomId: string, placeId: string, viewer: 'pla
   const own = memberId ? partyIdOfMember(roomId, memberId) : null;
   const inside = viewer === 'table' || listParties(roomId).some((q) => (own === null || q.id === own) && q.visible && q.mapId === p.mapId && partyNear(p, q));
   if (!inside) return outside(p);
+  const names = memberNames(roomId);
   const spots = spotRows(p.id).filter((s) => s.visible);
   const spotIds = new Set(spots.map((s) => s.id));
   const here = presenceRows(p.id)
@@ -141,9 +142,15 @@ export function projectPlaceDetail(roomId: string, placeId: string, viewer: 'pla
       here: here.filter((h) => h.spotId === s.id).map((h) => h.v),
     })),
     rumors: rumorRows(p.id)
-      .filter((r) => r.visible)
+      .filter((r) => r.visible && !r.proposed)
       .sort((a, b) => (a.revealedAt ?? 0) - (b.revealedAt ?? 0))
-      .map((r) => ({ id: r.id, kind: RumorKindSchema.catch('rumor').parse(r.kind), text: r.text })),
+      .map((r) => ({
+        id: r.id,
+        kind: RumorKindSchema.catch('rumor').parse(r.kind),
+        text: r.text,
+        by: r.authorMemberId ? (names.get(r.authorMemberId) ?? null) : null,
+        firstBy: r.firstHeardBy ? (names.get(r.firstHeardBy) ?? null) : null,
+      })),
     here: here.filter((h) => h.spotId === null).map((h) => h.v),
   });
 }

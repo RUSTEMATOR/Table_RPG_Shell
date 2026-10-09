@@ -489,10 +489,18 @@ export const mapRumor = sqliteTable(
     visible: integer('visible', { mode: 'boolean' }).notNull().default(false),
     revealedAt: integer('revealed_at'),
     noteGm: text('note_gm').notNull().default(''),
+    /** Открыть по расписанию (этап 45): планировщик откроет в это время. */
+    revealAt: integer('reveal_at'),
+    /** Сказ игрока (этап 45): автор; proposed — ждёт решения мастера, игрокам не виден. */
+    authorMemberId: text('author_member_id').references(() => member.id, { onDelete: 'set null' }),
+    proposed: integer('proposed', { mode: 'boolean' }).notNull().default(false),
+    /** Кто первым открыл «Слухи» с этим слухом. */
+    firstHeardBy: text('first_heard_by').references(() => member.id, { onDelete: 'set null' }),
+    firstHeardAt: integer('first_heard_at'),
     createdAt: integer('created_at').notNull(),
     updatedAt: integer('updated_at').notNull(),
   },
-  (t) => [index('map_rumor_place_idx').on(t.placeId)],
+  (t) => [index('map_rumor_place_idx').on(t.placeId), index('map_rumor_due_idx').on(t.visible, t.revealAt)],
 );
 
 // Кто здесь: противник из библиотеки в городе (или в месте города). Игроку и столу — имя, фигурка и роль, без id противника.

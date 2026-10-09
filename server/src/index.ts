@@ -3,7 +3,7 @@ import { buildApp } from './app.ts';
 import { BUILD_ID, config } from './config.ts';
 import { db, sqlite } from './db/client.ts';
 import { backfillMedia } from './domain/media.ts';
-import { startLetterScheduler, stopLetterScheduler } from './domain/letters.ts';
+import { startScheduler, stopScheduler } from './realtime/scheduler.ts';
 import { initPush } from './push/send.ts';
 import { MIGRATIONS_DIR } from './paths.ts';
 import { attachSocketIo } from './realtime/io.ts';
@@ -16,7 +16,7 @@ await app.listen({ host: config.HOST, port: config.PORT });
 app.log.info({ build: BUILD_ID, env: config.NODE_ENV }, 'Зеленогорье запущено');
 void backfillMedia(app.log);
 initPush(app.log);
-startLetterScheduler(app.log);
+startScheduler(app.log);
 
 let closing = false;
 for (const sig of ['SIGINT', 'SIGTERM'] as const) {
@@ -24,7 +24,7 @@ for (const sig of ['SIGINT', 'SIGTERM'] as const) {
     if (closing) return;
     closing = true;
     app.log.info({ sig }, 'остановка');
-    stopLetterScheduler();
+    stopScheduler();
     io.disconnectSockets(true);
     await app.close();
     sqlite.close();
