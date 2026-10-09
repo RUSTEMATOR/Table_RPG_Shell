@@ -404,6 +404,24 @@ export const bestiaryUnlock = sqliteTable(
   (t) => [uniqueIndex('bestiary_unlock_once_idx').on(t.roomId, t.npcId)],
 );
 
+// Открываемые оболочки (этап 51): pick — игрок открыл оболочку; grant — подарок мастера (+1 открытие, без оболочки).
+export const shellUnlock = sqliteTable(
+  'shell_unlock',
+  {
+    id: text('id').primaryKey(),
+    roomId: text('room_id')
+      .notNull()
+      .references(() => room.id, { onDelete: 'cascade' }),
+    characterId: text('character_id')
+      .notNull()
+      .references(() => character.id, { onDelete: 'cascade' }),
+    kind: text('kind', { enum: ['pick', 'grant'] }).notNull(),
+    shell: text('shell'),
+    createdAt: integer('created_at').notNull(),
+  },
+  (t) => [index('shell_unlock_character_idx').on(t.characterId)],
+);
+
 // Заметки мастера к сессии.
 export const sessionNote = sqliteTable('session_note', {
   sessionId: text('session_id')

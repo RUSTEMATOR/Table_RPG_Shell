@@ -8,6 +8,7 @@ import { TRAITS } from '../domain/traits.ts';
 import { portraitUrl } from '../domain/portrait.ts';
 import { momentsForPlayer } from '../domain/moments.ts';
 import { sparkBalance } from '../domain/sparks.ts';
+import { shellsOf } from '../domain/shells.ts';
 
 // Единственное место, где персонаж превращается в то, что видит игрок (перенос toPublic §2.3).
 // Берём только раскрытое, по белому списку полей; скрытые черты не оставляют ни записи, ни счётчика.
@@ -60,5 +61,6 @@ export function projectForPlayer({ row, doc }: LoadedCharacter): PlayerCharacter
     ...playerSheet(row.id),
     moments: momentsForPlayer(row.id),
     sparks: sparkBalance(row.id),
+    shells: shellsOf(row),
   });
 }

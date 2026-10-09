@@ -1,6 +1,7 @@
 import { SUMMARY_KINDS, type GmCharacterView, type GmDraftView, type GmSlotView, type GmSummary } from '@zg/shared';
 import { momentsForGm } from './moments.ts';
 import { sparksForGm } from './sparks.ts';
+import { shellsOf } from './shells.ts';
 import { ARCHS, GREEN_SIGNS, TIERS } from './data.ts';
 import { cardOf, catLabel, combosFor, effSteps, gmLayers, originOf, powerBand, powerOf, stagePowerHint } from './cards.ts';
 import { STAGE_NAMES, int04, normRevealed, pronounWord, type CharDoc, type Draft, type Slot } from './character.ts';
@@ -111,6 +112,7 @@ export function characterView(lc: LoadedCharacter): GmCharacterView {
     sheet: gmSheet(listSheet(row.id)),
     moments: momentsForGm(row.id),
     sparks: sparksForGm(row.id),
+    shells: shellsOf(row),
   };
 }
 

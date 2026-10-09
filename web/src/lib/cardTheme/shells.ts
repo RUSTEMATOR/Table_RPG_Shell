@@ -4,25 +4,9 @@
 
 import { ensureFonts } from '../fonts.ts';
 
-export const SHELLS = [
-  'book',
-  'chronicle',
-  'fresco',
-  'ink',
-  'manga',
-  'novel',
-  'comic',
-  'deco',
-  'cyber',
-  'console',
-  'brass',
-  'terminal',
-  'pda',
-  'dossier',
-  'pixel',
-  'document',
-] as const;
-export type Shell = (typeof SHELLS)[number];
+import { SHELLS, type Shell } from '@zg/shared';
+
+export { SHELLS, type Shell };
 
 const THEME_SHELL: Record<string, Shell> = {
   other: 'book',

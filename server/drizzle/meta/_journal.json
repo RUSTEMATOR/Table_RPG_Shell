@@ -176,6 +176,13 @@
       "when": 1791507374994,
       "tag": "0024_bestiary",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "6",
+      "when": 1791544308735,
+      "tag": "0025_shell_unlock",
+      "breakpoints": true
     }
   ]
 }

@@ -21,3 +21,4 @@ export * from './sparks.ts';
 export * from './acquaintances.ts';
 export * from './bestiary.ts';
 export * from './srd.ts';
+export * from './shells.ts';

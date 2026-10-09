@@ -3,6 +3,7 @@ import { FigureSchema, type Figure } from './figure.ts';
 import { SHEET_KINDS, type SheetKind } from './constants.ts';
 import { MomentPlayerSchema, type GmMoment } from './moments.ts';
 import type { GmSparks } from './sparks.ts';
+import { ShellsPlayerSchema, type ShellsPlayer } from './shells.ts';
 
 // ---- Что видит игрок: единственный формат, белый список, strictObject на всех уровнях ----
 
@@ -54,6 +55,8 @@ export const PlayerCharacterSchema = z.strictObject({
   moments: z.array(MomentPlayerSchema),
   /** Искры (этап 48): сколько можно потратить на переброс. */
   sparks: z.number().int().min(0),
+  /** Открываемые оболочки (этап 51). */
+  shells: ShellsPlayerSchema,
 });
 export type PlayerCharacter = z.infer<typeof PlayerCharacterSchema>;
 export type PlayerTrait = z.infer<typeof PlayerTraitSchema>;
@@ -218,6 +221,7 @@ export interface GmCharacterView {
   sheet: GmSheetEntry[];
   moments: GmMoment[];
   sparks: GmSparks;
+  shells: ShellsPlayer;
 }
 
 // ---- Лист персонажа ----
