@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MOMENT_KINDS, MOMENT_KIND_LABELS, SPARK_KIND_LABELS, type GmCharacterView, type MomentKind } from '@zg/shared';
+import { MOMENT_KINDS, MOMENT_KIND_LABELS, SHELL_LABELS, SPARK_KIND_LABELS, type GmCharacterView, type MomentKind } from '@zg/shared';
 import { api } from '../lib/api.ts';
 import { Badge, Button, Card, CardTitle, Field, GameIcon, Input, MOMENT_ICON, Select, Switch, Textarea, toast } from '../ui/index.ts';
 
@@ -142,6 +142,36 @@ export function SparksPanel({ c, onChange }: { c: GmCharacterView; onChange: (c:
           ))}
         </ul>
       )}
+    </Card>
+  );
+}
+
+/** Открываемые оболочки персонажа (этап 51): что открыто, сколько можно открыть, откуда, подарок «+1 открытие». */
+export function ShellsPanel({ c, onChange }: { c: GmCharacterView; onChange: (c: GmCharacterView) => void }) {
+  const [busy, setBusy] = useState(false);
+  const s = c.shells;
+  const e = s.earned;
+  const grant = async () => {
+    setBusy(true);
+    const r = await api<GmCharacterView>('POST', '/api/gm/shells/grant', { characterId: c.id });
+    setBusy(false);
+    if (!r.ok) return toast.error('Не получилось');
+    onChange(r.data);
+    toast('Игрок может открыть ещё одну оболочку');
+  };
+  return (
+    <Card>
+      <div className="flex flex-wrap items-center gap-3">
+        <CardTitle className="grow">Оболочки</CardTitle>
+        <Badge tone={s.available > 0 ? 'accent' : 'neutral'}>можно открыть: {s.available}</Badge>
+      </div>
+      <p className="m-0 text-[13.6px] text-muted">
+        Свободны «Книга» и оболочка темы персонажа. Открыто игроком: {s.picked.length ? s.picked.map((x) => SHELL_LABELS[x]).join(', ') : 'пока ничего'}. Вехи: моменты {e.moments}{' '}
+        (2 = открытие), викторины без ошибок {e.quizzes}, чудища в бестиарии {e.beasts} (3 = открытие), сыгранные сессии {e.sessions} (3 = открытие), подарки {e.gifts}.
+      </p>
+      <Button className="justify-self-start" disabled={busy} onClick={() => void grant()}>
+        +1 открытие
+      </Button>
     </Card>
   );
 }

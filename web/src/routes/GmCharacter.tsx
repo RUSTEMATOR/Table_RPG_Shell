@@ -6,7 +6,7 @@ import { PlayerCard } from '../components/PlayerCard.tsx';
 import { ThemePick } from '../components/ThemePick.tsx';
 import { SheetPanel } from '../components/SheetPanel.tsx';
 import { SummaryPanel } from '../components/SummaryPanel.tsx';
-import { MomentsPanel, SparksPanel } from '../components/MomentsPanel.tsx';
+import { MomentsPanel, ShellsPanel, SparksPanel } from '../components/MomentsPanel.tsx';
 import { api } from '../lib/api.ts';
 import { OWNER_ERRORS, usePlayers } from '../lib/gm.ts';
 import { emitGm, useConnection, useSocketEvent } from '../lib/socket.ts';
@@ -190,6 +190,7 @@ export function GmCharacter() {
             <TabPanel value="moments" className="flex flex-col gap-4 focus:outline-none">
               <SparksPanel c={c} onChange={setC} />
               <MomentsPanel c={c} onChange={setC} />
+              {c.ownerMemberId && <ShellsPanel c={c} onChange={setC} />}
             </TabPanel>
             <TabPanel value="figure" className="flex max-w-[560px] flex-col gap-4 focus:outline-none">
               {tab === 'figure' && (
