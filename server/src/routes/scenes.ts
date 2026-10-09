@@ -1,7 +1,7 @@
 import { createReadStream } from 'node:fs';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { SceneWriteSchema } from '@zg/shared';
+import { SceneWriteSchema, AtmosphereWriteSchema } from '@zg/shared';
 import { checkPublicText } from '../ai/jev/integrations.ts';
 import { requireGm } from '../auth/requireGm.ts';
 import { listCharacters } from '../domain/repo.ts';
@@ -16,6 +16,8 @@ import {
   setShown,
   shownSceneId,
   updateScene,
+  getAtmosphere,
+  setAtmosphere,
 } from '../domain/scenes.ts';
 import { IMAGE_BODY_LIMIT, IMAGE_TYPES, mediaAllowed, mediaPath } from '../domain/media.ts';
 import { publish } from '../realtime/publish.ts';
@@ -31,6 +33,17 @@ export async function gmSceneRoutes(app: FastifyInstance) {
   app.addHook('onRequest', requireGm);
   // Картинка приходит сырым телом запроса (Content-Type: image/*), до 15 МБ.
   app.addContentTypeParser(IMAGE_TYPES, { parseAs: 'buffer', bodyLimit: IMAGE_BODY_LIMIT }, (_req, body, done) => done(null, body));
+
+  // атмосфера стола (этап 57)
+  app.get('/api/gm/table/atmosphere', async (request) => getAtmosphere(request.auth!.room.id));
+  app.post('/api/gm/table/atmosphere', async (request, reply) => {
+    const b = AtmosphereWriteSchema.safeParse(request.body);
+    if (!b.success) return reply.code(400).send({ error: 'bad_request' });
+    const roomId = request.auth!.room.id;
+    const a = setAtmosphere(roomId, b.data);
+    pushTable(roomId);
+    return a;
+  });
 
   app.get('/api/gm/scenes', async (request) => {
     const roomId = request.auth!.room.id;
@@ -110,7 +123,11 @@ export async function gmSceneRoutes(app: FastifyInstance) {
     const b = CheckSchema.safeParse(request.body);
     if (!b.success) return reply.code(400).send({ error: 'bad_request' });
     const roomId = request.auth!.room.id;
-    return checkPublicText(roomId, b.data.text, listCharacters(roomId).map((c) => c.doc));
+    return checkPublicText(
+      roomId,
+      b.data.text,
+      listCharacters(roomId).map((c) => c.doc),
+    );
   });
 }
 

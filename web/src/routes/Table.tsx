@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { AnimatePresence, m, MotionConfig } from 'motion/react';
-import { DEMO_ROOM_CODE, EFFECT_LABELS, type TableMoment, type TableReaction, type TableState } from '@zg/shared';
+import { DEFAULT_ATMOSPHERE, DEMO_ROOM_CODE, EFFECT_LABELS, type TableMoment, type TableReaction, type TableState } from '@zg/shared';
 import { ConnectionDot } from '../components/ConnectionDot.tsx';
 import { api } from '../lib/api.ts';
 import { useFeed } from '../lib/feed.ts';
@@ -43,7 +43,7 @@ export function Table() {
 function TableScreen({ room, demo }: { room: string; demo: boolean }) {
   useWakeLock();
   useEffect(() => ensureTheme('other'), []); // шрифты макета: Oranienbaum, IBM Plex
-  const [state, setState] = useState<TableState>({ scene: null, npc: null, map: null });
+  const [state, setState] = useState<TableState>({ scene: null, npc: null, map: null, atmosphere: DEFAULT_ATMOSPHERE });
   const [loaded, setLoaded] = useState(false); // до первого ответа заставку не показываем: иначе она мигнёт перед сценой
   const [signs, setSigns] = useState<Sign[]>([]);
   const [moments, setMoments] = useState<TableMoment[]>([]);

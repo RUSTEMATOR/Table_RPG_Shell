@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { ImagePublicSchema, type GmImage } from './media.ts';
 import type { GmAcquaintance } from './acquaintances.ts';
+import { TableAtmosphereSchema } from './atmosphere.ts';
 import { MapFocusSchema, MapIdSchema, type UnitId } from './maps.ts';
 import { FigureSchema, type Figure } from './figure.ts';
 
@@ -28,7 +29,13 @@ export type TableNpc = z.infer<typeof TableNpcSchema>;
 
 /** Карта на столе: какая и куда навести камеру (null — вся карта). Содержимое стол берёт отдельно, только открытое. */
 export const TableMapSchema = z.strictObject({ id: MapIdSchema, focus: MapFocusSchema.nullable() });
-export const TableStateSchema = z.strictObject({ scene: TableSceneSchema.nullable(), npc: TableNpcSchema.nullable(), map: TableMapSchema.nullable() });
+export const TableStateSchema = z.strictObject({
+  scene: TableSceneSchema.nullable(),
+  npc: TableNpcSchema.nullable(),
+  map: TableMapSchema.nullable(),
+  /** Атмосфера (этап 57). */
+  atmosphere: TableAtmosphereSchema,
+});
 export type TableState = z.infer<typeof TableStateSchema>;
 
 // ---- Сцены у мастера ----

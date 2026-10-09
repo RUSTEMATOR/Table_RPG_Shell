@@ -518,6 +518,10 @@ export const tableState = sqliteTable('table_state', {
   /** Карта на столе (вместо сцены) и куда навести камеру: JSON {x, y, zoom} или null — вся карта. */
   mapId: text('map_id'),
   mapFocus: text('map_focus'),
+  /** Атмосфера стола (этап 57). */
+  weather: text('weather').notNull().default('clear'),
+  daytime: text('daytime').notNull().default('day'),
+  ambient: text('ambient').notNull().default('auto'),
   updatedAt: integer('updated_at').notNull(),
 });
 

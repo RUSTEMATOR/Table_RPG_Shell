@@ -1,5 +1,5 @@
 import { and, desc, eq } from 'drizzle-orm';
-import { TableStateSchema, type GmScene, type TableState } from '@zg/shared';
+import { TableStateSchema, type GmScene, type TableState, DEFAULT_ATMOSPHERE, TableAtmosphereSchema, type TableAtmosphere } from '@zg/shared';
 import { newId } from '../auth/tokens.ts';
 import { db, schema } from '../db/client.ts';
 import { NO_IMAGE, imageGm, imagePublic, removeImage, storeImage } from './media.ts';
@@ -77,6 +77,7 @@ export function projectForTable(roomId: string): TableState {
     : undefined;
   const map = tableMap(roomId);
   return TableStateSchema.parse({
+    atmosphere: atmosphereOf(shown),
     map: map ? { id: map.mapId, focus: map.focus } : null,
     npc: n
       ? {
@@ -125,4 +126,28 @@ export async function setSceneImage(r: SceneRow, input: Buffer): Promise<SceneRo
 export function deleteScene(r: SceneRow): void {
   removeImage(r.imageFile);
   db.delete(schema.scene).where(eq(schema.scene.id, r.id)).run();
+}
+
+// ---- атмосфера стола (этап 57) ----
+
+type TableStateRow = typeof schema.tableState.$inferSelect;
+
+/** Неизвестные значения (старая база, ручная правка) — как по умолчанию. */
+export function atmosphereOf(row: TableStateRow | undefined): TableAtmosphere {
+  const p = TableAtmosphereSchema.safeParse(row ? { weather: row.weather, daytime: row.daytime, ambient: row.ambient } : DEFAULT_ATMOSPHERE);
+  return p.success ? p.data : DEFAULT_ATMOSPHERE;
+}
+
+export function getAtmosphere(roomId: string): TableAtmosphere {
+  return atmosphereOf(db.select().from(schema.tableState).where(eq(schema.tableState.roomId, roomId)).get());
+}
+
+export function setAtmosphere(roomId: string, patch: Partial<TableAtmosphere>): TableAtmosphere {
+  const next = { ...getAtmosphere(roomId), ...patch };
+  const now = Date.now();
+  db.insert(schema.tableState)
+    .values({ roomId, ...next, updatedAt: now })
+    .onConflictDoUpdate({ target: schema.tableState.roomId, set: { ...next, updatedAt: now } })
+    .run();
+  return next;
 }
