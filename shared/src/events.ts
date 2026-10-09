@@ -94,6 +94,8 @@ export interface ServerToClientEvents {
   /** Игроку: расписание изменилось (этап 46) — его проекция. */
   'schedule:changed': (payload: SchedulePlayer) => void;
   'gm:schedule.changed': () => void;
+  /** Мастеру: анкета игрока пришла или изменилась (этап 55). */
+  'gm:questionnaire.changed': () => void;
   /** Игроку: список знакомых изменился (этап 49). */
   'acquaintances:changed': (payload: { acquaintances: AcquaintancePlayer[] }) => void;
   /** Игрокам: бестиарий изменился (этап 50). */

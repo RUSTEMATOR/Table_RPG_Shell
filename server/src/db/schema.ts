@@ -445,6 +445,19 @@ export const shellUnlock = sqliteTable(
   (t) => [index('shell_unlock_character_idx').on(t.characterId)],
 );
 
+// Анкета персонажа (этап 55): одна на участника; answers — JSON по QuestionnaireAnswersSchema.
+export const questionnaire = sqliteTable('questionnaire', {
+  memberId: text('member_id')
+    .primaryKey()
+    .references(() => member.id, { onDelete: 'cascade' }),
+  roomId: text('room_id')
+    .notNull()
+    .references(() => room.id, { onDelete: 'cascade' }),
+  answers: text('answers').notNull(),
+  submittedAt: integer('submitted_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+});
+
 // Заметки мастера к сессии.
 export const sessionNote = sqliteTable('session_note', {
   sessionId: text('session_id')
