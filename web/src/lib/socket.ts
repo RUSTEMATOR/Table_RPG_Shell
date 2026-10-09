@@ -1,6 +1,6 @@
 import { io, type Socket } from 'socket.io-client';
 import { useEffect, useRef, useSyncExternalStore } from 'react';
-import type { ClientToServerEvents, GmAck, PlayerActivity, ServerToClientEvents } from '@zg/shared';
+import type { ClientToServerEvents, GmAck, PlayerActivity, ServerToClientEvents, Reaction } from '@zg/shared';
 import { BUILD_ID } from './api.ts';
 import { applyWelcome, clearFeed, feedLastSeq, ingest } from './feed.ts';
 
@@ -132,6 +132,13 @@ export function onSocketConnect(cb: () => void): () => void {
 export function emitActivity(payload: PlayerActivity): boolean {
   if (!socket?.connected) return false;
   socket.volatile.emit('player:activity', payload);
+  return true;
+}
+
+/** Отклик на стол (этап 52): без ответа; без связи — false. */
+export function emitReaction(kind: Reaction): boolean {
+  if (!socket?.connected) return false;
+  socket.volatile.emit('player:react', { kind });
   return true;
 }
 

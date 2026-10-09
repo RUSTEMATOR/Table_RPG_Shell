@@ -28,6 +28,7 @@ import type { SchedulePlayer } from './schedule.ts';
 import type { TableMoment } from './moments.ts';
 import type { AcquaintancePlayer } from './acquaintances.ts';
 import type { BestiaryPlayer } from './bestiary.ts';
+import type { TableReaction } from './reactions.ts';
 
 export interface ServerToClientEvents {
   'error:forbidden': (payload: { event: string }) => void;
@@ -52,6 +53,8 @@ export interface ServerToClientEvents {
   'table:sign': (payload: { character: string; sign: OverloadSign; at: number }) => void;
   /** Столу: памятный момент выдан (этап 47) — плашка на несколько секунд. */
   'table:moment': (payload: TableMoment) => void;
+  /** Столу: отклик игрока (этап 52). */
+  'table:reaction': (payload: TableReaction) => void;
   /** Столу: сцена сменилась. */
   'table:state': (payload: TableState) => void;
   /** Игрокам и столу: открытая часть карты изменилась (уходит, только если она действительно изменилась). Перечитать. */
@@ -109,4 +112,6 @@ export interface ClientToServerEvents {
   'gm:roll.override': (payload: unknown, ack: Ack) => void;
   /** Игрок: что открыто в приложении (PlayerActivitySchema). Без ответа, можно потерять. */
   'player:activity': (payload: unknown) => void;
+  /** Игрок: отклик на стол (ReactSchema). Без ответа, можно потерять. */
+  'player:react': (payload: unknown) => void;
 }
