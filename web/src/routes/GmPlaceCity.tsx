@@ -299,7 +299,12 @@ function RumorsTab({ d, url, send }: { d: GmPlaceDetail; url: string; send: Send
       <p className="m-0 text-[13.6px] text-muted">
         Новые слухи и задания скрыты; «Открыть» — и игроки увидят их в экране города, в порядке, в каком вы открывали. Открыто: {open} из {d.rumors.length}.
       </p>
-      {d.rumors.map((r) => (
+      {d.rumors.filter((r) => r.proposed).length > 0 && (
+        <p className="m-0 text-[13.6px] text-warn">
+          Сказы игроков ждут решения: «Принять» — сказ ляжет в город открытым слухом с подписью автора; «Отклонить» — удалится, автор узнает.
+        </p>
+      )}
+      {[...d.rumors.filter((r) => r.proposed), ...d.rumors.filter((r) => !r.proposed)].map((r) => (
         <RumorRow key={r.id} r={r} send={send} />
       ))}
       <div className="grid gap-2 rounded-control border border-dashed border-border p-2.5">
@@ -350,6 +355,13 @@ function RumorsTab({ d, url, send }: { d: GmPlaceDetail; url: string; send: Send
   );
 }
 
+const whenAt = (t: number) => new Date(t).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+function toLocalInput(ms: number): string {
+  const d = new Date(ms);
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
 function RumorRow({ r, send }: { r: GmRumor; send: Send }) {
   const [text, setText] = useState(r.text);
   const [noteGm, setNoteGm] = useState(r.noteGm);
@@ -358,21 +370,71 @@ function RumorRow({ r, send }: { r: GmRumor; send: Send }) {
     setNoteGm(r.noteGm);
   }, [r.text, r.noteGm]);
   const [del, setDel] = useState(false);
+  // расписание (этап 45): поле показывается по кнопке, значение — местное время
+  const [schedule, setSchedule] = useState(false);
+  const [at, setAt] = useState(() => toLocalInput(r.revealAt ?? Date.now() + 24 * 3600_000));
   const url = `/api/gm/maps/rumors/${r.id}`;
   const dirty = text !== r.text || noteGm !== r.noteGm;
   return (
-    <div className={cn('grid gap-2 rounded-control border border-solid border-border p-2.5', !r.visible && 'border-dashed')}>
-      <div className="flex items-center gap-2">
+    <div className={cn('grid gap-2 rounded-control border border-solid border-border p-2.5', !r.visible && 'border-dashed', r.proposed && 'border-warn')}>
+      <div className="flex flex-wrap items-center gap-2">
         <Badge tone={r.kind === 'quest' ? 'warn' : 'neutral'}>
           <GameIcon name={RUMOR_ICON[r.kind]} className="mr-1" />
           {RUMOR_KIND_LABELS[r.kind]}
         </Badge>
-        {r.visible ? <Badge tone="ok">Открыт</Badge> : <span className="text-[12.5px] text-muted">скрыт</span>}
+        {r.proposed ? (
+          <Badge tone="warn">сказ · {r.author ?? 'игрок'}</Badge>
+        ) : r.visible ? (
+          <Badge tone="ok">Открыт</Badge>
+        ) : r.revealAt ? (
+          <Badge tone="accent">откроется {whenAt(r.revealAt)}</Badge>
+        ) : (
+          <span className="text-[12.5px] text-muted">скрыт</span>
+        )}
+        {!r.proposed && r.author && <span className="text-[12.5px] text-muted">рассказал(а) {r.author}</span>}
+        {r.firstBy && <span className="text-[12.5px] text-muted">первым услышал(а) {r.firstBy}</span>}
         <span className="grow" />
-        <Button size="sm" variant={r.visible ? 'ghost' : 'primary'} onClick={() => void send(url, { visible: !r.visible }, r.visible ? 'Скрыто' : 'Открыто игрокам')}>
-          {r.visible ? 'Скрыть' : 'Открыть'}
-        </Button>
+        {r.proposed ? (
+          <>
+            <Button size="sm" variant="primary" onClick={() => void send(`${url}/accept`, {}, 'Сказ принят, автор узнает')}>
+              Принять
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => void send(`${url}/decline`, {}, 'Сказ отклонён')}>
+              Отклонить
+            </Button>
+          </>
+        ) : (
+          <>
+            {!r.visible && (
+              <Button size="sm" variant="ghost" onClick={() => setSchedule((v) => !v)}>
+                {r.revealAt ? 'Расписание' : 'Открыть в…'}
+              </Button>
+            )}
+            <Button size="sm" variant={r.visible ? 'ghost' : 'primary'} onClick={() => void send(url, { visible: !r.visible }, r.visible ? 'Скрыто' : 'Открыто игрокам')}>
+              {r.visible ? 'Скрыть' : 'Открыть'}
+            </Button>
+          </>
+        )}
       </div>
+      {schedule && !r.visible && !r.proposed && (
+        <div className="flex flex-wrap items-center gap-2">
+          <Input type="datetime-local" aria-label="Когда открыть" value={at} min={toLocalInput(Date.now())} onChange={(e) => setAt(e.target.value)} className="w-auto" />
+          <Button
+            size="sm"
+            disabled={Number.isNaN(new Date(at).getTime())}
+            onClick={async () => {
+              if (await send(url, { revealAt: new Date(at).getTime() }, `Откроется ${whenAt(new Date(at).getTime())}`)) setSchedule(false);
+            }}
+          >
+            Запланировать
+          </Button>
+          {r.revealAt && (
+            <Button size="sm" variant="ghost" onClick={() => void send(url, { revealAt: null }, 'Расписание снято')}>
+              Снять
+            </Button>
+          )}
+        </div>
+      )}
       <Textarea aria-label="Текст (видят игроки, когда открыт)" rows={2} value={text} maxLength={1000} onChange={(e) => setText(e.target.value)} />
       <Textarea
         aria-label="Заметка мастера"
