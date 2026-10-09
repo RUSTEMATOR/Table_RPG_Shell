@@ -304,3 +304,17 @@ html[data-shell='book'][data-skin] nav[aria-label='Разделы мастера
 html[data-shell='book'][data-skin] nav[aria-label='Разделы мастера'] p {
   color: color-mix(in oklab, var(--sh-page) 60%, var(--sh-desk));
 }
+
+/* Бестиарий: гравюрные плитки на страницах книги */
+html[data-shell='book'][data-skin] .zg-bestiary li > button,
+html[data-shell='book'][data-skin] .zg-bestiary li[aria-label] {
+  border-radius: 4px;
+  border: 1px solid color-mix(in oklab, var(--ct-ink) 55%, transparent);
+  box-shadow:
+    inset 0 0 0 3px var(--sh-page),
+    inset 0 0 0 4px color-mix(in oklab, var(--ct-ink) 35%, transparent);
+  background: var(--sh-page);
+}
+html[data-shell='book'][data-skin] .zg-bestiary li > button > span:first-child {
+  filter: sepia(0.35) contrast(1.05);
+}

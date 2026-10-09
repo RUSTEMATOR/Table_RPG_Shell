@@ -222,3 +222,26 @@ html[data-shell='dossier'][data-skin] :is(.zg-sheet, .zg-dialog) {
   background: var(--sh-paper);
   border-radius: 1px;
 }
+
+/* Бестиарий: карточки картотеки с печатью */
+html[data-shell='dossier'][data-skin] .zg-bestiary li > button,
+html[data-shell='dossier'][data-skin] .zg-bestiary li[aria-label] {
+  border-radius: 2px;
+  border: 1px solid color-mix(in oklab, var(--sh-ink) 40%, transparent);
+  background: var(--sh-paper);
+  font-family: var(--sh-type);
+  position: relative;
+}
+html[data-shell='dossier'][data-skin] .zg-bestiary li > button::after {
+  content: 'ДЕЛО';
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: var(--sh-stamp);
+  border: 1px solid var(--sh-stamp);
+  padding: 0 3px;
+  transform: rotate(-8deg);
+  opacity: 0.8;
+}

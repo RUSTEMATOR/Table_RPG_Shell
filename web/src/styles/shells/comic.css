@@ -231,3 +231,13 @@ html[data-shell='comic'][data-skin] :is(.zg-sheet, .zg-dialog) {
   border-radius: 0;
   background: var(--sh-paper);
 }
+
+/* Бестиарий: карточки комикса — жёлтая подложка, чёрная обводка */
+html[data-shell='comic'][data-skin] .zg-bestiary li > button,
+html[data-shell='comic'][data-skin] .zg-bestiary li[aria-label] {
+  border-radius: 6px;
+  border: 3px solid var(--sh-ink);
+  background: color-mix(in oklab, var(--sh-yellow) 35%, var(--sh-paper));
+  box-shadow: 3px 3px 0 var(--sh-ink);
+  font-family: var(--sh-hand);
+}

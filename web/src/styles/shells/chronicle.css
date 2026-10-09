@@ -235,3 +235,12 @@ html[data-shell='chronicle'][data-skin] :is(.zg-main, .zg-pager) .zg-btn-default
   color: color-mix(in oklab, var(--sh-page) 92%, #fff);
   border-color: color-mix(in oklab, var(--sh-page) 45%, transparent);
 }
+
+/* Бестиарий: пергаментные клейма с красной рамкой */
+html[data-shell='chronicle'][data-skin] .zg-bestiary li > button,
+html[data-shell='chronicle'][data-skin] .zg-bestiary li[aria-label] {
+  border-radius: 2px;
+  border: 2px double var(--sh-red);
+  background: var(--sh-page);
+  font-family: var(--sh-serif);
+}

@@ -219,3 +219,22 @@ html[data-shell='pixel'][data-skin] :is(.zg-sheet, .zg-dialog) {
   border-radius: 0;
   box-shadow: var(--sh-px);
 }
+
+/* Бестиарий: пиксельные рамки без сглаживания */
+html[data-shell='pixel'][data-skin] .zg-bestiary li > button,
+html[data-shell='pixel'][data-skin] .zg-bestiary li[aria-label] {
+  border-radius: 0;
+  border: 3px solid var(--ct-ink);
+  box-shadow: 3px 3px 0 var(--ct-ink);
+  background: var(--ct-panel);
+  image-rendering: pixelated;
+}
+html[data-shell='pixel'][data-skin] .zg-bestiary li > button:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 var(--ct-ink);
+}
+html[data-shell='pixel'][data-skin] .zg-bestiary li > button > span:first-child,
+html[data-shell='pixel'][data-skin] .zg-bestiary li[aria-label] > span:first-child {
+  border-radius: 0;
+  box-shadow: none;
+}

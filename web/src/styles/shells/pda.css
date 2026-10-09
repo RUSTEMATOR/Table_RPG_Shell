@@ -219,3 +219,26 @@ html[data-shell='pda'][data-skin] :is(.zg-sheet, .zg-dialog) {
   background: var(--sh-screen);
   border: 2px solid #1c1f14;
 }
+
+/* Бестиарий: записи полевого КПК */
+html[data-shell='pda'][data-skin] .zg-bestiary ul {
+  grid-template-columns: 1fr;
+  gap: 3px;
+}
+html[data-shell='pda'][data-skin] .zg-bestiary li > button,
+html[data-shell='pda'][data-skin] .zg-bestiary li[aria-label] {
+  grid-template-columns: auto 1fr;
+  justify-items: start;
+  align-items: center;
+  border-radius: 3px;
+  border: 1px solid color-mix(in oklab, var(--sh-warn) 45%, transparent);
+  background: color-mix(in oklab, var(--sh-screen) 85%, #000);
+  font-family: var(--sh-stencil);
+  letter-spacing: 0.04em;
+}
+html[data-shell='pda'][data-skin] .zg-bestiary li > button > span:first-child,
+html[data-shell='pda'][data-skin] .zg-bestiary li[aria-label] > span:first-child {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 3px;
+}

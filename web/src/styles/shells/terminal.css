@@ -245,3 +245,33 @@ html[data-shell='terminal'][data-skin] :is(.zg-sheet, .zg-dialog) {
   border: 2px solid var(--sh-phos);
   border-radius: 0;
 }
+
+/* Бестиарий: моноширинная таблица записей */
+html[data-shell='terminal'][data-skin] .zg-bestiary ul {
+  grid-template-columns: 1fr;
+  gap: 2px;
+}
+html[data-shell='terminal'][data-skin] .zg-bestiary li > button,
+html[data-shell='terminal'][data-skin] .zg-bestiary li[aria-label] {
+  grid-template-columns: auto 1fr;
+  justify-items: start;
+  align-items: center;
+  border-radius: 0;
+  border: 1px solid color-mix(in oklab, var(--ct-accent) 50%, transparent);
+  background: transparent;
+  font-family: var(--sh-head);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+html[data-shell='terminal'][data-skin] .zg-bestiary li > button > span:first-child,
+html[data-shell='terminal'][data-skin] .zg-bestiary li[aria-label] > span:first-child {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0;
+  box-shadow: none;
+}
+html[data-shell='terminal'][data-skin] .zg-bestiary li > button:hover {
+  transform: none;
+  box-shadow: none;
+  background: color-mix(in oklab, var(--ct-accent) 15%, transparent);
+}
