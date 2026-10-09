@@ -11,8 +11,23 @@ import { Downtime } from './Downtime.tsx';
 import { NextGame } from './NextGame.tsx';
 import { Letters } from './Letters.tsx';
 import { DictateButton } from './DictateButton.tsx';
+import { downloadMarkdown, loadExportData, openPrintWindow, printExport } from '../lib/exportPlayer.ts';
 import { spring } from '../lib/motion.tsx';
-import { Button, Card, CardTitle, EmptyState, Field, Segmented, Sheet, Textarea } from '../ui/index.ts';
+import {
+  Button,
+  Card,
+  CardTitle,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  EmptyState,
+  Field,
+  Segmented,
+  Sheet,
+  Textarea,
+  toast,
+} from '../ui/index.ts';
 
 const when = (t: number) => new Date(t).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 
@@ -90,7 +105,8 @@ export function Diary({ active = true }: { active?: boolean }) {
       <Downtime />
       <Letters active={active} />
       <div className="flex items-center justify-between gap-3">
-        <CardTitle className="text-[1.7rem]">Дневник</CardTitle>
+        <CardTitle className="grow text-[1.7rem]">Дневник</CardTitle>
+        <ExportMenu />
         <Button variant="primary" onClick={() => setSheet('new')}>
           {draft.text.trim() ? 'Черновик' : 'Новая запись'}
         </Button>
@@ -240,5 +256,28 @@ function EntrySheet({
         </div>
       </form>
     </Sheet>
+  );
+}
+
+/** Экспорт (этап 56): карточка, дневник и письма — в Markdown или в окно печати (PDF). Всё на устройстве. */
+function ExportMenu() {
+  const run = async (how: 'md' | 'pdf') => {
+    // окно печати — сразу по нажатию: после ожидания данных браузер счёл бы его всплывающим
+    const w = how === 'pdf' ? openPrintWindow() : null;
+    if (how === 'pdf' && !w) return toast.error('Браузер не дал открыть окно печати — разреши всплывающие окна');
+    const data = await loadExportData();
+    if (how === 'md') downloadMarkdown(data);
+    else printExport(w!, data);
+  };
+  return (
+    <DropdownMenu modal={false}>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost">Экспорт</Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent>
+        <DropdownMenuItem onSelect={() => void run('md')}>Markdown (.md)</DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => void run('pdf')}>PDF / печать</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
