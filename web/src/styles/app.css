@@ -563,3 +563,15 @@
     grid-area: aside;
   }
 }
+
+/* Туман на столе (этап 57): два слоя мягких пятен медленно плывут навстречу */
+@keyframes zg-fog-drift {
+  from { transform: translateX(-4%); }
+  to { transform: translateX(4%); }
+}
+.zg-fog {
+  background:
+    radial-gradient(ellipse 40% 25% at 20% 70%, rgba(225,230,235,.55), transparent 70%),
+    radial-gradient(ellipse 35% 22% at 70% 55%, rgba(225,230,235,.45), transparent 70%),
+    radial-gradient(ellipse 50% 30% at 45% 85%, rgba(225,230,235,.5), transparent 70%);
+}

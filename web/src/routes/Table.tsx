@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { AnimatePresence, m, MotionConfig } from 'motion/react';
-import { DEFAULT_ATMOSPHERE, DEMO_ROOM_CODE, EFFECT_LABELS, type TableMoment, type TableReaction, type TableState } from '@zg/shared';
+import { DEFAULT_ATMOSPHERE, DEMO_ROOM_CODE, ambientFor, EFFECT_LABELS, type TableMoment, type TableReaction, type TableState } from '@zg/shared';
 import { ConnectionDot } from '../components/ConnectionDot.tsx';
 import { api } from '../lib/api.ts';
 import { useFeed } from '../lib/feed.ts';
@@ -21,6 +21,8 @@ import { TvParticles } from '../tv/TvParticles.tsx';
 import { TvSigns, type Sign } from '../tv/TvSigns.tsx';
 import { TvMoments } from '../tv/TvMoments.tsx';
 import { TvReactions } from '../tv/TvReactions.tsx';
+import { TvDaytime, TvWeather } from '../tv/TvWeather.tsx';
+import { setAmbient } from '../tv/ambient.ts';
 import { TV_VARS, effectColor, isTableRoll } from '../tv/palette.ts';
 import { EFFECT_ICON, GameIcon } from '../ui/GameIcon.tsx';
 import { play, setSound, useSound } from '../tv/sound.ts';
@@ -106,6 +108,13 @@ function TableScreen({ room, demo }: { room: string; demo: boolean }) {
     else if (sceneId && sceneId !== p.scene) play('page');
   }, [loaded, sceneId, placeId]);
 
+  // фоновый звук (этап 57): по атмосфере и только при включённом звуке стола
+  const atm = state.atmosphere;
+  useEffect(() => {
+    setAmbient(ambientFor(atm), atm.weather === 'storm');
+  }, [atm.ambient, atm.weather, atm.daytime, sound]);
+  useEffect(() => () => setAmbient('none', false), []);
+
   const scene = state.scene;
   return (
     // «Анимация выкл.» гасит всё движение Motion так же, как «Уменьшить движение» в системе.
@@ -118,6 +127,8 @@ function TableScreen({ room, demo }: { room: string; demo: boolean }) {
         <TvScene scene={scene} motion={!still && !lite} idle={loaded && !state.npc} />
         {!still && !lite && !capabilities.reducedMotion() && <TvParticles onSlow={slow} />}
         <TvMap show={state.map} still={still} lite={lite} />
+        <TvDaytime daytime={state.atmosphere.daytime} />
+        <TvWeather weather={state.atmosphere.weather} still={still || lite || capabilities.reducedMotion()} />
 
         <header className="absolute inset-x-[5vw] top-[3vh] flex items-center gap-4 text-[clamp(14px,1.1vw,22px)] opacity-70">
           <span className="grow tracking-[.08em] text-[var(--tv-muted)] uppercase">

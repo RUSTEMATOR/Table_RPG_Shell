@@ -141,3 +141,8 @@ export function useSound(): SoundState {
     () => 'off',
   );
 }
+
+/** Для фонового звука (этап 57): контекст и общий выход, если звук стола включён и разрешён; иначе null. */
+export function soundOutput(): { ctx: AudioContext; out: GainNode } | null {
+  return state() === 'on' && ctx && master ? { ctx, out: master } : null;
+}
