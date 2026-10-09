@@ -12,7 +12,7 @@
 Не меняется: правила бросков, исправление броска мастером, моменты.
 
 ## Шаги
-1. **Сервер.** Таблица `spark`, колонка `roll.reroll_of` (миграция 0022); `shared/src/sparks.ts` (схемы, `GmSpark`), `PlayerCharacter.sparks`, `GmCharacterView.sparks`, `RollPublic.reroll`, `RollGm.reroll`, `MomentWriteSchema.spark`; `domain/sparks.ts` (баланс, начисление, трата, журнал); переброс в `rollService` (`rerollRoll`); маршруты игрока `GET /api/player/sparks`, `POST /api/player/rolls/:id/reroll`; мастера `POST /api/gm/sparks` (начислить); искра за викторину в `answerQuiz`; искра при моменте.
+1. **Сервер.** Таблица `spark`, колонка `roll.reroll_of` (миграция 0022); `shared/src/sparks.ts` (схемы, `GmSpark`), `PlayerCharacter.sparks`, `GmCharacterView.sparks`, `RollPublic.reroll`, `RollGm.reroll`, `MomentWriteSchema.spark`; `domain/sparks.ts` (баланс, начисление, трата, журнал); переброс — тем же `roll:request` с `rerollOf` (проверка `rerollError`, трата в `createRoll`), а не отдельным маршрутом: так анимация лотка и дедупликация по `clientRequestId` остаются общими; маршруты игрока `GET /api/player/sparks`; мастера `POST /api/gm/sparks` (начислить); искра за викторину в `answerQuiz`; искра при моменте.
 2. **Игрок.** В лотке «Броски»: «Искры: N» и «Переброс за искру» у последнего своего броска; пометка «переброс» в ленте; баланс на карточке у имени.
 3. **Мастер.** Вкладка «Моменты и искры»: баланс, начислить с причиной, журнал; галочка «и искру» в формах момента.
 4. **Документы:** руководство, решения, ручные проверки `docs/test-cases/stage-48.md`, статус в плане.
