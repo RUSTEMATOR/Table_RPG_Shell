@@ -6,6 +6,7 @@ import { craftOf } from '../domain/randomizer.ts';
 import { playerSheet } from '../domain/sheet.ts';
 import { TRAITS } from '../domain/traits.ts';
 import { portraitUrl } from '../domain/portrait.ts';
+import { momentsForPlayer } from '../domain/moments.ts';
 
 // Единственное место, где персонаж превращается в то, что видит игрок (перенос toPublic §2.3).
 // Берём только раскрытое, по белому списку полей; скрытые черты не оставляют ни записи, ни счётчика.
@@ -56,5 +57,6 @@ export function projectForPlayer({ row, doc }: LoadedCharacter): PlayerCharacter
     traits,
     hints,
     ...playerSheet(row.id),
+    moments: momentsForPlayer(row.id),
   });
 }

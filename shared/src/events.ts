@@ -25,6 +25,7 @@ import type { LetterPlayer } from './letters.ts';
 import type { ChapterPlayer } from './chronicle.ts';
 import type { DowntimeStatePlayer } from './downtime.ts';
 import type { SchedulePlayer } from './schedule.ts';
+import type { TableMoment } from './moments.ts';
 
 export interface ServerToClientEvents {
   'error:forbidden': (payload: { event: string }) => void;
@@ -47,6 +48,8 @@ export interface ServerToClientEvents {
   'gm:suggestion.green': (payload: GreenSuggestion) => void;
   /** Столу: видимый признак перегрузки персонажа (по кнопке мастера). */
   'table:sign': (payload: { character: string; sign: OverloadSign; at: number }) => void;
+  /** Столу: памятный момент выдан (этап 47) — плашка на несколько секунд. */
+  'table:moment': (payload: TableMoment) => void;
   /** Столу: сцена сменилась. */
   'table:state': (payload: TableState) => void;
   /** Игрокам и столу: открытая часть карты изменилась (уходит, только если она действительно изменилась). Перечитать. */

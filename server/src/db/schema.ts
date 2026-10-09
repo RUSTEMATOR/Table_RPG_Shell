@@ -318,6 +318,27 @@ export const gameSlotVote = sqliteTable(
   (t) => [uniqueIndex('game_slot_vote_once_idx').on(t.slotId, t.memberId)],
 );
 
+// Памятный момент (этап 47): значок персонажу от мастера. note_gm — только мастеру.
+export const moment = sqliteTable(
+  'moment',
+  {
+    id: text('id').primaryKey(),
+    roomId: text('room_id')
+      .notNull()
+      .references(() => room.id, { onDelete: 'cascade' }),
+    characterId: text('character_id')
+      .notNull()
+      .references(() => character.id, { onDelete: 'cascade' }),
+    kind: text('kind').notNull(),
+    title: text('title').notNull(),
+    text: text('text').notNull().default(''),
+    rollId: text('roll_id').references(() => roll.id, { onDelete: 'set null' }),
+    noteGm: text('note_gm').notNull().default(''),
+    createdAt: integer('created_at').notNull(),
+  },
+  (t) => [index('moment_character_idx').on(t.characterId, t.createdAt)],
+);
+
 // Заметки мастера к сессии.
 export const sessionNote = sqliteTable('session_note', {
   sessionId: text('session_id')

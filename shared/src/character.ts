@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { FigureSchema, type Figure } from './figure.ts';
 import { SHEET_KINDS, type SheetKind } from './constants.ts';
+import { MomentPlayerSchema, type GmMoment } from './moments.ts';
 
 // ---- Что видит игрок: единственный формат, белый список, strictObject на всех уровнях ----
 
@@ -48,6 +49,8 @@ export const PlayerCharacterSchema = z.strictObject({
   relations: z.array(PlayerSheetNoteSchema),
   /** Пиксель-арт фигурка (этап 23). */
   figure: FigureSchema.optional(),
+  /** Памятные моменты (этап 47), по времени. */
+  moments: z.array(MomentPlayerSchema),
 });
 export type PlayerCharacter = z.infer<typeof PlayerCharacterSchema>;
 export type PlayerTrait = z.infer<typeof PlayerTraitSchema>;
@@ -210,6 +213,7 @@ export interface GmCharacterView {
   player: PlayerCharacter;
   summaries: import('./gm.ts').GmSummary[];
   sheet: GmSheetEntry[];
+  moments: GmMoment[];
 }
 
 // ---- Лист персонажа ----
