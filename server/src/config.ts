@@ -39,6 +39,9 @@ const ConfigSchema = z.object({
   VAPID_PRIVATE_KEY: z.string().optional(),
   // Контакт для push-служб: https-адрес (не почта). По умолчанию PUBLIC_ORIGIN.
   VAPID_SUBJECT: z.string().url().optional(),
+  // Litestream (этап 59): конфиг реплики и бинарник — только для страницы «База» (сама репликация — служба launchd).
+  LITESTREAM_CONFIG: z.string().optional(),
+  LITESTREAM_BIN: z.string().optional(),
 });
 
 const parsed = ConfigSchema.safeParse(process.env);
