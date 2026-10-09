@@ -141,6 +141,13 @@
       "when": 1791504612713,
       "tag": "0019_rumor_schedule_tales",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1791505732821,
+      "tag": "0020_schedule",
+      "breakpoints": true
     }
   ]
 }

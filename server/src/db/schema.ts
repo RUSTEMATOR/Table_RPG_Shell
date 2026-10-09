@@ -282,6 +282,42 @@ export const downtime = sqliteTable(
   (t) => [uniqueIndex('downtime_once_idx').on(t.sessionId, t.characterId), index('downtime_room_idx').on(t.roomId, t.resolvedAt)],
 );
 
+// Расписание (этап 46): вариант даты для голосования или назначенная игра (kind). Напоминания — флаги.
+export const gameSlot = sqliteTable(
+  'game_slot',
+  {
+    id: text('id').primaryKey(),
+    roomId: text('room_id')
+      .notNull()
+      .references(() => room.id, { onDelete: 'cascade' }),
+    kind: text('kind', { enum: ['option', 'planned'] }).notNull(),
+    startsAt: integer('starts_at').notNull(),
+    durationMin: integer('duration_min').notNull(),
+    note: text('note').notNull().default(''),
+    remindedDay: integer('reminded_day', { mode: 'boolean' }).notNull().default(false),
+    remindedHour: integer('reminded_hour', { mode: 'boolean' }).notNull().default(false),
+    createdAt: integer('created_at').notNull(),
+  },
+  (t) => [index('game_slot_room_idx').on(t.roomId, t.startsAt)],
+);
+
+// Ответ участника по слоту: голос за вариант или явка на назначенную игру. Один на участника.
+export const gameSlotVote = sqliteTable(
+  'game_slot_vote',
+  {
+    id: text('id').primaryKey(),
+    slotId: text('slot_id')
+      .notNull()
+      .references(() => gameSlot.id, { onDelete: 'cascade' }),
+    memberId: text('member_id')
+      .notNull()
+      .references(() => member.id, { onDelete: 'cascade' }),
+    answer: text('answer', { enum: ['yes', 'maybe', 'no'] }).notNull(),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  (t) => [uniqueIndex('game_slot_vote_once_idx').on(t.slotId, t.memberId)],
+);
+
 // Заметки мастера к сессии.
 export const sessionNote = sqliteTable('session_note', {
   sessionId: text('session_id')

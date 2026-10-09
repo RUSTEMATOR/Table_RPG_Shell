@@ -1,8 +1,9 @@
 import { deliverDue } from '../domain/letters.ts';
 import { revealDueRumors } from '../domain/places.ts';
+import { remindDue } from '../domain/schedule.ts';
 import { notifyPlaceChanged } from './maps.ts';
 
-// Общий планировщик (этапы 42, 45): при запуске и каждые 30 с — доставить письма, открыть слухи по расписанию.
+// Общий планировщик (этапы 42, 45, 46): при запуске и каждые 30 с — доставить письма, открыть слухи, напомнить об игре.
 // Ошибки одного тика игру не останавливают.
 
 const TICK_MS = 30_000;
@@ -24,6 +25,12 @@ export function startScheduler(log: Log): void {
       if (places.length) log.info({ n: places.length }, 'rumors: слухи открыты по расписанию');
     } catch (err) {
       log.warn({ err }, 'rumors: открытие по расписанию не удалось');
+    }
+    try {
+      const n = remindDue();
+      if (n) log.info({ n }, 'schedule: напоминания отправлены');
+    } catch (err) {
+      log.warn({ err }, 'schedule: напоминание не удалось');
     }
   };
   tick();

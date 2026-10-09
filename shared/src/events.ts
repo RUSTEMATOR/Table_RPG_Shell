@@ -24,6 +24,7 @@ import type { GmPlayerPresence } from './presence.ts';
 import type { LetterPlayer } from './letters.ts';
 import type { ChapterPlayer } from './chronicle.ts';
 import type { DowntimeStatePlayer } from './downtime.ts';
+import type { SchedulePlayer } from './schedule.ts';
 
 export interface ServerToClientEvents {
   'error:forbidden': (payload: { event: string }) => void;
@@ -82,6 +83,9 @@ export interface ServerToClientEvents {
   'downtime:changed': (payload: DowntimeStatePlayer) => void;
   /** Мастеру: дела изменились. */
   'gm:downtime.changed': (payload: { id: string }) => void;
+  /** Игроку: расписание изменилось (этап 46) — его проекция. */
+  'schedule:changed': (payload: SchedulePlayer) => void;
+  'gm:schedule.changed': () => void;
 }
 
 type Ack = (res: GmAck) => void;

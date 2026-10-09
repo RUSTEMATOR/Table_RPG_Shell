@@ -15,3 +15,4 @@ export * from './push.ts';
 export * from './letters.ts';
 export * from './chronicle.ts';
 export * from './downtime.ts';
+export * from './schedule.ts';
