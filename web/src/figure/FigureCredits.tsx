@@ -70,6 +70,14 @@ export function FigureCredits() {
           ))}
           .
         </p>
+        <p className="m-0 text-[14px] text-muted">
+          Справочник чудищ у мастера — D&D 5e System Reference Document 5.1 (Wizards of the Coast LLC), CC-BY-4.0, через{' '}
+          <a href="https://open5e.com" target="_blank" rel="noreferrer" className="text-link">
+            Open5e
+          </a>
+          . This work includes material taken from the System Reference Document 5.1 (“SRD 5.1”) by Wizards of the Coast LLC, licensed under the Creative Commons Attribution 4.0
+          International License.
+        </p>
         {!list ? (
           <p className="muted">Загрузка…</p>
         ) : (

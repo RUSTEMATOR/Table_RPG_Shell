@@ -7,7 +7,7 @@ import { SERVER_ROOT } from '../paths.ts';
 // схемы проверяют только форму. Порядок строк важен: от него зависит выбор генератора.
 
 const SEED_DIR = join(SERVER_ROOT, '..', 'seed');
-function load<T>(file: string, schema: z.ZodType<T>): T {
+export function load<T>(file: string, schema: z.ZodType<T>): T {
   const raw: unknown = JSON.parse(readFileSync(join(SEED_DIR, `${file}.json`), 'utf8'));
   const r = schema.safeParse(raw);
   if (!r.success) throw new Error(`seed/${file}.json: ${r.error.issues[0]?.path.join('.')} ${r.error.issues[0]?.message}`);
@@ -20,8 +20,7 @@ const StrList = z.array(z.string());
 export const TIER_KEYS = ['cursed', 'common', 'dual', 'legend'] as const;
 export type TierKey = (typeof TIER_KEYS)[number];
 export type Tier = TierKey | 'fixed';
-const TierRows = <T extends z.ZodTypeAny>(row: T) =>
-  z.object({ cursed: z.array(row), common: z.array(row), dual: z.array(row), legend: z.array(row) });
+const TierRows = <T extends z.ZodTypeAny>(row: T) => z.object({ cursed: z.array(row), common: z.array(row), dual: z.array(row), legend: z.array(row) });
 
 // Строки таблиц. Метка: имя, суть, 4 ступени, цена, крючок.
 export type MarkRow = [string, string, string[], string, string];

@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
-import { ATTITUDE_LABELS, UNIT_IDS, type Figure, type GmNpc, type UnitId } from '@zg/shared';
+import { ATTITUDE_LABELS, UNIT_IDS, type Figure, type GmNpc, type SrdListItem, type UnitId } from '@zg/shared';
 import { api } from '../lib/api.ts';
 import { useConnection, useSocketEvent } from '../lib/socket.ts';
 import { AnimatePresence, m } from 'motion/react';
@@ -45,6 +45,7 @@ function Npcs() {
     if (r.ok) toast('Противник убран со стола');
   };
   const anyShown = list?.some((n) => n.shown);
+  const [srdOpen, setSrdOpen] = useState(false);
 
   return (
     <>
@@ -56,10 +57,14 @@ function Npcs() {
               Убрать портрет со стола
             </Button>
           )}
+          <Button variant="ghost" onClick={() => setSrdOpen(true)}>
+            Из бестиария D&D
+          </Button>
           <Button variant="primary" onClick={create}>
             Новый
           </Button>
         </div>
+        <SrdPicker open={srdOpen} onClose={() => setSrdOpen(false)} onAdded={(n) => setList((l) => [n, ...(l ?? [])])} />
         <p className="m-0 text-[13.6px] text-muted">Игроки противников не видят. На стол по кнопке уходят только имя и портрет; сила и заметки остаются здесь.</p>
         {list?.length === 0 && <p className="m-0 text-muted">Пока никого.</p>}
         {error && <p className="error m-0">{error}</p>}
@@ -72,6 +77,63 @@ function Npcs() {
         ))}
       </AnimatePresence>
     </>
+  );
+}
+
+/** Справочник D&D SRD (этап 50, шаг 5): поиск по имени и виду, «Добавить» — противник с флагом бестиария и силой по CR. */
+function SrdPicker({ open, onClose, onAdded }: { open: boolean; onClose: () => void; onAdded: (n: GmNpc) => void }) {
+  const [list, setList] = useState<SrdListItem[] | null>(null);
+  const [attribution, setAttribution] = useState('');
+  const [q, setQ] = useState('');
+  const [busy, setBusy] = useState<string | null>(null);
+  useEffect(() => {
+    if (!open || list) return;
+    void api<{ attribution: string; monsters: SrdListItem[] }>('GET', '/api/gm/bestiary-srd').then((r) => {
+      if (r.ok) {
+        setList(r.data.monsters);
+        setAttribution(r.data.attribution);
+      }
+    });
+  }, [open, list]);
+  const needle = q.trim().toLowerCase();
+  const shown = (list ?? []).filter((m) => !needle || m.name.toLowerCase().includes(needle) || m.type.toLowerCase().includes(needle) || m.cr === needle).slice(0, 60);
+  const add = async (m: SrdListItem) => {
+    setBusy(m.slug);
+    const r = await api<GmNpc>('POST', '/api/gm/npcs/from-srd', { slug: m.slug });
+    setBusy(null);
+    if (!r.ok) return toast.error('Не добавилось');
+    onAdded(r.data);
+    toast(`«${m.name}» добавлен: сила ${m.power}, статблок в заметках`);
+  };
+  return (
+    <Sheet
+      open={open}
+      onOpenChange={(o) => !o && onClose()}
+      title="Бестиарий D&D SRD"
+      description="322 чудища из SRD 5.1 (CC-BY-4.0). Добавленный противник получает флаг «В бестиарии», силу по CR и статблок в заметках мастера; имя — английское, переименуйте по вкусу."
+    >
+      <div className="grid gap-3">
+        <Input aria-label="Поиск" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Имя, вид (dragon, undead, beast…) или CR" autoFocus />
+        {list === null && <p className="m-0 text-muted">Загрузка…</p>}
+        <ul className="m-0 grid max-h-[55dvh] list-none gap-0 overflow-y-auto p-0">
+          {shown.map((m) => (
+            <li key={m.slug} className="flex items-center gap-2 border-b border-solid border-border py-2 last:border-0">
+              <span className="grid min-w-0 grow">
+                <b className="truncate">{m.name}</b>
+                <span className="truncate text-[12.5px] text-muted">
+                  {m.size} {m.type} · CR {m.cr} · сила {m.power} ({m.band})
+                </span>
+              </span>
+              <Button size="sm" disabled={busy !== null} onClick={() => void add(m)}>
+                {busy === m.slug ? '…' : 'Добавить'}
+              </Button>
+            </li>
+          ))}
+          {list && shown.length === 0 && <li className="py-2 text-muted">Ничего не нашлось.</li>}
+        </ul>
+        {attribution && <p className="m-0 text-[11.5px] leading-snug text-muted">{attribution}</p>}
+      </div>
+    </Sheet>
   );
 }
 
@@ -254,6 +316,24 @@ function NpcEditor({ n, onChange }: { n: GmNpc; onChange: (n: GmNpc) => void }) 
                   />
                 )}
               </Field>
+            )}
+            {beast && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="justify-self-start"
+                disabled={busy}
+                onClick={async () => {
+                  setBusy(true);
+                  const r = await api<{ text: string }>('POST', `/api/gm/npcs/${n.id}/bestiary-draft`, { hint: beastText.trim().slice(0, 1000) });
+                  setBusy(false);
+                  if (!r.ok) return toast.error(r.message ?? 'Черновик не получился');
+                  setBeastText(r.data.text);
+                  toast('Описание в поле — поправьте и сохраните');
+                }}
+              >
+                Описать (Claude)
+              </Button>
             )}
             <p className="m-0 text-[12.5px] text-muted">Чудище открывается отряду само, когда становится противником сессии. Сохраните флаг и описание кнопкой «Сохранить».</p>
           </div>
