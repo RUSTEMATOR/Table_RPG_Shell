@@ -7,6 +7,7 @@ import { rememberLetters } from '../lib/unread.ts';
 import { spring } from '../lib/motion.tsx';
 import { cn } from '../lib/cn.ts';
 import { Button, Card, CardTitle, Field, Sheet, Textarea } from '../ui/index.ts';
+import { DictateButton } from './DictateButton.tsx';
 
 const when = (t: number) => new Date(t).toLocaleString('ru-RU', { day: '2-digit', month: 'long', hour: '2-digit', minute: '2-digit' });
 const firstLine = (t: string) => {
@@ -120,6 +121,7 @@ function LetterSheet({ letter, onClose, onChanged }: { letter: LetterPlayer | nu
               <Field label="Ответ" error={error}>
                 {(id) => <Textarea id={id} rows={5} value={text} maxLength={4000} onChange={(e) => setText(e.target.value)} placeholder="Что ответит твой персонаж…" />}
               </Field>
+              <DictateButton value={text} onChange={setText} />
               <div className="flex gap-2">
                 <Button type="button" variant="ghost" className="flex-1" onClick={() => setReplying(false)}>
                   Отмена

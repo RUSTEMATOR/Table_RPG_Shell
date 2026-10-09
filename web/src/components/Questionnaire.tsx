@@ -4,6 +4,7 @@ import { api } from '../lib/api.ts';
 import { useMe } from '../lib/me.tsx';
 import { load as loadPref, remove as removePref, save as savePref } from '../lib/storage.ts';
 import { Button, Card, CardTitle, EmptyState, Field, Input, Segmented, Select, Skeleton, Textarea, toast } from '../ui/index.ts';
+import { DictateButton } from './DictateButton.tsx';
 
 const EMPTY: QuestionnaireAnswers = { name: '', pronoun: '', source: '', universe: '', concept: '', past: '', wants: '', fears: '', ties: '', avoid: '' };
 const NONE = '__none';
@@ -95,9 +96,12 @@ export function Questionnaire() {
         </Field>
       </div>
       {LONG.map((f) => (
-        <Field key={f.key} label={QUESTIONNAIRE_LABELS[f.key]} hint={f.hint}>
-          {(id) => <Textarea id={id} rows={f.rows} value={a[f.key]} maxLength={f.max} onChange={(e) => set(f.key, e.target.value)} />}
-        </Field>
+        <div key={f.key} className="grid gap-1">
+          <Field label={QUESTIONNAIRE_LABELS[f.key]} hint={f.hint}>
+            {(id) => <Textarea id={id} rows={f.rows} value={a[f.key]} maxLength={f.max} onChange={(e) => set(f.key, e.target.value)} />}
+          </Field>
+          {f.key === 'past' && <DictateButton value={a.past} onChange={(v) => set('past', v)} />}
+        </div>
       ))}
       <div className="flex flex-wrap items-center gap-3">
         <Button variant="primary" disabled={busy || (sent && !dirty)} onClick={() => void submit()}>

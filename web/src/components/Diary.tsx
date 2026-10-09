@@ -10,6 +10,7 @@ import { useActivity } from '../lib/activity.ts';
 import { Downtime } from './Downtime.tsx';
 import { NextGame } from './NextGame.tsx';
 import { Letters } from './Letters.tsx';
+import { DictateButton } from './DictateButton.tsx';
 import { spring } from '../lib/motion.tsx';
 import { Button, Card, CardTitle, EmptyState, Field, Segmented, Sheet, Textarea } from '../ui/index.ts';
 
@@ -223,6 +224,11 @@ function EntrySheet({
             />
           )}
         </Field>
+        {cur.mode !== 'private' ? (
+          <DictateButton value={cur.text} onChange={(text) => set({ ...cur, text })} />
+        ) : (
+          <p className="m-0 text-[12.5px] text-muted">Для записей «Только мне» диктовки нет: распознаёт речь не телефон, а сервис браузера.</p>
+        )}
         {!entry && <p className="m-0 text-[13.6px] text-muted">Черновик сохраняется на телефоне, даже если пропадёт связь.</p>}
         <div className="flex gap-2">
           <Button type="button" variant="ghost" className="flex-1" onClick={onClose}>
