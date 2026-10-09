@@ -97,6 +97,13 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
             </div>
             <Command.List className="max-h-[min(60vh,480px)] overflow-y-auto overscroll-contain p-2 [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:pt-2.5 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:font-ui [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:tracking-[.06em] [&_[cmdk-group-heading]]:text-muted [&_[cmdk-group-heading]]:uppercase">
               <Command.Empty className="px-3 py-6 text-center text-muted">Ничего не нашлось.</Command.Empty>
+              {search.trim().length > 1 && (
+                <Command.Group heading="Поиск">
+                  <Item value={`искать везде ${search}`} onSelect={go(`/gm/search?q=${encodeURIComponent(search.trim())}`)}>
+                    Искать «{search.trim()}» везде
+                  </Item>
+                </Command.Group>
+              )}
               {!data && <Command.Loading className="px-3 py-2 text-muted">Загружаю сцены и персонажей…</Command.Loading>}
 
               <Command.Group heading="Стол">
