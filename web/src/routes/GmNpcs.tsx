@@ -5,7 +5,7 @@ import { useConnection, useSocketEvent } from '../lib/socket.ts';
 import { AnimatePresence, m } from 'motion/react';
 import { spring } from '../lib/motion.tsx';
 import { cn } from '../lib/cn.ts';
-import { Badge, Button, buttonVariants, Card, CardTitle, Field, Input, Select, Sheet, Textarea, toast } from '../ui/index.ts';
+import { Badge, Button, buttonVariants, Card, CardTitle, Field, Input, Select, Sheet, Textarea, toast, Switch } from '../ui/index.ts';
 import units from '../maps3d/units.json';
 import { Pic } from '../components/Pic.tsx';
 import { uploadImage } from '../lib/uploadImage.ts';
@@ -79,6 +79,8 @@ function NpcEditor({ n, onChange }: { n: GmNpc; onChange: (n: GmNpc) => void }) 
   const [name, setName] = useState(n.name);
   const [power, setPower] = useState(n.power ? String(n.power) : '');
   const [notes, setNotes] = useState(n.notes);
+  const [beast, setBeast] = useState(n.bestiary);
+  const [beastText, setBeastText] = useState(n.bestiaryText);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [confirmDel, setConfirmDel] = useState(false);
@@ -87,14 +89,16 @@ function NpcEditor({ n, onChange }: { n: GmNpc; onChange: (n: GmNpc) => void }) 
     setName(n.name);
     setPower(n.power ? String(n.power) : '');
     setNotes(n.notes);
-  }, [n.name, n.power, n.notes]);
+    setBeast(n.bestiary);
+    setBeastText(n.bestiaryText);
+  }, [n.name, n.power, n.notes, n.bestiary, n.bestiaryText]);
   const p = Math.trunc(Number(power));
   const powerValue = p > 0 ? p : null;
-  const dirty = name !== n.name || powerValue !== n.power || notes !== n.notes;
+  const dirty = name !== n.name || powerValue !== n.power || notes !== n.notes || beast !== n.bestiary || beastText !== n.bestiaryText;
 
   const save = async () => {
     setBusy(true);
-    const r = await api<GmNpc>('POST', `/api/gm/npcs/${n.id}`, { name, power: powerValue, notes });
+    const r = await api<GmNpc>('POST', `/api/gm/npcs/${n.id}`, { name, power: powerValue, notes, bestiary: beast, bestiaryText: beastText });
     setBusy(false);
     if (r.ok) onChange(r.data);
     else setMsg('Не сохранилось');
@@ -212,6 +216,47 @@ function NpcEditor({ n, onChange }: { n: GmNpc; onChange: (n: GmNpc) => void }) 
           <Field label="Заметки мастера (никуда не уходят)">
             {(id) => <Textarea id={id} rows={3} value={notes} maxLength={20000} onChange={(e) => setNotes(e.target.value)} />}
           </Field>
+          <div className="grid gap-2 rounded-control border border-dashed border-border p-2.5">
+            <div className="flex flex-wrap items-center gap-3">
+              <Switch checked={beast} onCheckedChange={setBeast} label="В бестиарии (чудище для коллекции отряда)" />
+              {n.bestiary && (
+                <span className="text-[13px] text-muted">
+                  {n.bestiaryUnlockedAt ? `открыт игрокам ${new Date(n.bestiaryUnlockedAt).toLocaleDateString('ru-RU')}` : 'игрокам ещё не открыт'} · бои: {n.fights}
+                </span>
+              )}
+              {n.bestiary && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={busy}
+                  onClick={async () => {
+                    const r = await api<GmNpc>('POST', `/api/gm/npcs/${n.id}/bestiary`, { open: !n.bestiaryUnlockedAt });
+                    if (r.ok) {
+                      onChange(r.data);
+                      toast(n.bestiaryUnlockedAt ? 'Скрыто из бестиария' : 'Открыто в бестиарии, игрокам ушло уведомление');
+                    } else toast.error(r.message ?? 'Не получилось');
+                  }}
+                >
+                  {n.bestiaryUnlockedAt ? 'Скрыть' : 'Открыть в бестиарии'}
+                </Button>
+              )}
+            </div>
+            {beast && (
+              <Field label="Описание для игроков (видно, когда чудище открыто)">
+                {(id) => (
+                  <Textarea
+                    id={id}
+                    rows={3}
+                    value={beastText}
+                    maxLength={2000}
+                    onChange={(e) => setBeastText(e.target.value)}
+                    placeholder="Что известно о твари: повадки, слабости, где водится"
+                  />
+                )}
+              </Field>
+            )}
+            <p className="m-0 text-[12.5px] text-muted">Чудище открывается отряду само, когда становится противником сессии. Сохраните флаг и описание кнопкой «Сохранить».</p>
+          </div>
         </div>
       </div>
       <div className="flex flex-wrap gap-2">
