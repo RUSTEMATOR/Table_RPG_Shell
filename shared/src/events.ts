@@ -27,6 +27,7 @@ import type { DowntimeStatePlayer } from './downtime.ts';
 import type { SchedulePlayer } from './schedule.ts';
 import type { TableMoment } from './moments.ts';
 import type { AcquaintancePlayer } from './acquaintances.ts';
+import type { BestiaryPlayer } from './bestiary.ts';
 
 export interface ServerToClientEvents {
   'error:forbidden': (payload: { event: string }) => void;
@@ -92,6 +93,8 @@ export interface ServerToClientEvents {
   'gm:schedule.changed': () => void;
   /** Игроку: список знакомых изменился (этап 49). */
   'acquaintances:changed': (payload: { acquaintances: AcquaintancePlayer[] }) => void;
+  /** Игрокам: бестиарий изменился (этап 50). */
+  'bestiary:changed': (payload: BestiaryPlayer) => void;
 }
 
 type Ack = (res: GmAck) => void;

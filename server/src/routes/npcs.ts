@@ -4,6 +4,7 @@ import { FigureSchema, NpcWriteSchema, UnitIdSchema } from '@zg/shared';
 import { requireGm } from '../auth/requireGm.ts';
 import { IMAGE_BODY_LIMIT, IMAGE_TYPES } from '../domain/media.ts';
 import { createNpc, deleteNpc, getNpc, gmNpc, listNpcs, setNpcFigure, setNpcImage, setNpcModel, updateNpc, type NpcRow } from '../domain/npc.ts';
+import { bestiaryChanged } from '../domain/bestiary.ts';
 import { setShownNpc, shownNpcId } from '../domain/scenes.ts';
 import { activeSession, setOpponent } from '../domain/session.ts';
 import { mapsWithPiece } from '../domain/maps.ts';
@@ -56,6 +57,8 @@ export async function gmNpcRoutes(app: FastifyInstance) {
     if (!r) return reply.code(404).send({ error: 'not_found' });
     const next = updateNpc(r, b.data);
     changed(roomId, next);
+    // бестиарий (этап 50): флаг или описание — игрокам обновить коллекцию
+    if (next.bestiary !== r.bestiary || next.bestiaryText !== r.bestiaryText) bestiaryChanged(roomId);
     return view(roomId, next);
   });
 

@@ -5,6 +5,7 @@ import { db, schema } from '../db/client.ts';
 import { powerBand } from './cards.ts';
 import { NO_IMAGE, imageGm, removeImage, storeImage } from './media.ts';
 import { acquaintancesOfNpc } from './acquaintances.ts';
+import { bestiaryInfo } from './bestiary.ts';
 
 // Библиотека противников. Всё здесь — мастерские данные; столу уходит только projectForTable.
 
@@ -23,6 +24,7 @@ export function gmNpc(r: NpcRow, shownId: string | null, opponentId: string | nu
     shown: r.id === shownId,
     opponent: r.id === opponentId,
     acquaintances: acquaintancesOfNpc(r.id),
+    ...bestiaryInfo(r),
     updatedAt: r.updatedAt,
   };
 }
@@ -68,7 +70,7 @@ export function getNpc(roomId: string, id: string): NpcRow | undefined {
     .get();
 }
 
-export function createNpc(roomId: string, w: { name: string; power: number | null; notes: string }): NpcRow {
+export function createNpc(roomId: string, w: { name: string; power: number | null; notes: string; bestiary?: boolean; bestiaryText?: string }): NpcRow {
   const now = Date.now();
   const row: NpcRow = {
     id: newId(),
@@ -83,6 +85,8 @@ export function createNpc(roomId: string, w: { name: string; power: number | nul
     imageHash: null,
     figure: null,
     model3d: null,
+    bestiary: w.bestiary ?? false,
+    bestiaryText: w.bestiaryText ?? '',
     createdAt: now,
     updatedAt: now,
   };
@@ -90,8 +94,15 @@ export function createNpc(roomId: string, w: { name: string; power: number | nul
   return row;
 }
 
-export function updateNpc(r: NpcRow, w: { name: string; power: number | null; notes: string }): NpcRow {
-  const patch = { name: w.name, power: w.power, notesGm: w.notes, updatedAt: Date.now() };
+export function updateNpc(r: NpcRow, w: { name: string; power: number | null; notes: string; bestiary?: boolean; bestiaryText?: string }): NpcRow {
+  const patch = {
+    name: w.name,
+    power: w.power,
+    notesGm: w.notes,
+    ...(w.bestiary !== undefined ? { bestiary: w.bestiary } : {}),
+    ...(w.bestiaryText !== undefined ? { bestiaryText: w.bestiaryText } : {}),
+    updatedAt: Date.now(),
+  };
   db.update(schema.npc).set(patch).where(eq(schema.npc.id, r.id)).run();
   return { ...r, ...patch };
 }

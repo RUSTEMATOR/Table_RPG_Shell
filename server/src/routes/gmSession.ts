@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { OpponentSchema } from '@zg/shared';
 import { requireGm } from '../auth/requireGm.ts';
 import { getNpc } from '../domain/npc.ts';
+import { unlockBeast } from '../domain/bestiary.ts';
 import { activeSession, sessionView, setOpponent, startNewSession } from '../domain/session.ts';
 import { notifyDowntimeSessionChanged } from '../domain/downtime.ts';
 import { pushEnabled, pushToPlayers } from '../push/send.ts';
@@ -36,6 +37,8 @@ export async function gmSessionRoutes(app: FastifyInstance) {
       const n = getNpc(roomId, b.data.npcId);
       if (!n) return reply.code(404).send({ error: 'not_found' });
       s = setOpponent(roomId, n.name, n.power, n.id);
+      // бой с чудищем открывает его в бестиарии отряда (этап 50)
+      unlockBeast(n, 'opponent');
     } else s = setOpponent(roomId, b.data.name, b.data.power);
     publish(roomId, { kind: 'gm' }, 'gm:session.changed');
     publish(roomId, { kind: 'gm' }, 'gm:npcs.changed');

@@ -169,6 +169,13 @@
       "when": 1791507121217,
       "tag": "0023_acquaintances",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "6",
+      "when": 1791507374994,
+      "tag": "0024_bestiary",
+      "breakpoints": true
     }
   ]
 }

@@ -19,3 +19,4 @@ export * from './schedule.ts';
 export * from './moments.ts';
 export * from './sparks.ts';
 export * from './acquaintances.ts';
+export * from './bestiary.ts';

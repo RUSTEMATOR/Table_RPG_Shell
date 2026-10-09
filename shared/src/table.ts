@@ -56,6 +56,9 @@ export const NpcWriteSchema = z.strictObject({
   name: z.string().trim().max(120).default(''),
   power: z.number().int().min(1).max(99999).nullable().default(null),
   notes: z.string().max(20000).default(''),
+  /** Бестиарий (этап 50): чудище и описание для игроков. Не присланы — не меняются. */
+  bestiary: z.boolean().optional(),
+  bestiaryText: z.string().trim().max(2000).optional(),
 });
 
 export interface GmNpc {
@@ -75,5 +78,10 @@ export interface GmNpc {
   opponent: boolean;
   /** Кто с ним знаком (этап 49). */
   acquaintances: GmAcquaintance[];
+  /** Бестиарий (этап 50). */
+  bestiary: boolean;
+  bestiaryText: string;
+  bestiaryUnlockedAt: number | null;
+  fights: number;
   updatedAt: number;
 }

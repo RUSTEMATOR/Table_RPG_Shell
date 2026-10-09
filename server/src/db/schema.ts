@@ -387,6 +387,23 @@ export const acquaintance = sqliteTable(
   (t) => [uniqueIndex('acquaintance_once_idx').on(t.characterId, t.npcId), index('acquaintance_npc_idx').on(t.npcId)],
 );
 
+// Бестиарий (этап 50): чудище открыто отряду. Одна запись на комнату и противника.
+export const bestiaryUnlock = sqliteTable(
+  'bestiary_unlock',
+  {
+    id: text('id').primaryKey(),
+    roomId: text('room_id')
+      .notNull()
+      .references(() => room.id, { onDelete: 'cascade' }),
+    npcId: text('npc_id')
+      .notNull()
+      .references(() => npc.id, { onDelete: 'cascade' }),
+    unlockedAt: integer('unlocked_at').notNull(),
+    by: text('by', { enum: ['opponent', 'gm'] }).notNull(),
+  },
+  (t) => [uniqueIndex('bestiary_unlock_once_idx').on(t.roomId, t.npcId)],
+);
+
 // Заметки мастера к сессии.
 export const sessionNote = sqliteTable('session_note', {
   sessionId: text('session_id')
@@ -467,6 +484,9 @@ export const npc = sqliteTable(
     imageBytes: integer('image_bytes'),
     /** thumbhash превью (этап 40), base64; null — ещё не посчитан. */
     imageHash: text('image_hash'),
+    /** Бестиарий (этап 50): чудище для коллекции отряда и описание для игроков (уходит, когда открыто). */
+    bestiary: integer('bestiary', { mode: 'boolean' }).notNull().default(false),
+    bestiaryText: text('bestiary_text').notNull().default(''),
     /** Пиксель-арт фигурка (этап 23), JSON по FigureSchema. Внешность — может уйти на стол и игрокам (карта, бой). */
     figure: text('figure'),
     /** 3D-модель на 3D-карте (этап 34): id из UNIT_IDS, null — фигурка как обычно. Внешность, как и фигурка. */
