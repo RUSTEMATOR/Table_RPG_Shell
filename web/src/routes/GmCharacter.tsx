@@ -6,7 +6,7 @@ import { PlayerCard } from '../components/PlayerCard.tsx';
 import { ThemePick } from '../components/ThemePick.tsx';
 import { SheetPanel } from '../components/SheetPanel.tsx';
 import { SummaryPanel } from '../components/SummaryPanel.tsx';
-import { MomentsPanel } from '../components/MomentsPanel.tsx';
+import { MomentsPanel, SparksPanel } from '../components/MomentsPanel.tsx';
 import { api } from '../lib/api.ts';
 import { OWNER_ERRORS, usePlayers } from '../lib/gm.ts';
 import { emitGm, useConnection, useSocketEvent } from '../lib/socket.ts';
@@ -154,7 +154,7 @@ export function GmCharacter() {
               { value: 'traits', label: `Черты · ${c.slots.length}` },
               { value: 'sheet', label: 'Лист' },
               { value: 'summaries', label: 'Сводки' },
-              { value: 'moments', label: `Моменты${c.moments.length ? ` · ${c.moments.length}` : ''}` },
+              { value: 'moments', label: `Моменты и искры${c.moments.length || c.sparks.balance ? ` · ${c.moments.length}/${c.sparks.balance}` : ''}` },
               { value: 'figure', label: 'Фигурка' },
               { value: 'notes', label: 'Заметки' },
             ]}
@@ -188,6 +188,7 @@ export function GmCharacter() {
               <SummaryPanel c={c} onChange={setC} />
             </TabPanel>
             <TabPanel value="moments" className="flex flex-col gap-4 focus:outline-none">
+              <SparksPanel c={c} onChange={setC} />
               <MomentsPanel c={c} onChange={setC} />
             </TabPanel>
             <TabPanel value="figure" className="flex max-w-[560px] flex-col gap-4 focus:outline-none">

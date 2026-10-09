@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { MOMENT_KINDS, MOMENT_KIND_LABELS, type GmCharacterView, type MomentKind } from '@zg/shared';
+import { MOMENT_KINDS, MOMENT_KIND_LABELS, SPARK_KIND_LABELS, type GmCharacterView, type MomentKind } from '@zg/shared';
 import { api } from '../lib/api.ts';
-import { Badge, Button, Card, CardTitle, Field, GameIcon, Input, MOMENT_ICON, Select, Textarea, toast } from '../ui/index.ts';
+import { Badge, Button, Card, CardTitle, Field, GameIcon, Input, MOMENT_ICON, Select, Switch, Textarea, toast } from '../ui/index.ts';
 
 const when = (t: number) => new Date(t).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
 
@@ -11,11 +11,12 @@ export function MomentsPanel({ c, onChange }: { c: GmCharacterView; onChange: (c
   const [title, setTitle] = useState('');
   const [text, setText] = useState('');
   const [noteGm, setNoteGm] = useState('');
+  const [spark, setSpark] = useState(false);
   const [busy, setBusy] = useState(false);
   const [confirm, setConfirm] = useState<string | null>(null);
   const add = async () => {
     setBusy(true);
-    const r = await api<GmCharacterView>('POST', '/api/gm/moments', { characterId: c.id, kind, title, text, noteGm });
+    const r = await api<GmCharacterView>('POST', '/api/gm/moments', { characterId: c.id, kind, title, text, noteGm, spark });
     setBusy(false);
     if (!r.ok) return toast.error('Не получилось');
     onChange(r.data);
@@ -87,10 +88,60 @@ export function MomentsPanel({ c, onChange }: { c: GmCharacterView; onChange: (c
         </div>
         <Field label="Пояснение (увидит игрок)">{(id) => <Textarea id={id} rows={2} value={text} maxLength={400} onChange={(e) => setText(e.target.value)} />}</Field>
         <Field label="Заметка мастера">{(id) => <Input id={id} value={noteGm} maxLength={1000} onChange={(e) => setNoteGm(e.target.value)} />}</Field>
+        <Switch checked={spark} onCheckedChange={setSpark} label="И искру (этап 48)" />
         <Button className="justify-self-start" disabled={busy || !title.trim()} onClick={() => void add()}>
           Выдать момент
         </Button>
       </div>
+    </Card>
+  );
+}
+
+/** Искры персонажа (этап 48): баланс, начислить с причиной, журнал. Тратит игрок — перебросом в лотке. */
+export function SparksPanel({ c, onChange }: { c: GmCharacterView; onChange: (c: GmCharacterView) => void }) {
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+  const when = (t: number) => new Date(t).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  const give = async () => {
+    setBusy(true);
+    const r = await api<GmCharacterView>('POST', '/api/gm/sparks', { characterId: c.id, reason });
+    setBusy(false);
+    if (!r.ok) return toast.error('Не получилось');
+    onChange(r.data);
+    setReason('');
+    toast('Искра начислена, игроку ушло уведомление');
+  };
+  return (
+    <Card>
+      <div className="flex flex-wrap items-center gap-3">
+        <CardTitle className="grow">Искры</CardTitle>
+        <Badge tone={c.sparks.balance > 0 ? 'accent' : 'neutral'}>{c.sparks.balance}</Badge>
+      </div>
+      <p className="m-0 text-[13.6px] text-muted">
+        Жетоны вдохновения: за отыгрыш, записи в дневнике, идеи. Игрок тратит искру на переброс своего броска (не позже 10 минут, один раз). Викторина летописи без ошибок даёт
+        искру сама.
+      </p>
+      <div className="flex flex-wrap items-end gap-2">
+        <Field label="За что" className="min-w-[200px] grow">
+          {(id) => <Input id={id} value={reason} maxLength={120} onChange={(e) => setReason(e.target.value)} placeholder="За речь у костра" />}
+        </Field>
+        <Button disabled={busy || !reason.trim()} onClick={() => void give()}>
+          +1 искра
+        </Button>
+      </div>
+      {c.sparks.ledger.length > 0 && (
+        <ul className="m-0 grid list-none gap-0 p-0 text-[13.6px]">
+          {c.sparks.ledger.map((e) => (
+            <li key={e.id} className="flex flex-wrap items-center gap-2 border-b border-solid border-border py-1.5 last:border-0">
+              <b className={e.delta > 0 ? 'text-ok' : 'text-muted'}>{e.delta > 0 ? '+1' : '−1'}</b>
+              <span>{e.reason}</span>
+              <span className="text-muted">
+                · {SPARK_KIND_LABELS[e.kind]} · {when(e.at)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
     </Card>
   );
 }

@@ -4,7 +4,7 @@ import type { FeedRoll } from '../lib/feed.ts';
 import { emitGm } from '../lib/socket.ts';
 import { api } from '../lib/api.ts';
 import { dismissGreen, useGreenSuggestions } from '../lib/suggestions.ts';
-import { Button, EFFECT_ICON, GameIcon, Input, MOMENT_ICON, Select, toast } from '../ui/index.ts';
+import { Button, EFFECT_ICON, GameIcon, Input, MOMENT_ICON, Select, Switch, toast } from '../ui/index.ts';
 
 // Мастерская часть строки ленты: исправить бросок, подсказка зелёной магии. Отдельный чанк: игроку не нужен.
 
@@ -92,6 +92,7 @@ export function Moment({ r }: { r: FeedRoll }) {
   const [kind, setKind] = useState<MomentKind>(r.effect === 'crit' ? 'crit' : r.effect === 'complication' ? 'fumble' : 'custom');
   const [title, setTitle] = useState(r.label || (r.effect === 'crit' ? 'Двадцатка' : r.effect === 'complication' ? 'Единица' : ''));
   const [text, setText] = useState('');
+  const [spark, setSpark] = useState(false);
   const [busy, setBusy] = useState(false);
   if (!r.character) return null;
   if (!open)
@@ -120,6 +121,7 @@ export function Moment({ r }: { r: FeedRoll }) {
         <Input aria-label="Заголовок" placeholder="Заголовок (увидит игрок и стол)" value={title} maxLength={80} onChange={(e) => setTitle(e.target.value)} />
       </div>
       <Input aria-label="Пояснение" placeholder="Пояснение (необязательно, увидит игрок)" value={text} maxLength={400} onChange={(e) => setText(e.target.value)} />
+      <Switch checked={spark} onCheckedChange={setSpark} label="И искру" />
       <div className="flex gap-2">
         <Button
           size="sm"
@@ -127,7 +129,7 @@ export function Moment({ r }: { r: FeedRoll }) {
           disabled={busy || !title.trim()}
           onClick={async () => {
             setBusy(true);
-            const res = await api('POST', '/api/gm/moments', { rollId: r.id, kind, title, text });
+            const res = await api('POST', '/api/gm/moments', { rollId: r.id, kind, title, text, spark });
             setBusy(false);
             if (res.ok) {
               setOpen(false);
