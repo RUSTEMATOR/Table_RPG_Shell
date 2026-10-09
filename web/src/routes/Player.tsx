@@ -8,6 +8,7 @@ import { RollPanel } from '../components/RollPanel.tsx';
 import { Diary } from '../components/Diary.tsx';
 import { Chronicle } from '../components/Chronicle.tsx';
 import { Acquaintances } from '../components/Acquaintances.tsx';
+import { Questionnaire } from '../components/Questionnaire.tsx';
 import { load as loadPref, save as savePref } from '../lib/storage.ts';
 import { RoleScreen } from '../components/Shell.tsx';
 import { api } from '../lib/api.ts';
@@ -57,12 +58,8 @@ function PlayerHome({ active, theme, base, choice, onChoice }: { active: boolean
   }, [conn, load]);
 
   if (character === undefined) return <Skeleton className="h-64" />;
-  if (character === null)
-    return (
-      <Card>
-        <EmptyState icon="hooded-figure">Мастер ещё не выдал тебе персонажа.</EmptyState>
-      </Card>
-    );
+  // без персонажа — анкета для мастера (этап 55)
+  if (character === null) return <Questionnaire />;
   return (
     <>
       <ThemeChoice base={base} value={choice} onChange={onChoice} shells={character.shells} />
