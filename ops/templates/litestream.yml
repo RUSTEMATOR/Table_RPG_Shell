@@ -1,0 +1,18 @@
+# Litestream (этап 59): непрерывная копия базы «Зеленогорья». Шаблон рендерит ops/scripts/install.sh → etc/litestream.yml;
+# положить его по пути LITESTREAM_CONFIG из ~/.config/zelenogorye/.env (например, ~/.config/zelenogorye/litestream.yml).
+# Ключи облака — не здесь, а в переменных окружения службы (LITESTREAM_ACCESS_KEY_ID / LITESTREAM_SECRET_ACCESS_KEY),
+# см. com.zelenogorye.litestream.plist. Оставьте одну или обе реплики.
+dbs:
+  - path: {{ZG_ROOT}}/data/zg.sqlite
+    replicas:
+      # 1) внешний диск: путь к примонтированному тому
+      - type: file
+        path: /Volumes/Backup/zelenogorye-litestream
+        retention: 168h
+      # 2) Backblaze B2 или любой S3 (раскомментировать и вписать бакет и регион/эндпоинт)
+      # - type: s3
+      #   bucket: zelenogorye-db
+      #   path: zg
+      #   endpoint: https://s3.eu-central-003.backblazeb2.com
+      #   region: eu-central-003
+      #   retention: 720h

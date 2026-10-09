@@ -57,6 +57,18 @@ chmod 600 ~/.config/zelenogorye/.env
 - **Сжатие и модели карты:** шаблон nginx (`ops/templates/zelenogorye.conf`) сжимает JSON, `.glb` и SVG и отдаёт `/models/*.glb` с типом `model/gltf-binary` и кэшем на неделю (версия файла — в `?v=`). После обновления шаблона — заново `install.sh` (пересоберёт конфиг) и `nginx -t` + перезагрузка nginx.
 - **Node из nvm:** путь к node зашит в plist. После обновления node через nvm заново выполнить `install.sh` и скопировать plist.
 
+## 5а. Litestream: непрерывная копия базы (этап 59)
+
+Снимки `backup.mjs` — точки во времени раз в 30 минут; Litestream дополняет их потоковой копией с отставанием в секунды (на внешний диск и/или в Backblaze B2 / S3). Необязательно.
+
+1. `brew install litestream` (без sudo).
+2. После `install.sh` в `etc/` лежит `litestream.yml` — поправить реплики (путь внешнего диска, бакет B2/S3) и скопировать: `cp etc/litestream.yml ~/.config/zelenogorye/litestream.yml && chmod 600 ~/.config/zelenogorye/litestream.yml`.
+3. Для B2/S3 — ключи `LITESTREAM_ACCESS_KEY_ID` и `LITESTREAM_SECRET_ACCESS_KEY` вписать в `EnvironmentVariables` установленного `com.zelenogorye.litestream.plist` (в `/Library/LaunchDaemons`, не в git).
+4. `sudo cp etc/com.zelenogorye.litestream.plist /Library/LaunchDaemons/ && sudo launchctl bootstrap system /Library/LaunchDaemons/com.zelenogorye.litestream.plist`.
+5. В `~/.config/zelenogorye/.env` — `LITESTREAM_CONFIG=/Users/<вы>/.config/zelenogorye/litestream.yml` (и `LITESTREAM_BIN`, если не `/opt/homebrew/bin/litestream`); перезапуск сервера. Мастер видит поколения и снимки реплики на странице «База».
+
+**Восстановление из Litestream** (вместо `restore.sh`, если снимок старше нужного): остановить сервер (`sudo launchctl bootout system/com.zelenogorye.server`), `litestream restore -config ~/.config/zelenogorye/litestream.yml -o ~/srv/zelenogorye/data/zg.sqlite.restored ~/srv/zelenogorye/data/zg.sqlite`, проверить `sqlite3 …restored 'pragma integrity_check'`, переложить файл на место (старый — рядом, `.bak`), запустить сервер. Точка во времени — флаг `-timestamp 2026-10-09T18:00:00Z`.
+
 ## 6. Закрытый QA-хост для ручной проверки снаружи
 
 `https://qc-zelenogorye.qa-temple-of-serenity.cc` на этом Mac: Cloudflare Tunnel (`cloudflared`, тот же туннель, что у qc-intercom) → nginx Homebrew :8080 → Vite 5173 → dev-сервер 3001, dev-база. Роутер, сертификаты и этап 0 не нужны.

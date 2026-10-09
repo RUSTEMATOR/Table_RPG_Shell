@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.zelenogorye.litestream</string>
+    <key>UserName</key>
+    <string>{{USER}}</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>HOME</key>
+        <string>{{HOME}}</string>
+        <!-- Для S3/B2: ключи доступа впишите здесь после установки (файл в /Library/LaunchDaemons, права 644 root) или
+             держите реплику только на внешнем диске. В git ключи не попадают. -->
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/opt/homebrew/bin/litestream</string>
+        <string>replicate</string>
+        <string>-config</string>
+        <string>{{HOME}}/.config/zelenogorye/litestream.yml</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>{{ZG_ROOT}}/logs/litestream.log</string>
+    <key>StandardErrorPath</key>
+    <string>{{ZG_ROOT}}/logs/litestream.log</string>
+</dict>
+</plist>
